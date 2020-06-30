@@ -114,26 +114,26 @@ def MobileFacenet(input_blob, embedding_size=10, bn_is_training=True):
     Returns:
       logits: the logits outputs of the model.
     """
-
+  units = [1, 4, 6, 2]
   input_blob = flow.transpose(input_blob, name="transpose", perm=[0, 3, 1, 2])
 
   conv_1 = Conv(input_blob, num_filter=64, kernel=3, pad='same', stride=[2, 2], bn_is_training =bn_is_training, name="conv_1")
-  conv_2 = Residual(conv_1, num_block=2, num_out=64, kernel=3, stride=[1, 1], pad='same', num_group=64, bn_is_training =bn_is_training,
+  conv_2 = Residual(conv_1, num_block=units[0], num_out=64, kernel=3, stride=[1, 1], pad='same', num_group=64, bn_is_training =bn_is_training,
                     name="res_2")
 
   conv_23 = DResidual_v1(conv_2, num_out=128, kernel=3, stride=[2, 2], pad='same', num_group=128, bn_is_training =bn_is_training,
                          name="dconv_23")
-  conv_3 = Residual(conv_23, num_block=6, num_out=128, kernel=3, stride=[1, 1], pad='same', num_group=128, bn_is_training =bn_is_training,
+  conv_3 = Residual(conv_23, num_block=units[1], num_out=128, kernel=3, stride=[1, 1], pad='same', num_group=128, bn_is_training =bn_is_training,
                     name="res_3")
 
   conv_34 = DResidual_v1(conv_3, num_out=256, kernel=3, stride=[2, 2], pad='same', num_group=256, bn_is_training =bn_is_training,
                          name="dconv_34")
-  conv_4 = Residual(conv_34, num_block=10, num_out=256, kernel=3, stride=[1, 1], pad='same', num_group=256, bn_is_training =bn_is_training,
+  conv_4 = Residual(conv_34, num_block=units[2], num_out=256, kernel=3, stride=[1, 1], pad='same', num_group=256, bn_is_training =bn_is_training,
                     name="res_4")
 
   conv_45 = DResidual_v1(conv_4, num_out=512, kernel=3, stride=[2, 2], pad='same', num_group=512, bn_is_training =bn_is_training,
                          name="dconv_45")
-  conv_5 = Residual(conv_45, num_block=2, num_out=512, kernel=3, stride=[1, 1], pad='same', num_group=512, bn_is_training =bn_is_training,
+  conv_5 = Residual(conv_45, num_block=units[3], num_out=512, kernel=3, stride=[1, 1], pad='same', num_group=512, bn_is_training =bn_is_training,
                     name="res_5")
   conv_6_sep = Conv(conv_5, num_filter=512, kernel=1, pad='valid', stride=[1, 1], bn_is_training =bn_is_training, name="conv_6sep")
 

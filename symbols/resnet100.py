@@ -2,7 +2,7 @@ import oneflow as flow
 import oneflow.core.operator.op_conf_pb2 as op_conf_util
 
 def _get_initializer():
-    return flow.variance_scaling_initializer(2.0, "fan_out", "random_normal", "channels_first")
+    return flow.variance_scaling_initializer(2.0, "fan_out", "random_normal", "NCHW")
 
 def _conv2d_layer(
     name,

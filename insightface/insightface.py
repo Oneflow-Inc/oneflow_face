@@ -194,7 +194,7 @@ func_config.default_data_type(flow.float)
 func_config.train.primary_lr(args.base_lr)
 func_config.train.model_update_conf(ParameterUpdateStrategy)
 
-@flow.function(func_config)
+@flow.global_function(func_config)
 def insightface_train_job():
     (labels, images) = _data_load_layer(args.train_dir)
     loss = insightface(images, labels)
