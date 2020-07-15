@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import oneflow as flow
 import oneflow.core.operator.op_conf_pb2 as op_conf_util
 from datetime import datetime
@@ -14,31 +18,29 @@ import math
 
 
 parser = argparse.ArgumentParser(description="flags for train")
-parser.add_argument("-g", "--gpu_num_per_node", type=int, default=1, required=False)
-parser.add_argument("-t", "--train_dir", type=str, required=False)
-parser.add_argument("-load", "--model_load_dir", type=str, required=False)
-parser.add_argument(
-    "-save", "--model_save_dir", type=str, required=False
-)
-parser.add_argument("-c", "--class_num", type=int, required=False)
-parser.add_argument("-b", "--batch_size", type=int, required=True)
-parser.add_argument("-p", "--data_part_num", type=int, required=True)
-parser.add_argument("-lr", "--base_lr", type=float, default=0, required=True)
-parser.add_argument("-wd", "--weight_decay", type=float, default=0.0005, required=False)
-parser.add_argument("-m", "--margin", type=float, default=0.35, required=False)
-parser.add_argument("-ms", "--margin_s", type=float, default=64, required=False)
-parser.add_argument("-easy", "--easy_margin", type=int, default=0, required=False)
+parser.add_argument("-gpu_num_per_node", "--gpu_num_per_node", type=int, default=1, required=False)
+parser.add_argument("-train_dir", "--train_dir", type=str, required=False)
+parser.add_argument("-model_load_dir", "--model_load_dir", type=str, required=False)
+parser.add_argument("-model_save_dir", "--model_save_dir", type=str, required=False)
+parser.add_argument("-class_num", "--class_num", type=int, required=False)
+parser.add_argument("-batch_size", "--batch_size", type=int, required=True)
+parser.add_argument("-data_part_num", "--data_part_num", type=int, required=True)
+parser.add_argument("-base_lr", "--base_lr", type=float, default=0, required=True)
+parser.add_argument("-weight_decay", "--weight_decay", type=float, default=0.0005, required=False)
+parser.add_argument("-margin", "--margin", type=float, default=0.35, required=False)
+parser.add_argument("-margin_s", "--margin_s", type=float, default=64, required=False)
+parser.add_argument("-easy_margin", "--easy_margin", type=int, default=0, required=False)
 parser.add_argument("-network", "--network", type=str, default="resnet100", required=False)
 parser.add_argument("-loss_type", "--loss_type", type=str, default="softmax", required=False)
-parser.add_argument("-mp", "--model_parallel", type=int, default=0, required=False)
-parser.add_argument("-l", "--loss_print_steps", type=int, default=1, required=False)
-parser.add_argument("-s", "--part_name_suffix_length", type=int, default=-1, required=False)
-parser.add_argument("-tbn", "--total_batch_num", type=int, required=True)
-parser.add_argument("-snapshot_num", "--num_of_batches_in_snapshot", type=int, required=True)
-parser.add_argument("-models", "--models_name", type=str, required=False)
-parser.add_argument("-m1", "--loss_m1", type=float, default=1.0, required=False)
-parser.add_argument("-m2", "--loss_m2", type=float, default=0.5, required=False)
-parser.add_argument("-m3", "--loss_m3", type=float, default=0.0, required=False)
+parser.add_argument("-model_parallel", "--model_parallel", type=int, default=0, required=False)
+parser.add_argument("-loss_print_steps", "--loss_print_steps", type=int, default=1, required=False)
+parser.add_argument("-part_name_suffix_length", "--part_name_suffix_length", type=int, default=-1, required=False)
+parser.add_argument("-total_batch_num", "--total_batch_num", type=int, required=True)
+parser.add_argument("-num_of_batches_in_snapshot", "--num_of_batches_in_snapshot", type=int, required=True)
+parser.add_argument("-models_name", "--models_name", type=str, required=False)
+parser.add_argument("-loss_m1", "--loss_m1", type=float, default=1.0, required=False)
+parser.add_argument("-loss_m2", "--loss_m2", type=float, default=0.5, required=False)
+parser.add_argument("-loss_m3", "--loss_m3", type=float, default=0.0, required=False)
 
 args = parser.parse_args()
 assert(not os.path.exists(args.model_save_dir))
@@ -193,6 +195,8 @@ func_config.default_distribute_strategy(flow.distribute.consistent_strategy())
 func_config.default_data_type(flow.float)
 func_config.train.primary_lr(args.base_lr)
 func_config.train.model_update_conf(ParameterUpdateStrategy)
+func_config.cudnn_conv_heuristic_search_algo(False)
+#func_config.use_boxing_v2(True)
 
 @flow.global_function(func_config)
 def insightface_train_job():
