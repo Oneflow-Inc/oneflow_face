@@ -212,7 +212,7 @@ func_config.default_data_type(flow.float)
 func_config.train.primary_lr(args.base_lr)
 func_config.train.model_update_conf(ParameterUpdateStrategy)
 func_config.cudnn_conv_heuristic_search_algo(False)
-#func_config.use_boxing_v2(True)
+# func_config.use_boxing_v2(True)
 
 
 @flow.global_function(func_config)
@@ -371,8 +371,6 @@ def insightface_val_job():
             val_batch_size=args.lfw_batch_size,
             val_data_part_num=args.lfw_data_part_num,
         )
-        print("val shape:")
-        print(labels.shape, images.shape)
     else:
         print("No validation dataset is provided.")
         print("Loading synthetic data.")
@@ -400,7 +398,6 @@ def main():
     train_metric = TrainMetric(
         desc="train", calculate_batches=1, batch_size=args.train_batch_size
     )
-    # val_metric = ValidationMetric(desc="validation")
 
     for step in range(args.total_batch_num):
         # train
@@ -431,15 +428,6 @@ def main():
                 embeddings_list.append(_em)
                 issame_list.append(_issame)
 
-                print(
-                    "val iter: {}, em.shape:{}, embeddings_list:{}, issame_list:{}, _issame.shape:{}".format(
-                        i,
-                        _em.shape,
-                        len(embeddings_list),
-                        len(issame_list),
-                        _issame.shape,
-                    )
-                )
             embedding_length = embeddings_list[0].shape[-1]
 
             embeddings = (
@@ -452,18 +440,16 @@ def main():
                 .flatten()
                 .reshape(-1, 1)[: args.lfw_total_images_num, :]
             )
-
-            print(
-                "embeddings.shape",
-                embeddings.shape,
-                "len(embeddings):",
-                len(embeddings),
-            )
-            print("issame.shape", issame.shape)
+            issame_list = [bool(x) for x in issame[0::2]]
 
             # caculate validation metrics on embeddings
+            print("{} Validation Result:".format("LFW"))
+
             validation_util.cal_validation_metrics(
-                embeddings, issame, nrof_folds=args.nrof_folds
+                embeddings,
+                issame_list,
+                nrof_folds=args.nrof_folds,
+                no_flip=True,
             )
 
 

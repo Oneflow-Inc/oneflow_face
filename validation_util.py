@@ -196,13 +196,15 @@ def calculate_val_far(threshold, dist, actual_issame):
     n_same = np.sum(actual_issame)
     n_diff = np.sum(np.logical_not(actual_issame))
     # print(true_accept, false_accept)
-    # print(n_same, n_diff)
+    # print("n_same, n_diff:",n_same, n_diff)
     val = float(true_accept) / float(n_same)
     far = float(false_accept) / float(n_diff)
     return val, far
 
 
 def evaluate(embeddings, actual_issame, nrof_folds=10, pca=0):
+    print("actual_issame:", len(actual_issame))
+
     # Calculate evaluation metrics
     thresholds = np.arange(0, 4, 0.01)
     embeddings1 = embeddings[0::2]
@@ -227,45 +229,46 @@ def evaluate(embeddings, actual_issame, nrof_folds=10, pca=0):
     return tpr, fpr, accuracy, val, val_std, far
 
 
-def cal_validation_metrics(embeddings, issame, nrof_folds=10):
+def cal_validation_metrics(
+    embeddings_list, issame_list, nrof_folds=10, no_flip=False
+):
+    if no_flip:
+        embeddings = embeddings_list
+        print("Reading {} embeddings.".format(len(embeddings)))
+        embeddings = sklearn.preprocessing.normalize(embeddings)
 
-    assert len(embeddings) == len(issame)
-    print("Reading {} embeddings.".format(len(embeddings)))
+        acc1 = 0.0
+        std1 = 0.0
 
-    # xnorm
-    # _xnorm = 0.0
-    # _xnorm_cnt = 0
-    # for embed in embeddings_list:
-    #     for i in range(embed.shape[0]):
-    #         _em = embed[i]
-    #         _norm = np.linalg.norm(_em)
-    #         # print(_em.shape, _norm)
-    #         _xnorm += _norm
-    #         _xnorm_cnt += 1
-    # _xnorm /= _xnorm_cnt
+        _, _, accuracy, val, val_std, far = evaluate(
+            embeddings, issame_list, nrof_folds=10
+        )
+        acc1, std1 = np.mean(accuracy), np.std(accuracy)
 
-    # Evaluate on embeddings
-    embeddings = sklearn.preprocessing.normalize(embeddings)
-    acc1 = 0.0
-    std1 = 0.0
-    _, _, accuracy, val, val_std, far = evaluate(
-        embeddings, issame[0::2], nrof_folds=10
-    )
-    acc1, std1 = np.mean(accuracy), np.std(accuracy)
+        print(
+            "Validation rate: %2.5f+-%2.5f @ FAR=%2.5f" % (val, val_std, far)
+        )
+    else:
+        # xnorm
+        _xnorm = 0.0
+        _xnorm_cnt = 0
+        for embed in embeddings_list:
+            for i in range(embed.shape[0]):
+                _em = embed[i]
+                _norm = np.linalg.norm(_em)
+                # print(_em.shape, _norm)
+                _xnorm += _norm
+                _xnorm_cnt += 1
+        _xnorm /= _xnorm_cnt
 
-    print("Validation rate: %2.5f+-%2.5f @ FAR=%2.5f" % (val, val_std, far))
+        # Evaluate on embeddings
+        embeddings = embeddings_list[0] + embeddings_list[1]
+        embeddings = sklearn.preprocessing.normalize(embeddings)
+        _, _, accuracy, val, val_std, far = evaluate(
+            embeddings, issame_list, nrof_folds=nrof_folds
+        )
+        acc2, std2 = np.mean(accuracy), np.std(accuracy)
 
-    # tpr, fpr, accuracy, val, val_std, far = evaluate(
-    #     embeddings, issame[0::2], nrof_folds=nrof_folds,
-    # )
+        print("XNorm: %f" % (_xnorm))
+        print("Accuracy-Flip: %1.5f+-%1.5f" % (acc2, std2))
 
-    # print("Accuracy: %2.5f+-%2.5f" % (np.mean(accuracy), np.std(accuracy)))
-    # print("Validation rate: %2.5f+-%2.5f @ FAR=%2.5f" % (val, val_std, far))
-
-    # auc = metrics.auc(fpr, tpr)
-    # print("Area Under Curve (AUC): %1.3f" % auc)
-    # eer = brentq(
-    #     lambda x: 1.0 - x - interpolate.interp1d(fpr, tpr)(x), 0.0, 1.0
-    # )
-    # print("Equal Error Rate (EER): %1.3f" % eer)
-    
