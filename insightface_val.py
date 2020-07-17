@@ -143,18 +143,16 @@ def do_validation(dataset="lfw"):
         _em_flipped_list.append(_em_flipped)
 
     issame = (
-        np.array(_issame_list)
-        .flatten()
-        .reshape(-1, 1)[: args.lfw_total_images_num, :]
+        np.array(_issame_list).flatten().reshape(-1, 1)[:total_images_num, :]
     )
     issame_list = [bool(x) for x in issame[0::2]]
     embedding_length = _em_list[0].shape[-1]
     embeddings = (np.array(_em_list).flatten().reshape(-1, embedding_length))[
-        : args.lfw_total_images_num, :
+        :total_images_num, :
     ]
     embeddings_flipped = (
         np.array(_em_flipped_list).flatten().reshape(-1, embedding_length)
-    )[: args.lfw_total_images_num, :]
+    )[:total_images_num, :]
     embeddings_list = [embeddings, embeddings_flipped]
 
     return issame_list, embeddings_list

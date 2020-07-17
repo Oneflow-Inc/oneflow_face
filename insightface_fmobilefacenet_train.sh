@@ -1,6 +1,7 @@
 export ONEFLOW_DEBUG_MODE=""
 export ENABLE_USER_OP=True
 
+# oneflow-16
 emore_data_dir=/dataset/kubernetes/dataset/public/faces_emore/ofrecord/train
 lfw_data_dir=/dataset/kubernetes/dataset/public/insightface/lfw
 cfp_fp_data_dir=/dataset/kubernetes/dataset/public/insightface/cfp_fp
@@ -14,7 +15,7 @@ per_gpu_batch_size=32
 network="mobilefacenet"
 loss_type="arc_loss"
 model_load_dir="/dataset/kubernetes/dataset/models/insightface/mobilefacenet/snapshot_9"
-model_save_dir="mobilenet_save_model"
+model_save_dir="output/mobilenet_save_model"
 log_dir="output/log"
 
 rm -r $model_save_dir
