@@ -230,6 +230,8 @@ def evaluate(embeddings, actual_issame, nrof_folds=10, pca=0):
 def cal_validation_metrics(
     embeddings_list, issame_list, nrof_folds=10, no_flip=False
 ):
+    print("Embedding shape: {}".format(embeddings_list[0].shape))
+
     if no_flip:
         embeddings = embeddings_list[0]
         print("Reading {} embeddings.".format(len(embeddings)))

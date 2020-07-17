@@ -113,8 +113,34 @@ def load_train_dataset(args):
 
 def load_lfw_dataset(args):
     data_dir = args.lfw_data_dir
-    batch_size = args.lfw_batch_size
+    batch_size = args.val_batch_size
     data_part_num = args.lfw_data_part_num
+
+    (issame, images) = validation_dataset_reader(
+        val_data_dir=data_dir,
+        val_batch_size=batch_size,
+        val_data_part_num=data_part_num,
+    )
+    return issame, images
+
+
+def load_cfp_fp_dataset(args):
+    data_dir = args.cfp_fp_data_dir
+    batch_size = args.val_batch_size
+    data_part_num = args.cfp_fp_data_part_num
+
+    (issame, images) = validation_dataset_reader(
+        val_data_dir=data_dir,
+        val_batch_size=batch_size,
+        val_data_part_num=data_part_num,
+    )
+    return issame, images
+
+
+def load_agedb_30_dataset(args):
+    data_dir = args.agedb_30_data_dir
+    batch_size = args.val_batch_size
+    data_part_num = args.agedb_30_data_part_num
 
     (issame, images) = validation_dataset_reader(
         val_data_dir=data_dir,

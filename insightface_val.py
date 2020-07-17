@@ -17,11 +17,29 @@ parser.add_argument(
 )
 
 # validation dataset
+parser.add_argument("--val_batch_size", default=120, type=int, required=False)
+
+# lfw
 parser.add_argument("--lfw_data_dir", type=str, required=False)
-parser.add_argument("--lfw_batch_size", type=int, required=False)
-parser.add_argument("--lfw_data_part_num", type=int, required=False)
+parser.add_argument("--lfw_data_part_num", default=1, type=int, required=False)
 parser.add_argument(
     "--lfw_total_images_num", type=int, default=12000, required=False
+)
+# cfp_fp
+parser.add_argument("--cfp_fp_data_dir", type=str, required=False)
+parser.add_argument(
+    "--cfp_fp_data_part_num", default=1, type=int, required=False
+)
+parser.add_argument(
+    "--cfp_fp_total_images_num", type=int, default=14000, required=False
+)
+# agedb_30
+parser.add_argument("--agedb_30_data_dir", type=str, required=False)
+parser.add_argument(
+    "--agedb_30_data_part_num", default=1, type=int, required=False
+)
+parser.add_argument(
+    "--agedb_30_total_images_num", type=int, default=12000, required=False
 )
 # Evaluation paramters
 parser.add_argument("--nrof_folds", type=int, help="", default=10)
@@ -37,7 +55,7 @@ args = parser.parse_args()
 
 input_blob_def_dict = {
     "images": flow.FixedTensorDef(
-        (args.lfw_batch_size, 112, 112, 3), dtype=flow.float
+        (args.val_batch_size, 112, 112, 3), dtype=flow.float
     ),
 }
 
@@ -66,13 +84,25 @@ def get_val_config(args):
 
 
 @flow.global_function(get_val_config(args))
-def get_validation_datset_job():
+def get_validation_datset_lfw_job():
     issame, images = ofrecord_util.load_lfw_dataset(args)
     return issame, images
 
 
 @flow.global_function(get_val_config(args))
-def insightface_val_job_2(images=input_blob_def_dict["images"]):
+def get_validation_datset_cfp_fp_job():
+    issame, images = ofrecord_util.load_cfp_fp_dataset(args)
+    return issame, images
+
+
+@flow.global_function(get_val_config(args))
+def get_validation_datset_agedb_30_job():
+    issame, images = ofrecord_util.load_agedb_30_dataset(args)
+    return issame, images
+
+
+@flow.global_function(get_val_config(args))
+def insightface_val_job(images=input_blob_def_dict["images"]):
     print("val batch data: ", images.shape)
     embedding = insightface(images)
     return embedding
@@ -84,17 +114,29 @@ def flip_data(images):
     return images_flipped
 
 
-def do_validation():
+def do_validation(dataset="lfw"):
+    print("Validation on [{}]:".format(dataset))
     _issame_list = []
     _em_list = []
     _em_flipped_list = []
 
-    val_iter_num = math.ceil(args.lfw_total_images_num / args.lfw_batch_size)
+    batch_size = args.val_batch_size
+    if dataset == "lfw":
+        total_images_num = args.lfw_total_images_num
+        val_job = get_validation_datset_lfw_job
+    if dataset == "cfp_fp":
+        total_images_num = args.cfp_fp_total_images_num
+        val_job = get_validation_datset_cfp_fp_job
+    if dataset == "agedb_30":
+        total_images_num = args.agedb_30_total_images_num
+        val_job = get_validation_datset_agedb_30_job
+
+    val_iter_num = math.ceil(total_images_num / batch_size)
     for i in range(val_iter_num):
-        _issame, images = get_validation_datset_job().get()
+        _issame, images = val_job().get()
         images_flipped = flip_data(images.ndarray())
-        _em = insightface_val_job_2(images.ndarray()).get()
-        _em_flipped = insightface_val_job_2(images_flipped).get()
+        _em = insightface_val_job(images.ndarray()).get()
+        _em_flipped = insightface_val_job(images_flipped).get()
 
         _issame_list.append(_issame)
         _em_list.append(_em)
@@ -127,11 +169,11 @@ def main():
     check_point.load(args.model_load_dir)
 
     # validation
-    issame_list, embeddings_list = do_validation()
-    print("Validation on [{}]:".format("LFW"))
-    validation_util.cal_validation_metrics(
-        embeddings_list, issame_list, nrof_folds=args.nrof_folds,
-    )
+    for ds in ["lfw", "cfp_fp", "agedb_30"]:
+        issame_list, embeddings_list = do_validation(dataset=ds)
+        validation_util.cal_validation_metrics(
+            embeddings_list, issame_list, nrof_folds=args.nrof_folds,
+        )
 
 
 if __name__ == "__main__":

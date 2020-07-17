@@ -28,10 +28,10 @@ python3 insightface_train_val.py \
 --train_data_part_num=$data_part_num \
 \
 --do_validataion_while_train \
+--val_batch_size=20 \
 --lfw_data_dir=$lfw_data_dir \
---lfw_batch_size=600 \
---lfw_data_part_num=1 \
---lfw_total_images_num=12000 \
+--cfp_fp_data_dir=$cfp_fp_data_dir \
+--agedb_30_data_dir=$agedb_30_data_dir \
 --validataion_interval=1 \
 \
 --total_batch_num=5 \

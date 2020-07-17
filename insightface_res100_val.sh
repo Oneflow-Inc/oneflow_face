@@ -20,9 +20,8 @@ rm -r $log_dir
 
 python3 insightface_val.py \
 --lfw_data_dir=$lfw_data_dir \
---lfw_batch_size=1200 \
---lfw_data_part_num=1 \
---lfw_total_images_num=12000 \
+--cfp_fp_data_dir=$cfp_fp_data_dir \
+--agedb_30_data_dir=$agedb_30_data_dir \
 --gpu_num_per_node=$gpu_num \
 --network=$network \
 --model_load_dir=$model_load_dir
