@@ -2,17 +2,14 @@ import os
 import math
 import argparse
 import numpy as np
-
-
 import oneflow as flow
+
 import ofrecord_util
 import validation_util
+from callback_util import TrainMetric
 from symbols.fmobilefacenet import MobileFacenet
 from symbols.resnet100 import Resnet100
 
-
-# from validation_util import validation_test
-from util import TrainMetric
 
 parser = argparse.ArgumentParser(description="flags for train")
 # machines
@@ -22,6 +19,7 @@ parser.add_argument(
 )
 
 # train dataset
+parser.add_argument("--use_synthetic_data", default=False, action="store_true")
 parser.add_argument("--train_data_dir", type=str, required=False)
 parser.add_argument("--class_num", type=int, required=False)
 parser.add_argument("--train_batch_size", type=int, required=True)
@@ -87,107 +85,11 @@ ParameterUpdateStrategy = dict(
     weight_decay_conf=dict(weight_decay_rate=args.weight_decay,),
 )
 
-
-def _data_load_layer(data_dir):
-    image_blob_conf = flow.data.BlobConf(
-        "encoded",
-        shape=(112, 112, 3),
-        dtype=flow.float,
-        codec=flow.data.ImageCodec(
-            image_preprocessors=[
-                flow.data.ImagePreprocessor("bgr2rgb"),
-                flow.data.ImagePreprocessor("mirror"),
-            ]
-        ),
-        preprocessors=[
-            flow.data.NormByChannelPreprocessor(
-                mean_values=(127.5, 127.5, 127.5), std_values=(128, 128, 128)
-            ),
-        ],
-    )
-
-    label_blob_conf = flow.data.BlobConf(
-        "label", shape=(), dtype=flow.int32, codec=flow.data.RawCodec()
-    )
-
-    return flow.data.decode_ofrecord(
-        data_dir,
-        (label_blob_conf, image_blob_conf),
-        batch_size=args.train_batch_size,
-        data_part_num=args.train_data_part_num,
-        part_name_suffix_length=args.part_name_suffix_length,
-        shuffle=True,
-        buffer_size=16384,
-    )
-
-
-def load_validation_dataset(val_data_dir):
-    image_blob_conf = flow.data.BlobConf(
-        "encoded",
-        shape=(160, 160, 3),
-        dtype=flow.float,
-        codec=flow.data.ImageCodec(
-            image_preprocessors=[flow.data.ImagePreprocessor("bgr2rgb")]
-        ),
-        preprocessors=[
-            flow.data.NormByChannelPreprocessor(
-                mean_values=(127.5, 127.5, 127.5), std_values=(128, 128, 128)
-            ),
-        ],
-    )
-
-    label_blob_conf = flow.data.BlobConf(
-        "issame", shape=(), dtype=flow.int32, codec=flow.data.RawCodec()
-    )
-
-    return flow.data.decode_ofrecord(
-        val_data_dir,
-        (label_blob_conf, image_blob_conf),
-        batch_size=2,
-        data_part_num=1,
-        part_name_suffix_length=1,
-        shuffle=False,
-        buffer_size=16384,
-    )
-
-
-def load_validation_dataset_2(
-    val_data_dir, val_batch_size=1, val_data_part_num=1
-):
-
-    color_space = "RGB"
-    ofrecord = flow.data.ofrecord_reader(
-        val_data_dir,
-        batch_size=val_batch_size,
-        data_part_num=val_data_part_num,
-        part_name_suffix_length=1,
-        shuffle_after_epoch=False,
-    )
-    image = flow.data.OFRecordImageDecoder(
-        ofrecord, "encoded", color_space=color_space
-    )
-    issame = flow.data.OFRecordRawDecoder(
-        ofrecord, "issame", shape=(), dtype=flow.int32
-    )
-
-    rsz = flow.image.Resize(
-        image, resize_x=112, resize_y=112, color_space=color_space
-    )
-    normal = flow.image.CropMirrorNormalize(
-        rsz,
-        color_space=color_space,
-        crop_h=0,
-        crop_w=0,
-        crop_pos_y=0.5,
-        crop_pos_x=0.5,
-        mean=[127.5, 127.5, 127.5],
-        std=[128.0, 128.0, 128.0],
-        output_dtype=flow.float,
-    )
-
-    normal = flow.transpose(normal, name="transpose_val", perm=[0, 2, 3, 1])
-
-    return issame, normal
+input_blob_def_dict = {
+    "images": flow.FixedTensorDef(
+        (args.lfw_batch_size, 112, 112, 3), dtype=flow.float
+    ),
+}
 
 
 def insightface(images):
@@ -206,20 +108,30 @@ def insightface(images):
     return embedding
 
 
-func_config = flow.FunctionConfig()
-func_config.default_distribute_strategy(flow.distribute.consistent_strategy())
-func_config.default_data_type(flow.float)
-func_config.train.primary_lr(args.base_lr)
-func_config.train.model_update_conf(ParameterUpdateStrategy)
-func_config.cudnn_conv_heuristic_search_algo(False)
-# func_config.use_boxing_v2(True)
+def get_train_config(args):
+    config = flow.FunctionConfig()
+    config.default_distribute_strategy(flow.distribute.consistent_strategy())
+    config.default_data_type(flow.float)
+    config.train.primary_lr(args.base_lr)
+    config.train.model_update_conf(ParameterUpdateStrategy)
+    config.cudnn_conv_heuristic_search_algo(False)
+    # config.use_boxing_v2(True)
+    return config
 
 
-@flow.global_function(func_config)
+def get_val_config(args):
+    config = flow.function_config()
+    config.default_distribute_strategy(flow.distribute.consistent_strategy())
+    config.default_data_type(flow.float)
+    return config
+
+
+@flow.global_function(get_train_config(args))
 def insightface_train_job():
-    # (labels, images) = ofrecord_util.load_synthetic(64, 112)
-    print("Loading train data from {}".format(args.train_data_dir))
-    (labels, images) = _data_load_layer(args.train_data_dir)
+    if args.use_synthetic_data:
+        (labels, images) = ofrecord_util.load_synthetic(args)
+    labels, images = ofrecord_util.load_train_dataset(args)
+    print("train batch data: ", images.shape)
     embedding = insightface(images)
 
     def _get_initializer():
@@ -269,7 +181,7 @@ def insightface_train_job():
             zy_keep = flow.math.add(zy, -s * mm)
         cond = flow.cast(cond, dtype=flow.int32)
         new_zy = flow.where(cond, new_zy, zy_keep)
-        print(new_zy.shape)
+        # print(new_zy.shape)
         zy = flow.math.multiply(zy, -1.0)
         diff = flow.math.add(new_zy, zy)
 
@@ -351,36 +263,58 @@ def insightface_train_job():
     return loss
 
 
-def get_val_config(args):
-    config = flow.function_config()
-    config.default_distribute_strategy(flow.distribute.consistent_strategy())
-    config.default_data_type(flow.float)
-    return config
+if args.do_validataion_while_train:
+
+    @flow.global_function(get_val_config(args))
+    def get_validation_datset_job():
+        issame, images = ofrecord_util.load_lfw_dataset(args)
+        return issame, images
+
+    @flow.global_function(get_val_config(args))
+    def insightface_val_job_2(images=input_blob_def_dict["images"]):
+        print("val batch data: ", images.shape)
+        embedding = insightface(images)
+        return embedding
 
 
-# lfw: (12000L, 3L, 112L, 112L)
-# cfp_fp: (14000L, 3L, 112L, 112L)
-# agedb_30: (12000L, 3L, 112L, 112L)
-@flow.global_function(get_val_config(args))
-def insightface_val_job():
-    if args.lfw_data_dir:
-        assert os.path.exists(args.lfw_data_dir)
-        print("Loading validation data from {}".format(args.lfw_data_dir))
-        (labels, images) = load_validation_dataset_2(
-            val_data_dir=args.lfw_data_dir,
-            val_batch_size=args.lfw_batch_size,
-            val_data_part_num=args.lfw_data_part_num,
-        )
-    else:
-        print("No validation dataset is provided.")
-        print("Loading synthetic data.")
-        (issame, images) = ofrecord_util.load_synthetic(
-            args.lfw_batch_size, 112
-        )
+def flip_data(images):
+    images_flipped = np.flip(images, axis=2).astype(np.float32)
 
-    embedding = insightface(images)
+    return images_flipped
 
-    return embedding, labels
+
+def do_validation(step):
+    _issame_list = []
+    _em_list = []
+    _em_flipped_list = []
+
+    val_iter_num = math.ceil(args.lfw_total_images_num / args.lfw_batch_size)
+    for i in range(val_iter_num):
+        _issame, images = get_validation_datset_job().get()
+        images_flipped = flip_data(images.ndarray())
+        _em = insightface_val_job_2(images.ndarray()).get()
+        _em_flipped = insightface_val_job_2(images_flipped).get()
+
+        _issame_list.append(_issame)
+        _em_list.append(_em)
+        _em_flipped_list.append(_em_flipped)
+
+    issame = (
+        np.array(_issame_list)
+        .flatten()
+        .reshape(-1, 1)[: args.lfw_total_images_num, :]
+    )
+    issame_list = [bool(x) for x in issame[0::2]]
+    embedding_length = _em_list[0].shape[-1]
+    embeddings = (np.array(_em_list).flatten().reshape(-1, embedding_length))[
+        : args.lfw_total_images_num, :
+    ]
+    embeddings_flipped = (
+        np.array(_em_flipped_list).flatten().reshape(-1, embedding_length)
+    )[: args.lfw_total_images_num, :]
+    embeddings_list = [embeddings, embeddings_flipped]
+
+    return issame_list, embeddings_list
 
 
 def main():
@@ -403,53 +337,25 @@ def main():
         # train
         insightface_train_job().async_get(train_metric.metric_cb(step))
 
+        # validation
+        if (
+            args.do_validataion_while_train
+            and (step + 1) % args.validataion_interval == 0
+        ):
+            issame_list, embeddings_list = do_validation(step)
+            print(
+                "Validation on [{}] after train iter [{}]:".format("LFW", step)
+            )
+            validation_util.cal_validation_metrics(
+                embeddings_list, issame_list, nrof_folds=args.nrof_folds,
+            )
+
         # snapshot
         if (step + 1) % args.num_of_batches_in_snapshot == 0:
             check_point.save(
                 args.model_save_dir
                 + "/snapshot_"
                 + str(step // args.num_of_batches_in_snapshot)
-            )
-
-        # validation
-        if (
-            args.do_validataion_while_train
-            and (step + 1) % args.validataion_interval == 0
-        ):
-
-            embeddings_list = []
-            issame_list = []
-            val_iter_num = math.ceil(
-                args.lfw_total_images_num / args.lfw_batch_size
-            )
-            for i in range(val_iter_num):
-                _em, _issame = insightface_val_job().get()
-
-                embeddings_list.append(_em)
-                issame_list.append(_issame)
-
-            embedding_length = embeddings_list[0].shape[-1]
-
-            embeddings = (
-                np.array(embeddings_list)
-                .flatten()
-                .reshape(-1, embedding_length)
-            )[: args.lfw_total_images_num, :]
-            issame = (
-                np.array(issame_list)
-                .flatten()
-                .reshape(-1, 1)[: args.lfw_total_images_num, :]
-            )
-            issame_list = [bool(x) for x in issame[0::2]]
-
-            # caculate validation metrics on embeddings
-            print("{} Validation Result:".format("LFW"))
-
-            validation_util.cal_validation_metrics(
-                embeddings,
-                issame_list,
-                nrof_folds=args.nrof_folds,
-                no_flip=True,
             )
 
 

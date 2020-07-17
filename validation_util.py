@@ -203,8 +203,6 @@ def calculate_val_far(threshold, dist, actual_issame):
 
 
 def evaluate(embeddings, actual_issame, nrof_folds=10, pca=0):
-    print("actual_issame:", len(actual_issame))
-
     # Calculate evaluation metrics
     thresholds = np.arange(0, 4, 0.01)
     embeddings1 = embeddings[0::2]
@@ -233,7 +231,7 @@ def cal_validation_metrics(
     embeddings_list, issame_list, nrof_folds=10, no_flip=False
 ):
     if no_flip:
-        embeddings = embeddings_list
+        embeddings = embeddings_list[0]
         print("Reading {} embeddings.".format(len(embeddings)))
         embeddings = sklearn.preprocessing.normalize(embeddings)
 

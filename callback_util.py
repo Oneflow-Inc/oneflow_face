@@ -47,7 +47,7 @@ class TrainMetric(object):
 
                 print(
                     self.fmt.format(
-                        self.desc, step + 1, loss.mean(), throughput
+                        self.desc, step, loss.mean(), throughput
                     )
                 )
 
