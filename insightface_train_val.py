@@ -259,9 +259,18 @@ def insightface_train_job():
                 body = gt_one_hot * diff
                 fc7 = fc7 + body
     elif args.loss_type == "softmax":
+        if args.model_parallel:
+            labels = labels.with_distribute(flow.distribute.broadcast())
+            fc1_distribute = flow.distribute.broadcast()
+            fc7_data_distribute = flow.distribute.split(1)
+            fc7_model_distribute = flow.distribute.split(0)
+        else:
+            fc1_distribute =  flow.distribute.split(0)
+            fc7_data_distribute =  flow.distribute.split(0)
+            fc7_model_distribute = flow.distribute.broadcast()
         print("loss 0")
         fc7 = flow.layers.dense(
-            inputs=embedding,
+            inputs=embedding.with_distribute(fc1_distribute),
             units=args.class_num,
             activation=None,
             use_bias=False,
@@ -269,7 +278,9 @@ def insightface_train_job():
             bias_initializer=None,
             trainable=trainable,
             name=args.models_name,
+            model_distribute=fc7_model_distribute
         )
+        fc7 = fc7.with_distribute(fc7_data_distribute)
     else:
         raise NotImplementedError
 
