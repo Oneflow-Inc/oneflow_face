@@ -41,7 +41,7 @@ parser.add_argument(
 parser.add_argument(
     "--agedb_30_total_images_num", type=int, default=12000, required=False
 )
-# Evaluation paramters
+# Validation paramters
 parser.add_argument("--nrof_folds", type=int, help="", default=10)
 
 # model and log

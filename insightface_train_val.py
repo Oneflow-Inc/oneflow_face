@@ -12,11 +12,12 @@ from symbols.resnet100 import Resnet100
 
 
 parser = argparse.ArgumentParser(description="flags for train")
-# machines
+# distrubute
 parser.add_argument("--gpu_num_per_node", type=int, default=1, required=False)
 parser.add_argument(
     "--num_nodes", type=int, default=1, help="node/machine number for training"
 )
+parser.add_argument("--model_parallel", type=int, default=0, required=False)
 
 # train dataset
 parser.add_argument("--use_synthetic_data", default=False, action="store_true")
@@ -52,7 +53,7 @@ parser.add_argument(
 parser.add_argument(
     "--agedb_30_total_images_num", type=int, default=12000, required=False
 )
-# Evaluation paramters
+# Validation paramters
 parser.add_argument("--nrof_folds", type=int, help="", default=10)
 
 # model and log
@@ -81,7 +82,6 @@ parser.add_argument("--margin_s", type=float, default=64, required=False)
 parser.add_argument("--easy_margin", type=int, default=0, required=False)
 parser.add_argument("--network", type=str, default="resnet100", required=False)
 parser.add_argument("--loss_type", type=str, default="softmax", required=False)
-parser.add_argument("--model_parallel", type=int, default=0, required=False)
 parser.add_argument("--models_name", type=str, required=False)
 parser.add_argument("--loss_m1", type=float, default=1.0, required=False)
 parser.add_argument("--loss_m2", type=float, default=0.5, required=False)
@@ -147,7 +147,8 @@ def get_val_config(args):
 def insightface_train_job():
     if args.use_synthetic_data:
         (labels, images) = ofrecord_util.load_synthetic(args)
-    labels, images = ofrecord_util.load_train_dataset(args)
+    else:
+        labels, images = ofrecord_util.load_train_dataset(args)
     print("train batch data: ", images.shape)
     embedding = insightface(images)
 
@@ -265,8 +266,8 @@ def insightface_train_job():
             fc7_data_distribute = flow.distribute.split(1)
             fc7_model_distribute = flow.distribute.split(0)
         else:
-            fc1_distribute =  flow.distribute.split(0)
-            fc7_data_distribute =  flow.distribute.split(0)
+            fc1_distribute = flow.distribute.split(0)
+            fc7_data_distribute = flow.distribute.split(0)
             fc7_model_distribute = flow.distribute.broadcast()
         print("loss 0")
         fc7 = flow.layers.dense(
@@ -278,7 +279,7 @@ def insightface_train_job():
             bias_initializer=None,
             trainable=trainable,
             name=args.models_name,
-            model_distribute=fc7_model_distribute
+            model_distribute=fc7_model_distribute,
         )
         fc7 = fc7.with_distribute(fc7_data_distribute)
     else:
@@ -386,11 +387,15 @@ def main():
         insightface_train_job().async_get(train_metric.metric_cb(step))
 
         # validation
-        for ds in ["lfw", "cfp_fp", "agedb_30"]:
-            issame_list, embeddings_list = do_validation(dataset=ds)
-            validation_util.cal_validation_metrics(
-                embeddings_list, issame_list, nrof_folds=args.nrof_folds,
-            )
+        if (
+            args.do_validataion_while_train
+            and (step + 1) % args.validataion_interval == 0
+        ):
+            for ds in ["lfw", "cfp_fp", "agedb_30"]:
+                issame_list, embeddings_list = do_validation(dataset=ds)
+                validation_util.cal_validation_metrics(
+                    embeddings_list, issame_list, nrof_folds=args.nrof_folds,
+                )
 
         # snapshot
         if (step + 1) % args.num_of_batches_in_snapshot == 0:

@@ -242,13 +242,7 @@ def Residual(
 
 
 def MobileFacenet(input_blob, embedding_size=10, bn_is_training=True):
-    """Creates the Inception Resnet V1 model.
-    Args:
-      inputs: a 4-D tensor of size [batch_size, height, width, 3].
-      embedding_size: int, last fully connected layer size.
-    Returns:
-      logits: the logits outputs of the model.
-    """
+
     units = [1, 4, 6, 2]
     input_blob = flow.transpose(
         input_blob, name="transpose", perm=[0, 3, 1, 2]
