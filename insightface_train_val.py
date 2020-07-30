@@ -3,6 +3,7 @@ import math
 import argparse
 import numpy as np
 import oneflow as flow
+import oneflow.typing as oft
 
 import ofrecord_util
 import validation_util
@@ -101,24 +102,6 @@ args = parser.parse_args()
 if not os.path.exists(args.model_save_dir):
     os.makedirs(args.model_save_dir)
 
-ParameterUpdateStrategy = dict(
-    learning_rate_decay=dict(
-        piecewise_scaling_conf=dict(
-            boundaries=[100000, 140000, 160000],
-            scales=[1.0, 0.1, 0.01, 0.001],
-        )
-    ),
-    momentum_conf=dict(beta=0.9,),
-    weight_decay_conf=dict(weight_decay_rate=args.weight_decay,),
-)
-
-input_blob_def_dict = {
-    "images": flow.FixedTensorDef(
-        (args.val_batch_size, 112, 112, 3), dtype=flow.float
-    ),
-}
-
-
 def insightface(images):
 
     print("args.network", args.network)
@@ -137,23 +120,20 @@ def insightface(images):
 
 def get_train_config(args):
     config = flow.FunctionConfig()
-    config.default_distribute_strategy(flow.distribute.consistent_strategy())
+    config.default_logical_view(flow.scope.consistent_view())
     config.default_data_type(flow.float)
-    config.train.primary_lr(args.base_lr)
-    config.train.model_update_conf(ParameterUpdateStrategy)
     config.cudnn_conv_heuristic_search_algo(False)
-    # config.use_boxing_v2(True)
     return config
 
 
 def get_val_config(args):
     config = flow.function_config()
-    config.default_distribute_strategy(flow.distribute.consistent_strategy())
+    config.default_logical_view(flow.scope.consistent_view())
     config.default_data_type(flow.float)
     return config
 
 
-@flow.global_function(get_train_config(args))
+@flow.global_function(type="train", function_config=get_train_config(args))
 def insightface_train_job():
     if args.use_synthetic_data:
         (labels, images) = ofrecord_util.load_synthetic(args)
@@ -297,29 +277,31 @@ def insightface_train_job():
     loss = flow.nn.sparse_softmax_cross_entropy_with_logits(
         labels, fc7, name="softmax_loss"
     )
-    flow.losses.add_loss(loss)
+    
+    lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.base_lr, [100000, 140000, 160000], 0.1)
+    flow.optimizer.SGD(lr_scheduler, momentum=0.9).minimize(loss)
     return loss
 
 
 if args.do_validataion_while_train:
 
-    @flow.global_function(get_val_config(args))
+    @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_validation_datset_lfw_job():
         issame, images = ofrecord_util.load_lfw_dataset(args)
         return issame, images
 
-    @flow.global_function(get_val_config(args))
+    @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_validation_datset_cfp_fp_job():
         issame, images = ofrecord_util.load_cfp_fp_dataset(args)
         return issame, images
 
-    @flow.global_function(get_val_config(args))
+    @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_validation_datset_agedb_30_job():
         issame, images = ofrecord_util.load_agedb_30_dataset(args)
         return issame, images
 
-    @flow.global_function(get_val_config(args))
-    def insightface_val_job(images=input_blob_def_dict["images"]):
+    @flow.global_function(type="predict", function_config=get_val_config(args))
+    def insightface_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size, 112, 112, 3))):
         print("val batch data: ", images.shape)
         embedding = insightface(images)
         return embedding
@@ -351,8 +333,8 @@ def do_validation(dataset="lfw"):
     val_iter_num = math.ceil(total_images_num / batch_size)
     for i in range(val_iter_num):
         _issame, images = val_job().get()
-        images_flipped = flip_data(images.ndarray())
-        _em = insightface_val_job(images.ndarray()).get()
+        images_flipped = flip_data(images.numpy())
+        _em = insightface_val_job(images.numpy()).get()
         _em_flipped = insightface_val_job(images_flipped).get()
 
         _issame_list.append(_issame)

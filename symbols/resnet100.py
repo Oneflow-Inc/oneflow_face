@@ -7,6 +7,8 @@ def _get_initializer():
         2.0, "fan_out", "random_normal", "NCHW"
     )
 
+def _get_regularizer():
+    return flow.regularizers.l2(0.0005)
 
 def _conv2d_layer(
     name,
@@ -22,6 +24,8 @@ def _conv2d_layer(
     use_bias=False,
     weight_initializer=_get_initializer(),
     bias_initializer=flow.zeros_initializer(),
+    weight_regularizer=_get_regularizer(),
+    bias_regularizer=_get_regularizer(),
 ):
     weight_shape = (
         int(filters),
@@ -34,6 +38,7 @@ def _conv2d_layer(
         shape=weight_shape,
         dtype=input.dtype,
         initializer=weight_initializer,
+        regularizer=weight_regularizer,
     )
     output = flow.nn.conv2d(
         input,
@@ -51,6 +56,7 @@ def _conv2d_layer(
             shape=(filters,),
             dtype=input.dtype,
             initializer=bias_initializer,
+            regularizer=bias_regularizer,
         )
         output = flow.nn.bias_add(output, bias, data_format)
 
@@ -81,6 +87,8 @@ def _batch_norm(
         scale=scale,
         beta_initializer=flow.zeros_initializer(),
         gamma_initializer=flow.ones_initializer(),
+        beta_regularizer=_get_regularizer(),
+        gamma_regularizer=_get_regularizer(),
         moving_mean_initializer=flow.zeros_initializer(),
         moving_variance_initializer=flow.ones_initializer(),
         trainable=trainable,
@@ -93,6 +101,7 @@ def _prelu(inputs, name=None):
     return flow.layers.prelu(
         inputs,
         alpha_initializer=flow.constant_initializer(0.25),
+        alpha_regularizer=_get_regularizer(), 
         shared_axes=[2, 3],
         name=name,
     )
@@ -105,8 +114,6 @@ def _avg_pool(inputs, pool_size, strides, padding, name=None):
 
 
 def _dropout(input_blob, dropout_prob):
-    if dropout_prob == 0.0:
-        return input_blob
     return flow.nn.dropout(input_blob, rate=dropout_prob)
 
 
@@ -310,6 +317,8 @@ def Resnet100(
             use_bias=True,
             kernel_initializer=_get_initializer(),
             bias_initializer=flow.zeros_initializer(),
+            kernel_regularizer=_get_regularizer(),
+            bias_regularizer=_get_regularizer(),
             trainable=True,
             name="pre_fc1",
         )
@@ -335,6 +344,8 @@ def Resnet100(
             use_bias=True,
             kernel_initializer=_get_initializer(),
             bias_initializer=flow.zeros_initializer(),
+            kernel_regularizer=_get_regularizer(),
+            bias_regularizer=_get_regularizer(),
             trainable=True,
             name="pre_fc1",
         )
@@ -358,6 +369,8 @@ def Resnet100(
             use_bias=True,
             kernel_initializer=_get_initializer(),
             bias_initializer=flow.zeros_initializer(),
+            kernel_regularizer=_get_regularizer(),
+            bias_regularizer=_get_regularizer(),
             trainable=True,
             name="pre_fc1",
         )

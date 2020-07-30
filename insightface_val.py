@@ -2,6 +2,8 @@ import math
 import argparse
 import numpy as np
 import oneflow as flow
+import oneflow.typing as oft
+
 
 import ofrecord_util
 import validation_util
@@ -53,12 +55,6 @@ parser.add_argument("--network", type=str, default="resnet100", required=False)
 
 args = parser.parse_args()
 
-input_blob_def_dict = {
-    "images": flow.FixedTensorDef(
-        (args.val_batch_size, 112, 112, 3), dtype=flow.float
-    ),
-}
-
 
 def insightface(images):
 
@@ -78,31 +74,31 @@ def insightface(images):
 
 def get_val_config(args):
     config = flow.function_config()
-    config.default_distribute_strategy(flow.distribute.consistent_strategy())
+    config.default_logical_view(flow.scope.consistent_view())
     config.default_data_type(flow.float)
     return config
 
 
-@flow.global_function(get_val_config(args))
+@flow.global_function(type="predict", function_config=get_val_config(args))
 def get_validation_datset_lfw_job():
     issame, images = ofrecord_util.load_lfw_dataset(args)
     return issame, images
 
 
-@flow.global_function(get_val_config(args))
+@flow.global_function(type="predict", function_config=get_val_config(args))
 def get_validation_datset_cfp_fp_job():
     issame, images = ofrecord_util.load_cfp_fp_dataset(args)
     return issame, images
 
 
-@flow.global_function(get_val_config(args))
+@flow.global_function(type="predict", function_config=get_val_config(args))
 def get_validation_datset_agedb_30_job():
     issame, images = ofrecord_util.load_agedb_30_dataset(args)
     return issame, images
 
 
-@flow.global_function(get_val_config(args))
-def insightface_val_job(images=input_blob_def_dict["images"]):
+@flow.global_function(type="predict", function_config=get_val_config(args))
+def insightface_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size, 112, 112, 3))):
     print("val batch data: ", images.shape)
     embedding = insightface(images)
     return embedding
@@ -134,8 +130,8 @@ def do_validation(dataset="lfw"):
     val_iter_num = math.ceil(total_images_num / batch_size)
     for i in range(val_iter_num):
         _issame, images = val_job().get()
-        images_flipped = flip_data(images.ndarray())
-        _em = insightface_val_job(images.ndarray()).get()
+        images_flipped = flip_data(images.numpy())
+        _em = insightface_val_job(images.numpy()).get()
         _em_flipped = insightface_val_job(images_flipped).get()
 
         _issame_list.append(_issame)
