@@ -189,10 +189,10 @@ def insightface_train_job():
         mm = math.sin(math.pi - m) * m
         threshold = math.cos(math.pi - m)
         if args.easy_margin:
-            cond = flow.keras.activations.relu(cos_t)
+            cond = flow.math.relu(cos_t)
         else:
             cond_v = cos_t - threshold
-            cond = flow.keras.activations.relu(cond_v)
+            cond = flow.math.relu(cond_v)
         body = flow.math.square(cos_t)
         body = flow.math.multiply(body, -1.0)
         body = flow.math.add(1, body)
@@ -209,7 +209,6 @@ def insightface_train_job():
             zy_keep = flow.math.add(zy, -s * mm)
         cond = flow.cast(cond, dtype=flow.int32)
         new_zy = flow.where(cond, new_zy, zy_keep)
-        # print(new_zy.shape)
         zy = flow.math.multiply(zy, -1.0)
         diff = flow.math.add(new_zy, zy)
 

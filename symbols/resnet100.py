@@ -56,7 +56,7 @@ def _conv2d_layer(
 
     if activation is not None:
         if activation == op_conf_util.kRelu:
-            output = flow.keras.activations.relu(output)
+            output = flow.math.relu(output)
         else:
             raise NotImplementedError
 
@@ -218,7 +218,7 @@ def residual_unit_v3(
             dilation_rate=1,
             activation=None,
         )
-        input_blob = flow.keras.activations.sigmoid(input=input_blob)
+        input_blob = flow.math.sigmoid(input=input_blob)
         bn3 = flow.math.multiply(x=input_blob, y=bn3)
         # se end
 
