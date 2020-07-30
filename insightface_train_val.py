@@ -11,11 +11,21 @@ from symbols.fmobilefacenet import MobileFacenet
 from symbols.resnet100 import Resnet100
 
 
+def str_list(x):
+    return x.split(",")
+
+
 parser = argparse.ArgumentParser(description="flags for train")
 # distrubute
 parser.add_argument("--gpu_num_per_node", type=int, default=1, required=False)
 parser.add_argument(
     "--num_nodes", type=int, default=1, help="node/machine number for training"
+)
+parser.add_argument(
+    "--node_ips",
+    type=str_list,
+    default=["192.168.1.13", "192.168.1.14"],
+    help='nodes ip list for training, devided by ",", length >= num_nodes',
 )
 parser.add_argument("--model_parallel", type=int, default=0, required=False)
 
@@ -367,9 +377,20 @@ def do_validation(dataset="lfw"):
 
 
 def main():
-    flow.env.log_dir(args.log_dir)
-    flow.config.gpu_device_num(args.gpu_num_per_node)
 
+    flow.config.gpu_device_num(args.gpu_num_per_node)
+    if args.num_nodes > 1:
+        assert args.num_nodes <= len(args.node_ips)
+        flow.env.ctrl_port(12138)
+        nodes = []
+        for ip in args.node_ips:
+            addr_dict = {}
+            addr_dict["addr"] = ip
+            nodes.append(addr_dict)
+
+        flow.env.machine(nodes)
+
+    flow.env.log_dir(args.log_dir)
     check_point = flow.train.CheckPoint()
     if not args.model_load_dir:
         print("Init model on demand.")

@@ -11,12 +11,9 @@ def parse_arguement(argv):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--set", type=str, default="train", help="train or eval"
-    )
-    parser.add_argument(
         "--data_dir",
         type=str,
-        default="/home/qiaojing/git_repo_out/insightface/datasets/faces_emore",
+        default="insightface/datasets/faces_emore",
         help="Root directory to mxnet dataset.",
     )
     parser.add_argument(
@@ -122,38 +119,33 @@ def convert_to_ofrecord(img_data):
 
 
 def main(args):
-    if args.set == "train":
-        # Convert recordio to ofrecord
-        imgrec, imgidx_list = load_train_data(data_dir=args.data_dir)
+    # Convert recordio to ofrecord
+    imgrec, imgidx_list = load_train_data(data_dir=args.data_dir)
 
-        output_dir = os.path.join(args.output_filepath, "train")
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        output_file = os.path.join(output_dir, "part-0")
-        with open(output_file, "wb") as f:
-            for idx in imgidx_list:
-                if idx % 10000 == 0:
-                    print(
-                        "Converting images: {} of {}".format(
-                            idx, len(imgidx_list)
-                        )
+    output_dir = os.path.join(args.output_filepath, "train")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_file = os.path.join(output_dir, "part-0")
+    with open(output_file, "wb") as f:
+        for idx in imgidx_list:
+            if idx % 10000 == 0:
+                print(
+                    "Converting images: {} of {}".format(
+                        idx, len(imgidx_list)
                     )
+                )
 
-                img_data = {}
-                rec = imgrec.read_idx(idx)
-                header, s = recordio.unpack(rec)
-                img_data["label"] = int(header.label[0])
-                img_data["pixel_data"] = s
+            img_data = {}
+            rec = imgrec.read_idx(idx)
+            header, s = recordio.unpack(rec)
+            img_data["label"] = int(header.label[0])
+            img_data["pixel_data"] = s
 
-                example = convert_to_ofrecord(img_data)
-                print("shape", len(img_data["pixel_data"]))
-                size = example.ByteSize()
-                f.write(struct.pack("q", size))
-                f.write(example.SerializeToString())
-    elif args.set == "eval":
-        print("TODO")
-    else:
-        print("--set must be 'train' or 'eval'.")
+            example = convert_to_ofrecord(img_data)
+            print("shape", len(img_data["pixel_data"]))
+            size = example.ByteSize()
+            f.write(struct.pack("q", size))
+            f.write(example.SerializeToString())
 
 
 if __name__ == "__main__":
