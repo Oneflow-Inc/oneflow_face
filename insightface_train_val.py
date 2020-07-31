@@ -336,10 +336,9 @@ def do_validation(dataset="lfw"):
         images_flipped = flip_data(images.numpy())
         _em = insightface_val_job(images.numpy()).get()
         _em_flipped = insightface_val_job(images_flipped).get()
-
-        _issame_list.append(_issame)
-        _em_list.append(_em)
-        _em_flipped_list.append(_em_flipped)
+        _issame_list.append(_issame.numpy())
+        _em_list.append(_em.numpy())
+        _em_flipped_list.append(_em_flipped.numpy())
 
     issame = (
         np.array(_issame_list).flatten().reshape(-1, 1)[:total_images_num, :]
