@@ -48,7 +48,7 @@
 
 ### 准备数据集
 
-[InsightFace原仓库](https://github.com/deepinsight/insightface)中提供了一系列人脸识别任务相关的数据集，并且已经完成了人脸对齐等预处理过程。请从[这里](https://github.com/deepinsight/insightface/wiki/Dataset-Zoo)下载相应的数据集，并且转换成OneFlow可以识别的OFrecord格式。
+[InsightFace原仓库](https://github.com/deepinsight/insightface)中提供了一系列人脸识别任务相关的数据集，并且已经完成了人脸对齐等预处理过程。请从[这里](https://github.com/deepinsight/insightface/wiki/Dataset-Zoo)下载相应的数据集，并且转换成OneFlow可以识别的OFrecord格式。也可以直接从[这里](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/train_ofrecord.tar.gz)下载已经转好的OFrecord数据集。
 
 下面分别数据集MS1M-ArcFace为例，展示如何将下载到的数据集转换成OFrecord格式。
 
