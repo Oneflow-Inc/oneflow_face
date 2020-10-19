@@ -287,18 +287,21 @@ if args.do_validataion_while_train:
 
     @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_validation_datset_lfw_job():
-        issame, images = ofrecord_util.load_lfw_dataset(args)
-        return issame, images
+        with flow.scope.placement("cpu", "0:0"):
+            issame, images = ofrecord_util.load_lfw_dataset(args)
+            return issame, images
 
     @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_validation_datset_cfp_fp_job():
-        issame, images = ofrecord_util.load_cfp_fp_dataset(args)
-        return issame, images
+        with flow.scope.placement("cpu", "0:0"):
+            issame, images = ofrecord_util.load_cfp_fp_dataset(args)
+            return issame, images
 
     @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_validation_datset_agedb_30_job():
-        issame, images = ofrecord_util.load_agedb_30_dataset(args)
-        return issame, images
+        with flow.scope.placement("cpu", "0:0"):
+            issame, images = ofrecord_util.load_agedb_30_dataset(args)
+            return issame, images
 
     @flow.global_function(type="predict", function_config=get_val_config(args))
     def insightface_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size, 112, 112, 3))):

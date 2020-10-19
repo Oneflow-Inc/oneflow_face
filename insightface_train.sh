@@ -1,20 +1,23 @@
 export ONEFLOW_DEBUG_MODE=""
 export ENABLE_USER_OP=True
 
-# oneflow-16
-emore_data_dir=/home/oyy/data/train_ofrecord/faces_emore
-lfw_data_dir=/home/oyy/data/eval_ofrecord/lfw
-cfp_fp_data_dir=/home/oyy/data/eval_ofrecord/cfp_fp
-agedb_30_data_dir=/home/oyy/data/eval_ofrecord/agedb_30
-
 emore_class_num=85742
-
-num_nodes=${1:-1}
-gpu_num_per_node=${2:-1}
-per_gpu_batch_size=${3:-32}
-node_ips=${4:-"'10.11.0.2','10.11.0.3','10.11.0.4','10.11.0.5'"}
-model_load_dir=${5:-''}
+network=${1:-"mobilefacenet"}
+# resnet100   margin_softmax
+data_dir_root=${2:-"/datasets"}
+num_nodes=${3:-1}
+gpu_num_per_node=${4:-8}
+per_gpu_batch_size=${5:-64}
+node_ips=${6:-"'10.11.0.2','10.11.0.3','10.11.0.4','10.11.0.5'"}
+model_load_dir=${7:-''}
 model_save_dir=${8:-'./output'}
+
+emore_data_dir=${data_dir_root}/train_ofrecord/faces_emore
+lfw_data_dir=${data_dir_root}/eval_ofrecord/lfw
+cfp_fp_data_dir=${data_dir_root}/eval_ofrecord/cfp_fp
+agedb_30_data_dir=${data_dir_root}/eval_ofrecord/agedb_30
+
+echo agedb_30_data_dir=$agedb_30_data_dir
 
 if [ $gpu_num_per_node -gt 1 ]; then
     data_part_num=16
@@ -22,10 +25,13 @@ else
     data_part_num=1
 fi
 
-network="mobilefacenet"
-loss_type="arc_loss"
+if [ $network == "mobilefacenet" ]; then
+    loss_type="arc_loss"
+else
+    loss_type="margin_softmax"
+fi
 
-model_save_dir=${model_save_dir}/mobilenet_save_model
+model_save_dir=${model_save_dir}/${network}_save_model
 log_dir=${model_save_dir}/log
 
 rm -r $model_save_dir
