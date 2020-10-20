@@ -2,10 +2,10 @@ export ONEFLOW_DEBUG_MODE=""
 export ENABLE_USER_OP=True
 
 # oneflow-16
-emore_data_dir=/home/oyy/data/train_ofrecord/faces_emore
-lfw_data_dir=/home/oyy/data/eval_ofrecord/lfw
-cfp_fp_data_dir=/home/oyy/data/eval_ofrecord/cfp_fp
-agedb_30_data_dir=/home/oyy/data/eval_ofrecord/agedb_30
+emore_data_dir=/data/train_ofrecord/faces_emore
+lfw_data_dir=/data/eval_ofrecord/lfw
+cfp_fp_data_dir=/data/eval_ofrecord/cfp_fp
+agedb_30_data_dir=/data/eval_ofrecord/agedb_30
 
 emore_class_num=85742
 
