@@ -18,33 +18,7 @@ parser.add_argument(
     "--num_nodes", type=int, default=1, help="node/machine number for training"
 )
 
-# validation dataset
-parser.add_argument("--val_batch_size", default=120, type=int, required=False)
 
-# lfw
-parser.add_argument("--lfw_data_dir", type=str, required=False)
-parser.add_argument("--lfw_data_part_num", default=1, type=int, required=False)
-parser.add_argument(
-    "--lfw_total_images_num", type=int, default=12000, required=False
-)
-# cfp_fp
-parser.add_argument("--cfp_fp_data_dir", type=str, required=False)
-parser.add_argument(
-    "--cfp_fp_data_part_num", default=1, type=int, required=False
-)
-parser.add_argument(
-    "--cfp_fp_total_images_num", type=int, default=14000, required=False
-)
-# agedb_30
-parser.add_argument("--agedb_30_data_dir", type=str, required=False)
-parser.add_argument(
-    "--agedb_30_data_part_num", default=1, type=int, required=False
-)
-parser.add_argument(
-    "--agedb_30_total_images_num", type=int, default=12000, required=False
-)
-# Validation paramters
-parser.add_argument("--nrof_folds", type=int, help="", default=10)
 
 # model and log
 parser.add_argument("--model_load_dir", type=str, required=False)
@@ -56,7 +30,7 @@ parser.add_argument("--network", type=str, default="resnet100", required=False)
 args = parser.parse_args()
 
 
-def insightface(images):
+def get_symbol(images):
 
     print("args.network", args.network)
 
@@ -80,33 +54,20 @@ def get_val_config(args):
 
 
 @flow.global_function(type="predict", function_config=get_val_config(args))
-def get_validation_datset_lfw_job():
-    issame, images = ofrecord_util.load_lfw_dataset(args)
-    return issame, images
-
-
-@flow.global_function(type="predict", function_config=get_val_config(args))
-def get_validation_datset_cfp_fp_job():
-    issame, images = ofrecord_util.load_cfp_fp_dataset(args)
-    return issame, images
-
-
-@flow.global_function(type="predict", function_config=get_val_config(args))
-def get_validation_datset_agedb_30_job():
+def get_validation_dataset():
     issame, images = ofrecord_util.load_agedb_30_dataset(args)
     return issame, images
 
 
 @flow.global_function(type="predict", function_config=get_val_config(args))
-def insightface_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size, 112, 112, 3))):
+def get_symbol_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size, 112, 112, 3))):
     print("val batch data: ", images.shape)
-    embedding = insightface(images)
+    embedding = get_symbol(images)
     return embedding
 
 
 def flip_data(images):
     images_flipped = np.flip(images, axis=2).astype(np.float32)
-
     return images_flipped
 
 
@@ -117,22 +78,15 @@ def do_validation(dataset="lfw"):
     _em_flipped_list = []
 
     batch_size = args.val_batch_size
-    if dataset == "lfw":
-        total_images_num = args.lfw_total_images_num
-        val_job = get_validation_datset_lfw_job
-    if dataset == "cfp_fp":
-        total_images_num = args.cfp_fp_total_images_num
-        val_job = get_validation_datset_cfp_fp_job
-    if dataset == "agedb_30":
-        total_images_num = args.agedb_30_total_images_num
-        val_job = get_validation_datset_agedb_30_job
+    total_images_num = config.total_images_num
+    val_job = get_validation_dataset(config.dataset)
 
     val_iter_num = math.ceil(total_images_num / batch_size)
     for i in range(val_iter_num):
         _issame, images = val_job().get()
         images_flipped = flip_data(images.numpy())
-        _em = insightface_val_job(images.numpy()).get()
-        _em_flipped = insightface_val_job(images_flipped).get()
+        _em = get_symbol_val_job(images.numpy()).get()
+        _em_flipped = get_symbol_val_job(images_flipped).get()
         _issame_list.append(_issame.numpy())
         _em_list.append(_em.numpy())
         _em_flipped_list.append(_em_flipped.numpy())
