@@ -5,13 +5,13 @@ import numpy as np
 import oneflow as flow
 import oneflow.typing as oft
 
+from sample_config import config, default, generate_config
 import ofrecord_util
 import validation_util
 from callback_util import TrainMetric
 from symbols.fmobilefacenet import MobileFacenet
 from symbols.resnet100 import Resnet100
-from validation import do_validation, flip_data, get_validation_dataset,
-get_symbel_val_job
+from insightface_val import do_validation, flip_data, get_validation_dataset, get_symbel_val_job
 
 def str_list(x):
     return x.split(",")
@@ -36,8 +36,7 @@ parser.add_argument(
     default=config.node_ips,
     help='nodes ip list for training, devided by ",", length >= num_nodes')
 parser.add_argument("--model_parallel", type=int,
-        default=default.model_parallel, required=False, help="whether use model
-        parallel")
+        default=default.model_parallel, required=False, help="whether use model parallel")
 
 # train dataset
 parser.add_argument("--use_synthetic_data", default=default.use_synthetic_data,
@@ -48,8 +47,7 @@ parser.add_argument("--train_batch_size_per_device", type=int,
         default=default.train_batch_size_per_device, required=True,
         help="batch_size of training on each gpu")
 parser.add_argument("--train_data_part_num", type=int,
-        default=config.tarin_data_part_num, required=True, help="the number of
-        OFRecord data parts for training")
+        default=config.tarin_data_part_num, required=True, help="the number of OFRecord data parts for training")
 
 # model and log
 parser.add_argument("--model_load_dir", type=str,
@@ -59,32 +57,25 @@ parser.add_argument("--models_root", type=str, required=False,
 parser.add_argument(
     "--log_dir", type=str, default=default.log_dir, help="log info save directory"
 )
-parser.add_argument("--ckpt", type=int, default=default.ckpt, help="checkpoint
-        saving option. 0: discard saving. 1: save when necessary. 2: always
-        save")
+parser.add_argument("--ckpt", type=int, default=default.ckpt, help="checkpoint saving option. 0: discard saving. 1: save when necessary. 2: always save")
 parser.add_argument("--loss_print_frequency", type=int,
-        default=default.loss_print_frequency, required=False, help="frequency of
-        printing loss")
+        default=default.loss_print_frequency, required=False, help="frequency of printing loss")
 parser.add_argument("--batch_num_in_snapshot", type=int,
-        default=default.batches_num_in_snapshot, required=True, help="the
-        number of batches in the snapshot")
+        default=default.batches_num_in_snapshot, required=True, help="the number of batches in the snapshot")
 parser.add_argument(
     "--do_validataion_while_train", default=default.do_validataion_while_train,
-    action="store_true", help="whether do validation while training"
-)
+    action="store_true", help="whether do validation while training")
 
 # hyperparameters
 parser.add_argument("--total_batch_num", type=int,
-        default=default.total_batch_num, required=True, help="total number of
-        batches running  ")
+        default=default.total_batch_num, required=True, help="total number of batches running")
 parser.add_argument("--lr", type=float, default=default.lr, required=True,
         help="start learning rate")
 parser.add_argument("--lr_steps", type=list, default=default.lr_steps,
 required=True, help="steps of lr changing")
 parser.add_argument(
     "-wd", "--weight_decay", type=float, default=default.wd, required=False,
-    help="weight
-    decay")
+    help="weight decay")
 parser.add_argument("-mom", "--momentum", type=float, default=default.mom,
         help="momentum")
 parser.add_argument("--network", type=str, default=default.network,
@@ -155,7 +146,7 @@ def get_symbol_train_job():
         )
         fc7 = fc7.with_distribute(fc7_data_distribute)
 
-       elif config.loss_name == "margin_softmax":
+    elif config.loss_name == "margin_softmax":
         fc7_weight = flow.get_variable(
             name="fc7-weight",
             shape=(config.num_classes, embedding.shape[1]),

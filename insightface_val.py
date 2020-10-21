@@ -5,6 +5,7 @@ import oneflow as flow
 import oneflow.typing as oft
 
 
+from sample_config import config, default, generate_config
 import ofrecord_util
 import validation_util
 from symbols.fmobilefacenet import MobileFacenet
@@ -13,19 +14,27 @@ from symbols.resnet100 import Resnet100
 
 parser = argparse.ArgumentParser(description="flags for train")
 # machines
-parser.add_argument("--gpu_num_per_node", type=int, default=1, required=False)
+parser.add_argument("--device_num_per_node", type=int,
+        default=config.device_num_per_node, required=False)
 parser.add_argument(
-    "--num_nodes", type=int, default=1, help="node/machine number for training"
+    "--num_nodes", type=int, default=config.num_nodes, help="node/machine number for training"
 )
 
 
 
 # model and log
-parser.add_argument("--model_load_dir", type=str, required=False)
 parser.add_argument(
     "--log_dir", type=str, default="./output", help="log info save directory"
 )
 parser.add_argument("--network", type=str, default="resnet100", required=False)
+
+parser.add_argument('--data-dir', default='', help='')
+parser.add_argument('--model_load_dir', default='../model/softmax,50', help='path to load model.')
+parser.add_argument('--target', default='lfw,cfp_ff,cfp_fp,agedb_30', help='test targets.')
+parser.add_argument('--batch-size', default=32, type=int, help='')
+parser.add_argument('--max', default='', type=str, help='')
+parser.add_argument('--mode', default=0, type=int, help='')
+parser.add_argument('--nfolds', default=10, type=int, help='')
 
 args = parser.parse_args()
 
