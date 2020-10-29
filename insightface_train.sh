@@ -49,13 +49,13 @@ python insightface_train_val.py \
 --lfw_data_dir=$lfw_data_dir \
 --cfp_fp_data_dir=$cfp_fp_data_dir \
 --agedb_30_data_dir=$agedb_30_data_dir \
---validataion_interval=1 \
+--validataion_interval=11329 \
 \
 --num_nodes=$num_nodes \
 --total_batch_num=200000 \
 --gpu_num_per_node=$gpu_num_per_node \
 --node_ips=$node_ips \
---num_of_batches_in_snapshot=20000 \
+--num_of_batches_in_snapshot=22658 \
 --base_lr=0.1 \
 --models_name=fc7 \
 --margin=0.5 \
