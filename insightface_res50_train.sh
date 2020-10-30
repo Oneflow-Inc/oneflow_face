@@ -2,11 +2,11 @@ export ONEFLOW_DEBUG_MODE=""
 export ENABLE_USER_OP=True
 
 emore_class_num=85742
-data_dir_root=${1:-"/datasets"}
-num_nodes=${2:-1}
+data_dir_root=${1:-"/datasets/insightface"}
+num_nodes=${2:-2}
 gpu_num_per_node=${3:-8}
-per_gpu_batch_size=${4:-64}
-node_ips=${5:-"'10.11.0.2','10.11.0.3','10.11.0.4','10.11.0.5'"}
+per_gpu_batch_size=${4:-128}
+node_ips=${5:-"'10.11.0.5','10.11.0.4','10.11.0.3','10.11.0.2'"}
 model_load_dir=${6:-''}
 model_save_root_dir=${7:-'./output'}
 
@@ -26,7 +26,7 @@ echo gpu_num_per_node=$gpu_num_per_node
 echo data_part_num=$data_part_num
 
 network="resnet50"
-loss_type="margin_softmax"
+loss_type="arc_loss_ms"
 
 model_save_dir=${model_save_root_dir}/${network}_save_model
 log_dir=${model_save_root_dir}/log
@@ -51,7 +51,7 @@ python insightface_train_val.py \
 --lfw_data_dir=$lfw_data_dir \
 --cfp_fp_data_dir=$cfp_fp_data_dir \
 --agedb_30_data_dir=$agedb_30_data_dir \
---validataion_interval=11329 \
+--validataion_interval=2844 \
 \
 --use_fp16 \
 --pad_output \
@@ -60,10 +60,10 @@ python insightface_train_val.py \
 --nccl_fusion_max_ops=24 \
 \
 --num_nodes=$num_nodes \
---total_batch_num=200000 \
+--total_batch_num=240000 \
 --gpu_num_per_node=$gpu_num_per_node \
 --node_ips=$node_ips \
---num_of_batches_in_snapshot=22658 \
+--num_of_batches_in_snapshot=2844 \
 --base_lr=0.1 \
 --models_name=fc7 \
 --margin=0.5 \

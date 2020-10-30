@@ -314,6 +314,30 @@ def insightface_train_job():
             model_distribute=fc7_model_distribute,
         )
         fc7 = fc7.with_distribute(fc7_data_distribute)
+    elif args.loss_type == "arc_loss_ms":
+        labels = labels.with_distribute(flow.distribute.broadcast())
+        fc7_model_distribute = flow.distribute.split(0)
+        fc7_data_distribute = flow.distribute.split(1)
+        fc7_weight = flow.get_variable(
+            name="fc7-weight",
+            shape=(args.class_num, embedding.shape[1]),
+            dtype=embedding.dtype,
+            initializer=_get_initializer(),
+            trainable=trainable,
+            model_name="weight",
+            distribute=fc7_model_distribute,
+        )
+        s = args.margin_s
+        fc7_weight = flow.math.l2_normalize(
+            input=fc7_weight, axis=1, epsilon=1e-10
+        )
+        fc1 = (
+            flow.math.l2_normalize(input=embedding, axis=1, epsilon=1e-10)
+        )
+        fc1 = flow.parallel_cast(fc1, distribute=flow.distribute.broadcast())
+        fc7 = flow.matmul(a=fc1, b=fc7_weight, transpose_b=True) #s1
+        fc7 = flow.arc_loss(fc7, labels, margin=args.loss_m2)*60
+        fc7 = fc7.with_distribute(fc7_data_distribute)
     else:
         raise NotImplementedError
 
