@@ -76,7 +76,7 @@ parser.add_argument(
 parser.add_argument("--loss_print_steps", type=int, default=1, required=False)
 parser.add_argument("--num_of_batches_in_snapshot", type=int, required=True)
 parser.add_argument(
-    "--validataion_interval", type=int, default=100, required=False,
+    "--validataion_interval", type=int, default=5000, required=False,
 )
 parser.add_argument(
     "--do_validataion_while_train", default=False, action="store_true"
@@ -287,18 +287,21 @@ if args.do_validataion_while_train:
 
     @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_validation_datset_lfw_job():
-        issame, images = ofrecord_util.load_lfw_dataset(args)
-        return issame, images
+        with flow.scope.placement("cpu", "0:0"):
+            issame, images = ofrecord_util.load_lfw_dataset(args)
+            return issame, images
 
     @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_validation_datset_cfp_fp_job():
-        issame, images = ofrecord_util.load_cfp_fp_dataset(args)
-        return issame, images
+        with flow.scope.placement("cpu", "0:0"):
+            issame, images = ofrecord_util.load_cfp_fp_dataset(args)
+            return issame, images
 
     @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_validation_datset_agedb_30_job():
-        issame, images = ofrecord_util.load_agedb_30_dataset(args)
-        return issame, images
+        with flow.scope.placement("cpu", "0:0"):
+            issame, images = ofrecord_util.load_agedb_30_dataset(args)
+            return issame, images
 
     @flow.global_function(type="predict", function_config=get_val_config(args))
     def insightface_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size, 112, 112, 3))):
