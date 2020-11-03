@@ -10,10 +10,19 @@ import validation_util
 from callback_util import TrainMetric
 from symbols.fmobilefacenet import MobileFacenet
 from symbols.resnet100 import Resnet100
+from symbols.resnet50 import Resnet50
 
 
 def str_list(x):
     return x.split(",")
+
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Unsupported value encountered.')
 
 
 parser = argparse.ArgumentParser(description="flags for train")
@@ -82,6 +91,29 @@ parser.add_argument(
     "--do_validataion_while_train", default=False, action="store_true"
 )
 
+# resnet50 fp16
+parser.add_argument(
+    '--use_fp16', type=str2bool, nargs='?', const=True, help='Whether to use use fp16'
+)
+parser.add_argument(
+    '--channel_last',
+    type=str2bool,
+    nargs='?',
+    const=False,
+    help='Whether to use use channel last mode(nhwc)'
+)
+parser.add_argument(
+    '--pad_output',
+    type=str2bool,
+    nargs='?',
+    const=True,
+    help='Whether to pad the output to number of image channels to 4.'
+)
+parser.add_argument("--nccl_fusion_threshold_mb", type=int, default=0,
+                    help="NCCL fusion threshold megabytes, set to 0 to compatible with previous version of OneFlow.")
+parser.add_argument("--nccl_fusion_max_ops", type=int, default=0,
+                    help="Maximum number of ops of NCCL fusion, set to 0 to compatible with previous version of OneFlow.")
+
 # heperparameters
 parser.add_argument("--total_batch_num", type=int, required=True)
 parser.add_argument("--base_lr", type=float, default=0, required=True)
@@ -112,6 +144,14 @@ def insightface(images):
         )
     elif args.network == "resnet100":
         embedding = Resnet100(images, embedding_size=512, fc_type="E")
+    elif args.network == "resnet50":
+        if args.use_fp16 and args.pad_output:
+            if args.channel_last: 
+                paddings = ((0, 0), (0, 0), (0, 0), (0, 1))
+            else:
+                paddings = ((0, 0), (0, 1), (0, 0), (0, 0))
+            images = flow.pad(images, paddings=paddings)
+        embedding = Resnet50(images, embedding_size=512, fc_type="E", channel_last=args.channel_last)
     else:
         raise NotImplementedError
 
@@ -122,7 +162,10 @@ def get_train_config(args):
     config = flow.FunctionConfig()
     config.default_logical_view(flow.scope.consistent_view())
     config.default_data_type(flow.float)
+    if args.use_fp16:
+        config.enable_auto_mixed_precision(True)
     config.cudnn_conv_heuristic_search_algo(False)
+    config.enable_fuse_model_update_ops(True)
     return config
 
 
@@ -271,6 +314,30 @@ def insightface_train_job():
             model_distribute=fc7_model_distribute,
         )
         fc7 = fc7.with_distribute(fc7_data_distribute)
+    elif args.loss_type == "arc_loss_ms":
+        labels = labels.with_distribute(flow.distribute.broadcast())
+        fc7_model_distribute = flow.distribute.split(0)
+        fc7_data_distribute = flow.distribute.split(1)
+        fc7_weight = flow.get_variable(
+            name="fc7-weight",
+            shape=(args.class_num, embedding.shape[1]),
+            dtype=embedding.dtype,
+            initializer=_get_initializer(),
+            trainable=trainable,
+            model_name="weight",
+            distribute=fc7_model_distribute,
+        )
+        s = args.margin_s
+        fc7_weight = flow.math.l2_normalize(
+            input=fc7_weight, axis=1, epsilon=1e-10
+        )
+        fc1 = (
+            flow.math.l2_normalize(input=embedding, axis=1, epsilon=1e-10)
+        )
+        fc1 = flow.parallel_cast(fc1, distribute=flow.distribute.broadcast())
+        fc7 = flow.matmul(a=fc1, b=fc7_weight, transpose_b=True) #s1
+        fc7 = flow.arc_loss(fc7, labels, margin=args.loss_m2)*60
+        fc7 = fc7.with_distribute(fc7_data_distribute)
     else:
         raise NotImplementedError
 
@@ -362,6 +429,14 @@ def do_validation(dataset="lfw"):
 def main():
 
     flow.config.gpu_device_num(args.gpu_num_per_node)
+
+    if args.use_fp16 and (args.num_nodes * args.gpu_num_per_node) > 1:
+        flow.config.collective_boxing.nccl_fusion_all_reduce_use_buffer(False)
+    if args.nccl_fusion_threshold_mb:
+        flow.config.collective_boxing.nccl_fusion_threshold_mb(args.nccl_fusion_threshold_mb)
+    if args.nccl_fusion_max_ops:
+        flow.config.collective_boxing.nccl_fusion_max_ops(args.nccl_fusion_max_ops)
+
     if args.num_nodes > 1:
         assert args.num_nodes <= len(args.node_ips)
         flow.env.ctrl_port(12138)
