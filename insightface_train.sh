@@ -8,7 +8,7 @@ data_dir_root=${2:-"/datasets"}
 num_nodes=${3:-1}
 gpu_num_per_node=${4:-8}
 per_gpu_batch_size=${5:-64}
-node_ips=${6:-"'10.11.0.2','10.11.0.3','10.11.0.4','10.11.0.5'"}
+node_ips=${6:-"10.11.0.2,10.11.0.3,10.11.0.4,10.11.0.5"}
 model_load_dir=${7:-''}
 model_save_dir=${8:-'./output'}
 

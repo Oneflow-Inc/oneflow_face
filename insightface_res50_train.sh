@@ -6,7 +6,7 @@ data_dir_root=${1:-"/datasets/insightface"}
 num_nodes=${2:-2}
 gpu_num_per_node=${3:-8}
 per_gpu_batch_size=${4:-128}
-node_ips=${5:-"'10.11.0.5','10.11.0.4','10.11.0.3','10.11.0.2'"}
+node_ips=${5:-"10.11.0.5,10.11.0.4,10.11.0.3,10.11.0.2"}
 model_load_dir=${6:-''}
 model_save_root_dir=${7:-'./output'}
 

@@ -12,7 +12,7 @@ emore_class_num=85742
 num_nodes=${1:-1}
 gpu_num_per_node=${2:-1}
 per_gpu_batch_size=${3:-32}
-node_ips=${4:-"'10.11.0.2','10.11.0.3','10.11.0.4','10.11.0.5'"}
+node_ips=${4:-"10.11.0.2,10.11.0.3,10.11.0.4,10.11.0.5"}
 model_load_dir=${5:-''}
 model_save_dir=${8:-'./output'}
 
