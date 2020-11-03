@@ -85,7 +85,7 @@ parser.add_argument(
 parser.add_argument("--loss_print_steps", type=int, default=1, required=False)
 parser.add_argument("--num_of_batches_in_snapshot", type=int, required=True)
 parser.add_argument(
-    "--validataion_interval", type=int, default=100, required=False,
+    "--validataion_interval", type=int, default=5000, required=False,
 )
 parser.add_argument(
     "--do_validataion_while_train", default=False, action="store_true"
