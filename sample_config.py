@@ -6,7 +6,7 @@ config = edict()
 
 config.node_ips = ["192.168.1.13", "192.168.1.14"]
 config.num_nodes = 1
-config.device_num_per_node = 1
+config.device_num_per_node = 8
 config.bn_mom = 0.9
 #config.workspace = 256
 #config.emb_size = 512
@@ -37,19 +37,19 @@ network.r100 = edict()
 network.r100.net_name = 'fresnet'
 network.r100.num_layers = 100
 
-network.r100fc = edict()
-network.r100fc.net_name = 'fresnet'
-network.r100fc.num_layers = 100
-network.r100fc.net_output = 'FC'
+#network.r100fc = edict()
+#network.r100fc.net_name = 'fresnet'
+#network.r100fc.num_layers = 100
+#network.r100fc.net_output = 'FC'
 
 network.r50 = edict()
 network.r50.net_name = 'fresnet'
 network.r50.num_layers = 50
 
-network.r50v1 = edict()
-network.r50v1.net_name = 'fresnet'
-network.r50v1.num_layers = 50
-network.r50v1.net_unit = 1
+#network.r50v1 = edict()
+#network.r50v1.net_name = 'fresnet'
+#network.r50v1.num_layers = 50
+#network.r50v1.net_unit = 1
 
 
 network.y1 = edict()
@@ -57,31 +57,43 @@ network.y1.net_name = 'fmobilefacenet'
 network.y1.emb_size = 128
 network.y1.net_output = 'GDC'
 
-network.y2 = edict()
-network.y2.net_name = 'fmobilefacenet'
-network.y2.emb_size = 256
-network.y2.net_output = 'GDC'
-network.y2.net_blocks = [2,8,16,4]
+#network.y2 = edict()
+#network.y2.net_name = 'fmobilefacenet'
+#network.y2.emb_size = 256
+#network.y2.net_output = 'GDC'
+#network.y2.net_blocks = [2,8,16,4]
 
 
-# dataset settings
+# train dataset settings
 dataset = edict()
 
 dataset.emore = edict()
 dataset.emore.dataset = 'emore'
-dataset.emore.dataset_path = '/dataset/kubernetes/dataset/public/faces_emore/ofrecord/train'
+dataset.emore.dataset_dir = "/data/train_ofrecord/faces_emore"
 dataset.emore.num_classes = 85742
 dataset.emore.image_shape = (112,112,3)
-dataset.emore.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
+dataset.emore.part_name_suffix_length = 1
+dataset.emore.train_data_part_num = 1
+dataset.emore.train_batch_size_per_device = 120
 
-# validation settings
-dataset.validation = edict()
-dataset.validation.batch_size_per_dvice = 120
-dataset.validation.dataset = lfw
-dataset.validation.data_part_num = 32
-dataset.validation.dataset_total_images_num = 12000 
-dataset.validation.interval = 100
-dataset.validation.nrof_folds = 10 
+# val dataset settings
+
+val_dataset = edict()
+
+val_dataset.lfw = edict()
+val_dataset.lfw.val_dataset_dir = "/dataset/kubernetes/dataset/public/insightface/lfw" 
+val_dataset.lfw.val_data_part_num = 1
+val_dataset.lfw.total_images_num = 12000 
+
+val_dataset.cfp_fp = edict()
+val_dataset.cfp_fp.val_dataset_dir = "/dataset/kubernetes/dataset/public/insightface/lfw" 
+val_dataset.cfp_fp.val_data_part_num = 1
+val_dataset.cfp_fp.total_images_num = 12000 
+
+val_dataset.agedb_30 = edict()
+val_dataset.agedb_30.val_dataset_dir = "/dataset/kubernetes/dataset/public/insightface/lfw" 
+val_dataset.agedb_30.val_data_part_num = 1
+val_dataset.agedb_30.total_images_num = 12000 
 
 # loss settings
 loss = edict()
@@ -126,8 +138,7 @@ default.total_batch_num = 100
 default.num_nodes = 1
 default.use_synthetic_data = False
 default.dataset = 'emore'
-default.train_batch_size_per_device = 120
-default.train_data_part_num = 32
+default.val_dataset = 'lfw'
 default.loss = 'arcface'
 default.loss_print_frequency = 1
 default.model_parallel = 0
@@ -137,12 +148,18 @@ default.wd = 0.0005
 default.mom = 0.9
 default.ckpt = 1
 default.lr_steps = [100000,160000,220000]
-default.do_validataion_while_train = False
+#default.do_validation_while_train = False
 default.log_dir = "output/log"
-default.model_save_dir =
-"/dataset/kubernetes/dataset/models/insightface/mobilefacenet/snapshot_9"
+default.model_load_dir = ""
 default.models_root = 'output/mobilenet_save_model'
-default.batches_num_in_snapshot = 100
+default.batch_num_in_snapshot = 100
+# validation settings
+default.val_batch_size_per_device = 120
+default.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
+default.validation_interval = 50000
+default.nfolds = 10
+
+
 
 
 def generate_config(_network, _dataset, _loss):
@@ -158,9 +175,18 @@ def generate_config(_network, _dataset, _loss):
       config[k] = v
       if k in default:
         default[k] = v
+
     config.loss = _loss
     config.network = _network
     config.dataset = _dataset
     config.num_workers = 1
     if 'DMLC_NUM_WORKER' in os.environ:
       config.num_workers = int(os.environ['DMLC_NUM_WORKER'])
+
+def generate_val_config(_val_dataset):
+  for k, v in val_dataset[_val_dataset].items():
+    config[k] = v
+  if k in default:
+    default[k] = v
+  config.val_dataset = _val_dataset
+

@@ -3,15 +3,15 @@ import math
 import argparse
 import numpy as np
 import oneflow as flow
-import oneflow.typing as oft
+#import oneflow.typing as oft
 
-from sample_config import config, default, generate_config
+from sample_config import config, default, generate_config, generate_val_config
 import ofrecord_util
 import validation_util
 from callback_util import TrainMetric
 from symbols.fmobilefacenet import MobileFacenet
 from symbols.resnet100 import Resnet100
-from insightface_val import do_validation, flip_data, get_validation_dataset, get_symbel_val_job
+from insightface_val import do_validation, flip_data, get_validation_dataset, get_symbol_val_job
 
 def str_list(x):
     return x.split(",")
@@ -21,12 +21,14 @@ parser = argparse.ArgumentParser(description="flags for train")
 parser.add_argument('--dataset', default=default.dataset, help='dataset config')
 parser.add_argument('--network', default=default.network, help='network config')
 parser.add_argument('--loss', default=default.loss, help='loss config')
+parser.add_argument("--val_dataset", default=default.val_dataset, help="validation dataset config")
 args, rest = parser.parse_known_args()
 generate_config(args.network, args.dataset, args.loss)
-
+generate_val_config(args.val_dataset)
+print("args.network: ", args.network)
 # distrubute
-parser.add_argument("--device_num_per_node", type=int, default=config.gpu_num_node,
-        required=False, help="the number of gpus used per node")
+parser.add_argument("--device_num_per_node", type=int, default=config.device_num_per_node,
+         help="the number of gpus used per node")
 parser.add_argument(
     "--num_nodes", type=int, default=default.num_nodes, help="node/machine number for training"
 )
@@ -36,65 +38,53 @@ parser.add_argument(
     default=config.node_ips,
     help='nodes ip list for training, devided by ",", length >= num_nodes')
 parser.add_argument("--model_parallel", type=int,
-        default=default.model_parallel, required=False, help="whether use model parallel")
+        default=default.model_parallel,  help="whether use model parallel")
 
 # train dataset
 parser.add_argument("--use_synthetic_data", default=default.use_synthetic_data,
         action="store_true", help="whether use synthetic data")
-parser.add_argument("--train_dataset", type=str, default=default.tarin_dataset,
-        required=False, help="dataset path for training")
-parser.add_argument("--train_batch_size_per_device", type=int,
-        default=default.train_batch_size_per_device, required=True,
-        help="batch_size of training on each gpu")
-parser.add_argument("--train_data_part_num", type=int,
-        default=config.tarin_data_part_num, required=True, help="the number of OFRecord data parts for training")
-
 # model and log
 parser.add_argument("--model_load_dir", type=str,
-        default=default.model_load_dir, required=False, help="dir to load model")
-parser.add_argument("--models_root", type=str, required=False,
+        default=default.model_load_dir,  help="dir to load model")
+parser.add_argument("--models_root", type=str, 
         default=default.models_root, help="root directory to save model.")
 parser.add_argument(
-    "--log_dir", type=str, default=default.log_dir, help="log info save directory"
-)
+    "--log_dir", type=str, default=default.log_dir, help="log info save directory")
 parser.add_argument("--ckpt", type=int, default=default.ckpt, help="checkpoint saving option. 0: discard saving. 1: save when necessary. 2: always save")
 parser.add_argument("--loss_print_frequency", type=int,
-        default=default.loss_print_frequency, required=False, help="frequency of printing loss")
-parser.add_argument("--batch_num_in_snapshot", type=int,
-        default=default.batches_num_in_snapshot, required=True, help="the number of batches in the snapshot")
-parser.add_argument(
-    "--do_validataion_while_train", default=default.do_validataion_while_train,
-    action="store_true", help="whether do validation while training")
+        default=default.loss_print_frequency,  help="frequency of printing loss")
+parser.add_argument("--batch_num_in_snapshot", type=int,  
+        default=default.batch_num_in_snapshot, help="the number of batches in the snapshot")
+#parser.add_argument(
+#    "--do_validation_while_train", default=default.do_validation_while_train,
+#    action="store_true", help="whether do validation while training")
 
 # hyperparameters
-parser.add_argument("--total_batch_num", type=int,
-        default=default.total_batch_num, required=True, help="total number of batches running")
-parser.add_argument("--lr", type=float, default=default.lr, required=True,
+parser.add_argument("--total_batch_num", type=int,  
+        default=default.total_batch_num, help="total number of batches running")
+parser.add_argument("--lr", type=float, default=default.lr, 
         help="start learning rate")
-parser.add_argument("--lr_steps", type=list, default=default.lr_steps,
-required=True, help="steps of lr changing")
+parser.add_argument("--lr_steps", type=str_list,  default=default.lr_steps,
+help="steps of lr changing")
 parser.add_argument(
-    "-wd", "--weight_decay", type=float, default=default.wd, required=False,
+    "-wd", "--weight_decay", type=float, default=default.wd, 
     help="weight decay")
 parser.add_argument("-mom", "--momentum", type=float, default=default.mom,
         help="momentum")
-parser.add_argument("--network", type=str, default=default.network,
-        required=False, help="choose which network as backbone")
-parser.add_argument("--loss", type=str, default=default.loss, required=False,
-        help="loss config")
+parser.add_argument("--val_data_part_num", type=int, default=config.val_data_part_num, help="data part_num of validation")
+parser.add_argument("--val_batch_size_per_device", type=int, default=default.val_batch_size_per_device, help="data part_num of validation")
 
 args = parser.parse_args()
-if not os.path.exists(args.models-root):
-    os.makedirs(args.models-root)
+if not os.path.exists(args.models_root):
+    os.makedirs(args.models_root)
 
 def get_symbol(images):
 
-    print("config.network", config.net_name)
-    if config.net_name == "fmobilefacenet":
+    if config.network == "y1":
         embedding = MobileFacenet(
-            images, embedding_size=128, bn_is_training=True
+            images, embedding_size=config.emb_size, bn_is_training=True
         )
-    elif config.net_name == "fresnet":
+    elif config.network == "r100":
         embedding = Resnet100(images, embedding_size=512, fc_type="E")
     else:
         raise NotImplementedError
@@ -112,6 +102,7 @@ def get_train_config(args):
 @flow.global_function(type="train", function_config=get_train_config(args))
 def get_symbol_train_job():
     if args.use_synthetic_data:
+        print("syn!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         (labels, images) = ofrecord_util.load_synthetic(args)
     else:
         labels, images = ofrecord_util.load_train_dataset(args)
@@ -221,7 +212,7 @@ def get_symbol_train_job():
     return loss
 
 def main():
-    flow.config.gpu_device_num(config.gpu_num_per_node)
+    flow.config.gpu_device_num(config.device_num_per_node)
     if args.num_nodes > 1:
         assert args.num_nodes <= len(args.node_ips)
         flow.env.ctrl_port(12138)
@@ -267,7 +258,7 @@ def main():
         # snapshot
         if (step + 1) % args.num_of_batches_in_snapshot == 0:
             check_point.save(
-                args.models-root
+                args.models_root
                 + "/snapshot_"
                 + str(step // args.num_of_batches_in_snapshot)
             )

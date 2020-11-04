@@ -5,7 +5,7 @@ import oneflow as flow
 import oneflow.typing as oft
 
 
-from sample_config import config, default, generate_config
+from sample_config import config, default, generate_val_config
 import ofrecord_util
 import validation_util
 from symbols.fmobilefacenet import MobileFacenet
@@ -13,41 +13,42 @@ from symbols.resnet100 import Resnet100
 
 
 parser = argparse.ArgumentParser(description="flags for train")
+parser.add_argument("--val_dataset", default=default.val_dataset, help="validation dataset config")
+args, rest = parser.parse_known_args()
+generate_val_config(args.val_dataset)
+
 # machines
-parser.add_argument("--device_num_per_node", type=int,
-        default=config.device_num_per_node, required=False)
-parser.add_argument(
-    "--num_nodes", type=int, default=config.num_nodes, help="node/machine number for training"
-)
-
-
+#parser.add_argument("--device_num_per_node", type=int,
+#        default=config.device_num_per_node, required=False)
+#parser.add_argument(
+#    "--num_nodes", type=int, default=config.num_nodes, help="node/machine number for training"
+#)
 
 # model and log
 parser.add_argument(
-    "--log_dir", type=str, default="./output", help="log info save directory"
-)
-parser.add_argument("--network", type=str, default="resnet100", required=False)
-
-parser.add_argument('--data-dir', default='', help='')
-parser.add_argument('--model_load_dir', default='../model/softmax,50', help='path to load model.')
-parser.add_argument('--target', default='lfw,cfp_ff,cfp_fp,agedb_30', help='test targets.')
-parser.add_argument('--batch-size', default=32, type=int, help='')
+    "--log_dir", type=str, default="./output", help="log info save")
+parser.add_argument("--network", type=str, default=default.network, required=False)
+#parser.add_argument('--val_dataset_dir', default=config.val_dataet_dir, help='')
+parser.add_argument('--model_load_dir', default="", help='path to load model.')
+parser.add_argument('--target', default=default.val_targets, help='test targets.')
+parser.add_argument('--val_batch_size_per_device', default=default.val_batch_size_per_device, type=int, help='')
+#parser.add_argument('--val_data_part_num', default=default.val_data_part_num, type=int, help='data part num of validation dataset')
 parser.add_argument('--max', default='', type=str, help='')
-parser.add_argument('--mode', default=0, type=int, help='')
-parser.add_argument('--nfolds', default=10, type=int, help='')
+parser.add_argument('--mode', default=default.model_parallel, type=int, help='')
+parser.add_argument('--nfolds', default=default.nfolds, type=int, help='')
 
 args = parser.parse_args()
 
 
 def get_symbol(images):
 
-    print("args.network", args.network)
+    print("args.network", config.net_name)
 
-    if args.network == "mobilefacenet":
+    if args.network == "r100":
         embedding = MobileFacenet(
             images, embedding_size=128, bn_is_training=True
         )
-    elif args.network == "resnet100":
+    elif args.network == "y1":
         embedding = Resnet100(images, embedding_size=512, fc_type="E")
     else:
         raise NotImplementedError
@@ -64,12 +65,14 @@ def get_val_config(args):
 
 @flow.global_function(type="predict", function_config=get_val_config(args))
 def get_validation_dataset():
-    issame, images = ofrecord_util.load_agedb_30_dataset(args)
+    print("222222222222222222222222222222222222222222222222222222222222222")
+    issame, images = ofrecord_util.load_validation_dataset(args)
     return issame, images
 
 
 @flow.global_function(type="predict", function_config=get_val_config(args))
-def get_symbol_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size, 112, 112, 3))):
+def get_symbol_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size_per_device, 112, 112, 3))):
+    print("33333333333333333333333333333333333333333333333333333333333333333")
     print("val batch data: ", images.shape)
     embedding = get_symbol(images)
     return embedding
@@ -86,7 +89,7 @@ def do_validation(dataset="lfw"):
     _em_list = []
     _em_flipped_list = []
 
-    batch_size = args.val_batch_size
+    batch_size = args.val_batch_size_per_device
     total_images_num = config.total_images_num
     val_job = get_validation_dataset(config.dataset)
 
