@@ -11,7 +11,7 @@ import validation_util
 from callback_util import TrainMetric
 from symbols.fmobilefacenet import MobileFacenet
 from symbols.resnet100 import Resnet100
-from insightface_val import do_validation, flip_data, get_validation_dataset, get_symbol_val_job
+from insightface_val import do_validation, flip_data
 
 def str_list(x):
     return x.split(",")
@@ -55,9 +55,8 @@ parser.add_argument("--loss_print_frequency", type=int,
         default=default.loss_print_frequency,  help="frequency of printing loss")
 parser.add_argument("--batch_num_in_snapshot", type=int,  
         default=default.batch_num_in_snapshot, help="the number of batches in the snapshot")
-#parser.add_argument(
-#    "--do_validation_while_train", default=default.do_validation_while_train,
-#    action="store_true", help="whether do validation while training")
+parser.add_argument(
+    "--do_validation_while_train", action="store_true", help="whether do validation while training")
 
 # hyperparameters
 parser.add_argument("--total_batch_num", type=int,  
@@ -82,10 +81,10 @@ def get_symbol(images):
 
     if config.network == "y1":
         embedding = MobileFacenet(
-            images, embedding_size=config.emb_size, bn_is_training=True
+            images, embedding_size=config.emb_size, bn_is_training=config.bn_is_training
         )
     elif config.network == "r100":
-        embedding = Resnet100(images, embedding_size=512, fc_type="E")
+        embedding = Resnet100(images, embedding_size=config.emb_size, fc_type=config.fc_type)
     else:
         raise NotImplementedError
 
@@ -102,7 +101,6 @@ def get_train_config(args):
 @flow.global_function(type="train", function_config=get_train_config(args))
 def get_symbol_train_job():
     if args.use_synthetic_data:
-        print("syn!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         (labels, images) = ofrecord_util.load_synthetic(args)
     else:
         labels, images = ofrecord_util.load_train_dataset(args)
@@ -197,16 +195,15 @@ def get_symbol_train_job():
     loss = flow.nn.sparse_softmax_cross_entropy_with_logits(
         labels, fc7, name="softmax_loss"
     )
-    if config.ce_loss:
-        body = flow.nn.softmax(fc7)
-        body = flow.math.log(body)
-        label = flow.nn.one_hot(labels, depth = configs.num_classes, on_value =
-                -1.0, off_value = 0.0)
-        body = body * labels
-        ce_loss = flow.math.sm(body) / args.train_batch_size_per_device
-    lr_steps = [int(x) for x in args.lr_steps.split(',')]
+    #if config.ce_loss:
+    #    body = flow.nn.softmax(fc7)
+    #    body = flow.math.log(body)
+    #    labels = flow.one_hot(labels, depth = config.num_classes, on_value = -1.0, off_value = 0.0, dtype=flow.float)
+    #    body = body * labels
+    #    ce_loss = flow.math.reduce_sum(body) /config.train_batch_size_per_device
+    lr_steps = [int(x) for x in args.lr_steps]
     print('lr_steps', lr_steps)
-    lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.base_lr,
+    lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.lr,
             args.lr_steps, 0.1)
     flow.optimizer.SGD(lr_scheduler, momentum=args.momentum).minimize(loss)
     return loss
@@ -232,12 +229,12 @@ def main():
     else:
         print("Loading model from {}".format(args.model_load_dir))
         check_point.load(args.model_load_dir)
-    args.batch_size = args.train_batch_size_per_device * args.gpu_num_per_node
+    args.batch_size = config.train_batch_size_per_device * args.device_num_per_node
     print("num_classes ", config.num_classes)
     print("Called with argument: ", args, config)
     train_metric = TrainMetric(
         desc="train", calculate_batches=1,
-        batch_size=args.train_batch_size_per_device
+        batch_size=config.train_batch_size_per_device
     )
 
     for step in range(args.total_batch_num):
@@ -246,21 +243,21 @@ def main():
 
         # validation
         if (
-            args.do_validataion_while_train
+            args.do_validation_while_train
             and (step + 1) % args.validataion_interval == 0
-        ):
-            for ds in ["lfw", "cfp_fp", "agedb_30"]:
+        ):  
+            for ds in config.val_targets:
                 issame_list, embeddings_list = do_validation(dataset=ds)
                 validation_util.cal_validation_metrics(
                     embeddings_list, issame_list, nrof_folds=args.nrof_folds,
                 )
 
         # snapshot
-        if (step + 1) % args.num_of_batches_in_snapshot == 0:
+        if (step + 1) % args.batch_num_in_snapshot == 0:
             check_point.save(
                 args.models_root
                 + "/snapshot_"
-                + str(step // args.num_of_batches_in_snapshot)
+                + str(step // args.batch_num_in_snapshot)
             )
 
 

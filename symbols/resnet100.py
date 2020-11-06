@@ -332,6 +332,7 @@ def Resnet100(
         )
 
     elif fc_type == "E":
+        print("her!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         input_blob = _batch_norm(
             input_blob, epsilon=2e-5, is_training=bn_is_training, name="bn1"
         )

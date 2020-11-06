@@ -11,7 +11,6 @@ import validation_util
 from symbols.fmobilefacenet import MobileFacenet
 from symbols.resnet100 import Resnet100
 
-
 parser = argparse.ArgumentParser(description="flags for train")
 parser.add_argument("--val_dataset", default=default.val_dataset, help="validation dataset config")
 args, rest = parser.parse_known_args()
@@ -41,41 +40,40 @@ args = parser.parse_args()
 
 
 def get_symbol(images):
-
-    print("args.network", config.net_name)
-
-    if args.network == "r100":
+    if args.network == "y1":
         embedding = MobileFacenet(
-            images, embedding_size=128, bn_is_training=True
+            images, embedding_size=config.ebd_size, bn_is_training=config.bn_is_training
         )
-    elif args.network == "y1":
-        embedding = Resnet100(images, embedding_size=512, fc_type="E")
+    elif args.network == "r100":
+        embedding = Resnet100(images, embedding_size=config.ebd_size, fc_type=config.fc_type)
     else:
         raise NotImplementedError
 
     return embedding
 
 
-def get_val_config(args):
+def get_val_config(args, config):
     config = flow.function_config()
     config.default_logical_view(flow.scope.consistent_view())
     config.default_data_type(flow.float)
     return config
 
+if default.do_validation_while_train:
 
-@flow.global_function(type="predict", function_config=get_val_config(args))
-def get_validation_dataset():
-    print("222222222222222222222222222222222222222222222222222222222222222")
-    issame, images = ofrecord_util.load_validation_dataset(args)
-    return issame, images
+    @flow.global_function(type="predict", function_config=get_val_config(args, config))
+    def get_validation_dataset():
+        print("222222222222222222222222222222222222222222222222222222222222222")
+        with flow.scope.placement("cpu", "0:0"):
+            issame, images = ofrecord_util.load_validation_dataset(args)
+        return issame, images
 
 
-@flow.global_function(type="predict", function_config=get_val_config(args))
-def get_symbol_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size_per_device, 112, 112, 3))):
-    print("33333333333333333333333333333333333333333333333333333333333333333")
-    print("val batch data: ", images.shape)
-    embedding = get_symbol(images)
-    return embedding
+    @flow.global_function(type="predict", function_config=get_val_config(args, config))
+    def get_symbol_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size_per_device, 112, 112, 3))):
+        print("33333333333333333333333333333333333333333333333333333333333333333")
+        print("val batch data: ", images.shape)
+        embedding = get_symbol(images)
+        return embedding
 
 
 def flip_data(images):

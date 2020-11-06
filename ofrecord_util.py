@@ -32,6 +32,7 @@ def train_dataset_reader(
         (label_blob_conf, image_blob_conf),
         batch_size=batch_size,
         data_part_num=data_part_num,
+        part_name_prefix = "part-0000",
         part_name_suffix_length=part_name_suffix_length,
         shuffle=True,
         buffer_size=16384,
