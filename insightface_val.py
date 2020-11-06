@@ -16,43 +16,25 @@ parser.add_argument("--val_dataset", default=default.val_dataset, help="validati
 args, rest = parser.parse_known_args()
 generate_val_config(args.val_dataset)
 
-# machines
-#parser.add_argument("--device_num_per_node", type=int,
-#        default=config.device_num_per_node, required=False)
-#parser.add_argument(
-#    "--num_nodes", type=int, default=config.num_nodes, help="node/machine number for training"
-#)
+# distribution config
+parser.add_argument("--device_num_per_node", type=int,
+        default=default.device_num_per_node, required=False)
+parser.add_argument(
+    "--num_nodes", type=int, default=default.num_nodes, help="node/machine number for training"
+)
 
+parser.add_argument("--network", type=str, default=default.network, required=False)
+parser.add_argument('--val_batch_size_per_device', default=default.val_batch_size_per_device, type=int, help='validation batch size per device')
+parser.add_argument('--nrof_folds', default=default.nrof_folds, type=int, help='')
 # model and log
 parser.add_argument(
-    "--log_dir", type=str, default="./output", help="log info save")
-parser.add_argument("--network", type=str, default=default.network, required=False)
-#parser.add_argument('--val_dataset_dir', default=config.val_dataet_dir, help='')
-parser.add_argument('--model_load_dir', default="", help='path to load model.')
-parser.add_argument('--target', default=default.val_targets, help='test targets.')
-parser.add_argument('--val_batch_size_per_device', default=default.val_batch_size_per_device, type=int, help='')
-#parser.add_argument('--val_data_part_num', default=default.val_data_part_num, type=int, help='data part num of validation dataset')
-parser.add_argument('--max', default='', type=str, help='')
-parser.add_argument('--mode', default=default.model_parallel, type=int, help='')
-parser.add_argument('--nfolds', default=default.nfolds, type=int, help='')
+    "--log_dir", type=str, default=default.log_dir, help="log info save")
+parser.add_argument('--model_load_dir', default=default.model_load_dir, help='path to load model.')
 
 args = parser.parse_args()
 
 
-def get_symbol(images):
-    if args.network == "y1":
-        embedding = MobileFacenet(
-            images, embedding_size=config.ebd_size, bn_is_training=config.bn_is_training
-        )
-    elif args.network == "r100":
-        embedding = Resnet100(images, embedding_size=config.ebd_size, fc_type=config.fc_type)
-    else:
-        raise NotImplementedError
-
-    return embedding
-
-
-def get_val_config(args, config):
+def get_val_config(args):
     config = flow.function_config()
     config.default_logical_view(flow.scope.consistent_view())
     config.default_data_type(flow.float)
@@ -60,7 +42,7 @@ def get_val_config(args, config):
 
 if default.do_validation_while_train:
 
-    @flow.global_function(type="predict", function_config=get_val_config(args, config))
+    @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_validation_dataset():
         print("222222222222222222222222222222222222222222222222222222222222222")
         with flow.scope.placement("cpu", "0:0"):
@@ -68,10 +50,10 @@ if default.do_validation_while_train:
         return issame, images
 
 
-    @flow.global_function(type="predict", function_config=get_val_config(args, config))
+    @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_symbol_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size_per_device, 112, 112, 3))):
         print("33333333333333333333333333333333333333333333333333333333333333333")
-        print("val batch data: ", images.shape)
+        print("val batch images size: ", images.shape)
         embedding = get_symbol(images)
         return embedding
 
@@ -126,7 +108,7 @@ def main():
     check_point.load(args.model_load_dir)
 
     # validation
-    for ds in ["lfw", "cfp_fp", "agedb_30"]:
+    for ds in config.val_targets:
         issame_list, embeddings_list = do_validation(dataset=ds)
         validation_util.cal_validation_metrics(
             embeddings_list, issame_list, nrof_folds=args.nrof_folds,

@@ -16,7 +16,6 @@ from insightface_val import do_validation, flip_data
 def str_list(x):
     return x.split(",")
 
-# distrubuted config
 parser = argparse.ArgumentParser(description="flags for train")
 parser.add_argument('--dataset', default=default.dataset, help='dataset config')
 parser.add_argument('--network', default=default.network, help='network config')
@@ -25,9 +24,8 @@ parser.add_argument("--val_dataset", default=default.val_dataset, help="validati
 args, rest = parser.parse_known_args()
 generate_config(args.network, args.dataset, args.loss)
 generate_val_config(args.val_dataset)
-print("args.network: ", args.network)
-# distrubute
-parser.add_argument("--device_num_per_node", type=int, default=config.device_num_per_node,
+# distrubution config
+parser.add_argument("--device_num_per_node", type=int, default=default.device_num_per_node,
          help="the number of gpus used per node")
 parser.add_argument(
     "--num_nodes", type=int, default=default.num_nodes, help="node/machine number for training"
@@ -35,29 +33,14 @@ parser.add_argument(
 parser.add_argument(
     "--node_ips",
     type=str_list,
-    default=config.node_ips,
+    default=default.node_ips,
     help='nodes ip list for training, devided by ",", length >= num_nodes')
-parser.add_argument("--model_parallel", type=int,
-        default=default.model_parallel,  help="whether use model parallel")
-
-# train dataset
-parser.add_argument("--use_synthetic_data", default=default.use_synthetic_data,
-        action="store_true", help="whether use synthetic data")
-# model and log
-parser.add_argument("--model_load_dir", type=str,
-        default=default.model_load_dir,  help="dir to load model")
-parser.add_argument("--models_root", type=str, 
-        default=default.models_root, help="root directory to save model.")
+parser.add_argument("--model_parallel", type=str2bool, nargs="?", const=default.model_parallel, help="whether use model parallel")
+# train config
+parser.add_argument("--use_synthetic_data", type=str2bool,
+nargs="?", const=default.use_synthetic_data, help="whether use synthetic data")
 parser.add_argument(
-    "--log_dir", type=str, default=default.log_dir, help="log info save directory")
-parser.add_argument("--ckpt", type=int, default=default.ckpt, help="checkpoint saving option. 0: discard saving. 1: save when necessary. 2: always save")
-parser.add_argument("--loss_print_frequency", type=int,
-        default=default.loss_print_frequency,  help="frequency of printing loss")
-parser.add_argument("--batch_num_in_snapshot", type=int,  
-        default=default.batch_num_in_snapshot, help="the number of batches in the snapshot")
-parser.add_argument(
-    "--do_validation_while_train", action="store_true", help="whether do validation while training")
-
+    "--do_validation_while_train", type=str2bool, nargs="?", const=default.do_validation_while_train, help="whether do validation while training")
 # hyperparameters
 parser.add_argument("--total_batch_num", type=int,  
         default=default.total_batch_num, help="total number of batches running")
@@ -70,8 +53,44 @@ parser.add_argument(
     help="weight decay")
 parser.add_argument("-mom", "--momentum", type=float, default=default.mom,
         help="momentum")
+# model and log
+parser.add_argument("--model_load_dir", type=str,
+        default=default.model_load_dir,  help="dir to load model")
+parser.add_argument("--models_root", type=str, 
+        default=default.models_root, help="root directory to save model.")
+parser.add_argument(
+    "--log_dir", type=str, default=default.log_dir, help="log info save directory")
+parser.add_argument("--ckpt", type=int, default=default.ckpt, help="checkpoint saving option. 0: discard saving. 1: save when necessary. 2: always save")
+parser.add_argument("--loss_print_frequency", type=int,
+        default=default.loss_print_frequency,  help="frequency of printing loss")
+parser.add_argument("--batch_num_in_snapshot", type=int,  
+        default=default.batch_num_in_snapshot, help="the number of batches in the snapshot")
+# resnet50 fp16
+parser.add_argument(
+    '--use_fp16', type=str2bool, nargs='?', const=default.use_fp16, help='Whether to use use fp16'
+)
+parser.add_argument(
+    '--channel_last',
+    type=str2bool,
+    nargs='?',
+    const=default.channel_last,
+    help='Whether to use use channel last mode(nhwc)'
+)
+parser.add_argument(
+    '--pad_output',
+    type=str2bool,
+    nargs='?',
+    const=default.pad_output,
+    help='Whether to pad the output to number of image channels to 4.'
+)
+parser.add_argument("--nccl_fusion_threshold_mb", type=int, default=default.nccl_fusion_threshold_mb,
+                    help="NCCL fusion threshold megabytes, set to 0 to compatible with previous version of OneFlow.")
+parser.add_argument("--nccl_fusion_max_ops", type=int, default=default.nccl_fusion_max_ops,
+                    help="Maximum number of ops of NCCL fusion, set to 0 to compatible with previous version of OneFlow.")
+
+# validation config
 parser.add_argument("--val_data_part_num", type=int, default=config.val_data_part_num, help="data part_num of validation")
-parser.add_argument("--val_batch_size_per_device", type=int, default=default.val_batch_size_per_device, help="data part_num of validation")
+parser.add_argument("--val_batch_size_per_device", type=int, default=default.val_batch_size_per_device, help="validation batch size per device")
 
 args = parser.parse_args()
 if not os.path.exists(args.models_root):
@@ -85,6 +104,14 @@ def get_symbol(images):
         )
     elif config.network == "r100":
         embedding = Resnet100(images, embedding_size=config.emb_size, fc_type=config.fc_type)
+    elif config.network == "r50":
+        if args.use_fp16 and args.pad_output:
+            if args.channel_last:
+                paddings = ((0, 0), (0, 0), (0, 0), (0, 1))
+            else:
+                paddings = ((0, 0), (0, 1), (0, 0), (0, 0))
+            images = flow.pad(images, paddings=paddings)
+        embedding = Resnet50(images, embedding_size=config.emb_size, fc_type=config.fc_type, channel_last=args.channel_last)
     else:
         raise NotImplementedError
 
@@ -104,7 +131,7 @@ def get_symbol_train_job():
         (labels, images) = ofrecord_util.load_synthetic(args)
     else:
         labels, images = ofrecord_util.load_train_dataset(args)
-    print("train batch data: ", images.shape)
+    print("train image_size: ", images.shape)
     embedding = get_symbol(images)
 
     def _get_initializer():
@@ -195,12 +222,12 @@ def get_symbol_train_job():
     loss = flow.nn.sparse_softmax_cross_entropy_with_logits(
         labels, fc7, name="softmax_loss"
     )
-    #if config.ce_loss:
-    #    body = flow.nn.softmax(fc7)
-    #    body = flow.math.log(body)
-    #    labels = flow.one_hot(labels, depth = config.num_classes, on_value = -1.0, off_value = 0.0, dtype=flow.float)
-    #    body = body * labels
-    #    ce_loss = flow.math.reduce_sum(body) /config.train_batch_size_per_device
+    if config.ce_loss:
+        body = flow.nn.softmax(fc7)
+        body = flow.math.log(body)
+        labels = flow.one_hot(labels, depth = config.num_classes, on_value = -1.0, off_value = 0.0, dtype=flow.float)
+        body = body * labels
+        ce_loss = flow.math.reduce_sum(body) /config.train_batch_size_per_device
     lr_steps = [int(x) for x in args.lr_steps]
     print('lr_steps', lr_steps)
     lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.lr,
@@ -210,6 +237,14 @@ def get_symbol_train_job():
 
 def main():
     flow.config.gpu_device_num(config.device_num_per_node)
+    print("gpu num: ", len(config.device_num_per_node))
+    if args.use_fp16 and (args.num_nodes * args.gpu_num_per_node) > 1:
+        flow.config.collective_boxing.nccl_fusion_all_reduce_use_buffer(False)
+    if args.nccl_fusion_threshold_mb:
+        flow.config.collective_boxing.nccl_fusion_threshold_mb(args.nccl_fusion_threshold_mb)
+    if args.nccl_fusion_max_ops:
+        flow.config.collective_boxing.nccl_fusion_max_ops(args.nccl_fusion_max_ops)
+
     if args.num_nodes > 1:
         assert args.num_nodes <= len(args.node_ips)
         flow.env.ctrl_port(12138)

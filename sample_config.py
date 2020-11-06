@@ -4,10 +4,6 @@ from easydict import EasyDict as edict
 
 config = edict()
 
-config.node_ips = ["192.168.1.13", "192.168.1.14"]
-config.num_nodes = 1
-config.device_num_per_node = 1
-config.bn_mom = 0.9
 #config.workspace = 256
 #config.emb_size = 512
 #config.ckpt_embedding = True
@@ -28,7 +24,7 @@ config.fc7_no_bias = False
 #config.data_color = 0
 #config.data_images_filter = 0
 config.count_flops = True
-config.model_parallel = 0
+config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
 
 # network settings
 network = edict()
@@ -133,33 +129,42 @@ loss.combined.loss_m3 = 0.2
 # default settings
 default = edict()
 
-# default network
-default.network = 'r100'
-# default train parameters
-default.total_batch_num = 100
-default.num_nodes = 1
-default.use_synthetic_data = False
 default.dataset = 'emore'
-default.val_dataset = 'lfw'
+default.network = 'r100'
 default.loss = 'arcface'
-default.loss_print_frequency = 1
+default.val_dataset = 'lfw'
+
+default.node_ips = ["192.168.1.13", "192.168.1.14"]
+default.num_nodes = 1
+default.device_num_per_node = 1
+default.bn_mom = 0.9
 default.model_parallel = 0
-#default.end_epoch = 10000
+
+default.use_synthetic_data = False
+default.do_validation_while_train = False
+
+default.total_batch_num = 100
 default.lr = 0.1
+default.lr_steps = [100000,160000,220000]
 default.wd = 0.0005
 default.mom = 0.9
-default.ckpt = 1
-default.lr_steps = [100000,160000,220000]
-default.do_validation_while_train = False
-default.log_dir = "output/log"
+
 default.model_load_dir = ""
-default.models_root = 'output/mobilenet_save_model'
+default.models_root = 'output/save_model'
+default.log_dir = "output/log"
+default.ckpt = 1
+default.loss_print_frequency = 1
 default.batch_num_in_snapshot = 100
-# validation settings
+
+default.use_fp16 = False
+default.channel_last = False
+default.pad_output = True
+default.nccl_fusion_threshold_mb = 0
+default.nccl_fusion_max_ops = 0
+
 default.val_batch_size_per_device = 8
-default.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
 default.validation_interval = 50000
-default.nfolds = 10
+default.nrof_folds = 10
 
 
 
