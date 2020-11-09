@@ -1,19 +1,19 @@
-import numpy as np
 import os
 from easydict import EasyDict as edict
 
 config = edict()
 
 #config.workspace = 256
-#config.emb_size = 512
+config.emb_size = 512
 #config.ckpt_embedding = True
 #config.net_se = 0
 #config.net_act = 'prelu'
 #config.net_unit = 3
 #config.net_input = 1
-#config.net_blocks = [1,4,6,2]
+config.net_blocks = [1,4,6,2]
 #config.net_output = 'E'
 #config.net_multiplier = 1.0
+config.channel_last = False
 config.ce_loss = True
 config.fc7_lr_mult = 1.0
 config.fc7_wd_mult = 1.0
@@ -24,6 +24,7 @@ config.fc7_no_bias = False
 #config.data_color = 0
 #config.data_images_filter = 0
 config.count_flops = True
+config.bn_is_training = True
 config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
 
 # network settings
@@ -157,7 +158,6 @@ default.loss_print_frequency = 1
 default.batch_num_in_snapshot = 100
 
 default.use_fp16 = False
-default.channel_last = False
 default.pad_output = True
 default.nccl_fusion_threshold_mb = 0
 default.nccl_fusion_max_ops = 0

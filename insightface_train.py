@@ -9,12 +9,22 @@ from sample_config import config, default, generate_config, generate_val_config
 import ofrecord_util
 import validation_util
 from callback_util import TrainMetric
+from symbols.symbol_utils import get_symbol
 from symbols.fmobilefacenet import MobileFacenet
-from symbols.resnet100 import Resnet100
+from symbols.fresnet100 import Resnet100
+from symbols.fresnet50 import Resnet50
 from insightface_val import do_validation, flip_data
 
 def str_list(x):
     return x.split(",")
+
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Unsupported value encountered.')
 
 parser = argparse.ArgumentParser(description="flags for train")
 parser.add_argument('--dataset', default=default.dataset, help='dataset config')
@@ -73,7 +83,7 @@ parser.add_argument(
     '--channel_last',
     type=str2bool,
     nargs='?',
-    const=default.channel_last,
+    const=config.channel_last,
     help='Whether to use use channel last mode(nhwc)'
 )
 parser.add_argument(
@@ -96,28 +106,6 @@ args = parser.parse_args()
 if not os.path.exists(args.models_root):
     os.makedirs(args.models_root)
 
-def get_symbol(images):
-
-    if config.network == "y1":
-        embedding = MobileFacenet(
-            images, embedding_size=config.emb_size, bn_is_training=config.bn_is_training
-        )
-    elif config.network == "r100":
-        embedding = Resnet100(images, embedding_size=config.emb_size, fc_type=config.fc_type)
-    elif config.network == "r50":
-        if args.use_fp16 and args.pad_output:
-            if args.channel_last:
-                paddings = ((0, 0), (0, 0), (0, 0), (0, 1))
-            else:
-                paddings = ((0, 0), (0, 1), (0, 0), (0, 0))
-            images = flow.pad(images, paddings=paddings)
-        embedding = Resnet50(images, embedding_size=config.emb_size, fc_type=config.fc_type, channel_last=args.channel_last)
-    else:
-        raise NotImplementedError
-
-    return embedding
-
-
 def get_train_config(args):
     config = flow.FunctionConfig()
     config.default_logical_view(flow.scope.consistent_view())
@@ -132,7 +120,7 @@ def get_symbol_train_job():
     else:
         labels, images = ofrecord_util.load_train_dataset(args)
     print("train image_size: ", images.shape)
-    embedding = get_symbol(images)
+    embedding = get_symbol(images, config)
 
     def _get_initializer():
         return flow.random_normal_initializer(mean=0.0, stddev=0.01)
@@ -236,8 +224,8 @@ def get_symbol_train_job():
     return loss
 
 def main():
-    flow.config.gpu_device_num(config.device_num_per_node)
-    print("gpu num: ", len(config.device_num_per_node))
+    flow.config.gpu_device_num(args.device_num_per_node)
+    print("gpu num: ", args.device_num_per_node)
     if args.use_fp16 and (args.num_nodes * args.gpu_num_per_node) > 1:
         flow.config.collective_boxing.nccl_fusion_all_reduce_use_buffer(False)
     if args.nccl_fusion_threshold_mb:
