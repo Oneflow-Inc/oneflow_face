@@ -2,6 +2,7 @@ import os
 import sys
 import struct
 import argparse
+import numbers
 
 from mxnet import recordio
 import oneflow.core.record.record_pb2 as of_record
@@ -138,7 +139,10 @@ def main(args):
             img_data = {}
             rec = imgrec.read_idx(idx)
             header, s = recordio.unpack(rec)
-            img_data["label"] = int(header.label[0])
+            label = header.label
+            if not isinstance(label, numbers.Number):
+                label = label[0]
+            img_data["label"] = int(label)
             img_data["pixel_data"] = s
 
             example = convert_to_ofrecord(img_data)
