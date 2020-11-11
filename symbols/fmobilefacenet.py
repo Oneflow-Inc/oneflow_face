@@ -1,6 +1,6 @@
 import oneflow as flow
 import oneflow.core.operator.op_conf_pb2 as op_conf_util
-from symbol_utils import _get_initializer, _conv2d_layer, _batch_norm, _prelu
+from symbols.symbol_utils import _get_initializer, _conv2d_layer, _batch_norm, _prelu, get_fc1
 
 """
 References:
@@ -148,6 +148,8 @@ def Residual(
 
 def get_symbol(input_blob):
     net_blocks = config.net_blocks
+    num_classes = config.emb_size
+    fc_type = config.fc_type
     input_blob = flow.transpose(
         input_blob, name="transpose", perm=[0, 3, 1, 2]
     )
@@ -260,37 +262,5 @@ def get_symbol(input_blob):
         bn_is_training=bn_is_training,
         name="conv_6sep",
     )
-
-    conv_6_dw = Linear(
-        conv_6_sep,
-        num_filter=512,
-        num_group=512,
-        kernel=7,
-        pad="valid",
-        stride=[1, 1],
-        bn_is_training=bn_is_training,
-        name="conv_6dw7_7",
-    )
-    conv_6_dw = flow.reshape(conv_6_dw, (conv_6_dw.shape[0], -1))
-    fc1 = symbol_utils.get_fc1(conv_6_sep, num_classes, fc_type)
-    conv_6_f = flow.layers.dense(
-        inputs=conv_6_dw,
-        net_blocks=embedding_size,
-        activation=None,
-        use_bias=True,
-        kernel_initializer=_get_initializer(),
-        bias_initializer=flow.zeros_initializer(),
-        kernel_regularizer=_get_regularizer(),
-        bias_regularizer=_get_regularizer(),
-        trainable=True,
-        name="pre_fc1",
-    )
-    fc1 = _batch_norm(
-        conv_6_f,
-        epsilon=2e-5,
-        scale=False,
-        center=True,
-        is_training=bn_is_training,
-        name="fc1",
-    )
+    fc1 = get_fc1(conv_6_sep, num_classes,fc_type, input_channel=config.input_channel)
     return fc1

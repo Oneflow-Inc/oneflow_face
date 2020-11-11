@@ -1,7 +1,7 @@
 import oneflow as flow
 import oneflow.core.operator.op_conf_pb2 as op_conf_util
-from symbol_utils import _get_regularizer, _get_initializer, _batch_norm, _conv2d_layer, _dropout, _avg_pool, _prelu
-
+from symbols.symbol_utils import _get_regularizer, _get_initializer, _batch_norm, _conv2d_layer, _dropout, _avg_pool, _prelu, get_fc1
+from sample_config import config
 
 def Linear(
     input_blob,
@@ -10,7 +10,7 @@ def Linear(
     stride=None,
     pad="valid",
     num_group=1,
-    bn_is_training=True,
+    bn_is_training=config.bn_is_training,
     name=None,
     suffix="",
 ):
@@ -29,7 +29,7 @@ def Linear(
     bn = _batch_norm(
         conv,
         epsilon=0.001,
-        is_training=bn_is_training,
+        is_training=config.bn_is_training,
         name="%s%s_batchnorm" % (name, suffix),
     )
     return bn
@@ -140,13 +140,13 @@ def residual_unit_v3(
     return identity
 
 
-def Resnet100(
-    input_blob, embedding_size, fc_type="GDC", bn_is_training=True, **kw
-):
+def get_symbol(input_blob):
     filter_list = [64, 64, 128, 256, 512]
     num_stages = 4
     units = [3, 13, 30, 3]
-
+    num_classes = config.emb_size
+    fc_type = config.fc_type
+    bn_is_training = config.bn_is_training
     input_blob = flow.transpose(
         input_blob, name="transpose", perm=[0, 3, 1, 2]
     )
@@ -184,92 +184,5 @@ def Resnet100(
                 bn_is_training=bn_is_training,
                 name="stage%d_unit%d" % (i + 1, j + 2),
             )
-    if fc_type == "GDC":
-        input_blob = Linear(
-            input_blob,
-            num_filter=512,
-            num_group=512,
-            kernel=7,
-            pad="valid",
-            stride=[1, 1],
-            bn_is_training=bn_is_training,
-            name="conv_6dw7_7",
-        )
-        input_blob = flow.reshape(input_blob, (input_blob.shape[0], -1))
-        pre_fc1 = flow.layers.dense(
-            inputs=input_blob,
-            units=embedding_size,
-            activation=None,
-            use_bias=True,
-            kernel_initializer=_get_initializer(),
-            bias_initializer=flow.zeros_initializer(),
-            kernel_regularizer=_get_regularizer(),
-            bias_regularizer=_get_regularizer(),
-            trainable=True,
-            name="pre_fc1",
-        )
-        fc1 = _batch_norm(
-            pre_fc1,
-            epsilon=2e-5,
-            center=True,
-            scale=False,
-            is_training=bn_is_training,
-            name="fc1",
-        )
-
-    elif fc_type == "E":
-        print("her!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        input_blob = _batch_norm(
-            input_blob, epsilon=2e-5, is_training=bn_is_training, name="bn1"
-        )
-        input_blob = _dropout(input_blob, dropout_prob=0.4)
-        input_blob = flow.reshape(input_blob, (input_blob.shape[0], -1))
-        pre_fc1 = flow.layers.dense(
-            inputs=input_blob,
-            units=embedding_size,
-            activation=None,
-            use_bias=True,
-            kernel_initializer=_get_initializer(),
-            bias_initializer=flow.zeros_initializer(),
-            kernel_regularizer=_get_regularizer(),
-            bias_regularizer=_get_regularizer(),
-            trainable=True,
-            name="pre_fc1",
-        )
-        fc1 = _batch_norm(
-            pre_fc1,
-            epsilon=2e-5,
-            center=True,
-            scale=False,
-            is_training=bn_is_training,
-            name="fc1",
-        )
-    elif fc_type == "FC":
-        input_blob = _batch_norm(
-            input_blob, epsilon=2e-5, is_training=bn_is_training, name="bn1"
-        )
-        input_blob = flow.reshape(input_blob, (input_blob.shape[0], -1))
-        pre_fc1 = flow.layers.dense(
-            inputs=input_blob,
-            units=embedding_size,
-            activation=None,
-            use_bias=True,
-            kernel_initializer=_get_initializer(),
-            bias_initializer=flow.zeros_initializer(),
-            kernel_regularizer=_get_regularizer(),
-            bias_regularizer=_get_regularizer(),
-            trainable=True,
-            name="pre_fc1",
-        )
-        fc1 = _batch_norm(
-            pre_fc1,
-            epsilon=2e-5,
-            center=True,
-            scale=False,
-            is_training=bn_is_training,
-            name="fc1",
-        )
-
-    else:
-        print("unimplemented")
+    fc1 = get_fc1(input_blob, num_classes, fc_type)
     return fc1

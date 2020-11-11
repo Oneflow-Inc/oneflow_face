@@ -8,7 +8,7 @@ import oneflow.typing as oft
 from sample_config import config, default, generate_val_config
 import ofrecord_util
 import validation_util
-from symbols.symbol_utils import get_symbol
+#from symbols.symbol_utils import get_symbol
 
 parser = argparse.ArgumentParser(description="flags for train")
 parser.add_argument("--val_dataset", default=default.val_dataset, help="validation dataset config")
@@ -53,7 +53,7 @@ if default.do_validation_while_train:
     def get_symbol_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size_per_device, 112, 112, 3))):
         print("33333333333333333333333333333333333333333333333333333333333333333")
         print("val batch images size: ", images.shape)
-        embedding = get_symbol(images, config)
+        embedding = get_symbol(images)
         return embedding
 
 

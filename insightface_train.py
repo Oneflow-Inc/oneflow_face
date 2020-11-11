@@ -9,10 +9,10 @@ from sample_config import config, default, generate_config, generate_val_config
 import ofrecord_util
 import validation_util
 from callback_util import TrainMetric
-from symbols.symbol_utils import get_symbol
-from symbols.fmobilefacenet import MobileFacenet
-from symbols.fresnet100 import Resnet100
-from symbols.fresnet50 import Resnet50
+from symbols import fmobilefacenet, fresnet100
+
+#from symbols.fmobilefacenet import MobileFacenet
+#from symbols.fresnet100 import Resnet100
 from insightface_val import do_validation, flip_data
 
 def str_list(x):
@@ -120,7 +120,7 @@ def get_symbol_train_job():
     else:
         labels, images = ofrecord_util.load_train_dataset(args)
     print("train image_size: ", images.shape)
-    embedding = get_symbol(images, config)
+    embedding = eval(config.net_name).get_symbol(images)
 
     def _get_initializer():
         return flow.random_normal_initializer(mean=0.0, stddev=0.01)
