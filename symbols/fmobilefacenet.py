@@ -1,6 +1,7 @@
 import oneflow as flow
 import oneflow.core.operator.op_conf_pb2 as op_conf_util
-from symbols.symbol_utils import _get_initializer, _conv2d_layer, _batch_norm, _prelu, get_fc1
+from symbols.symbol_utils import _get_initializer, _conv2d_layer, _batch_norm, _prelu, Linear, get_fc1
+from sample_config import config
 
 """
 References:
@@ -40,39 +41,6 @@ def Conv(
     prelu = _prelu(bn, name="%s%s_relu" % (name, suffix))
 
     return prelu
-
-
-def Linear(
-    input_blob,
-    num_filter=1,
-    kernel=None,
-    stride=None,
-    pad="valid",
-    num_group=1,
-    bn_is_training=True,
-    name=None,
-    suffix="",
-):
-    conv = _conv2d_layer(
-        name="%s%s_conv2d" % (name, suffix),
-        input=input_blob,
-        filters=num_filter,
-        kernel_size=kernel,
-        strides=stride,
-        padding=pad,
-        group_num=num_group,
-        use_bias=False,
-        dilation_rate=1,
-        activation=None,
-    )
-    bn = _batch_norm(
-        conv,
-        epsilon=0.001,
-        is_training=bn_is_training,
-        name="%s%s_batchnorm" % (name, suffix),
-    )
-    return bn
-
 
 def DResidual_v1(
     input_blob,
@@ -172,7 +140,7 @@ def get_symbol(input_blob):
             stride=[1, 1],
             pad="same",
             num_group=64,
-            bn_is_training=bn_is_training,
+            bn_is_training=config.bn_is_training,
             name="conv_2_dw",
         )
     else:
@@ -184,7 +152,7 @@ def get_symbol(input_blob):
             stride=[1, 1],
             pad="same",
             num_group=64,
-            bn_is_training=bn_is_training,
+            bn_is_training=config.bn_is_training,
             name="res_2",
         )
 
@@ -195,7 +163,7 @@ def get_symbol(input_blob):
         stride=[2, 2],
         pad="same",
         num_group=128,
-        bn_is_training=bn_is_training,
+        bn_is_training=config.bn_is_training,
         name="dconv_23",
     )
     conv_3 = Residual(
@@ -206,7 +174,7 @@ def get_symbol(input_blob):
         stride=[1, 1],
         pad="same",
         num_group=128,
-        bn_is_training=bn_is_training,
+        bn_is_training=config.bn_is_training,
         name="res_3",
     )
 
@@ -217,7 +185,7 @@ def get_symbol(input_blob):
         stride=[2, 2],
         pad="same",
         num_group=256,
-        bn_is_training=bn_is_training,
+        bn_is_training=config.bn_is_training,
         name="dconv_34",
     )
     conv_4 = Residual(
@@ -228,7 +196,7 @@ def get_symbol(input_blob):
         stride=[1, 1],
         pad="same",
         num_group=256,
-        bn_is_training=bn_is_training,
+        bn_is_training=config.bn_is_training,
         name="res_4",
     )
 
@@ -239,7 +207,7 @@ def get_symbol(input_blob):
         stride=[2, 2],
         pad="same",
         num_group=512,
-        bn_is_training=bn_is_training,
+        bn_is_training=config.bn_is_training,
         name="dconv_45",
     )
     conv_5 = Residual(
@@ -250,7 +218,7 @@ def get_symbol(input_blob):
         stride=[1, 1],
         pad="same",
         num_group=256,
-        bn_is_training=bn_is_training,
+        bn_is_training=config.bn_is_training,
         name="res_5",
     )
     conv_6_sep = Conv(
@@ -259,7 +227,7 @@ def get_symbol(input_blob):
         kernel=1,
         pad="valid",
         stride=[1, 1],
-        bn_is_training=bn_is_training,
+        bn_is_training=config.bn_is_training,
         name="conv_6sep",
     )
     fc1 = get_fc1(conv_6_sep, num_classes,fc_type, input_channel=config.input_channel)

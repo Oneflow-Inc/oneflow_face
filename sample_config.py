@@ -49,21 +49,16 @@ network.r50.fc_type = "E"
 network.y1 = edict()
 network.y1.net_name = 'fmobilefacenet'
 network.y1.emb_size = 128
-network.y1.net_output = 'GDC'
+network.y1.fc_type = 'GDC'
 network.y1.bn_is_training = True
-#network.y2 = edict()
-#network.y2.net_name = 'fmobilefacenet'
-#network.y2.emb_size = 256
-#network.y2.net_output = 'GDC'
-#network.y2.net_blocks = [2,8,16,4]
-
+network.y1.input_channel = 512
 
 # train dataset settings
 dataset = edict()
 
 dataset.emore = edict()
 dataset.emore.dataset = 'emore'
-dataset.emore.dataset_dir = "/dataset/face/train_ofrecord/faces_emore"
+dataset.emore.dataset_dir = "/dataset/face/emore_ofrecord"
 dataset.emore.num_classes = 85742
 dataset.emore.image_shape = (112,112,3)
 dataset.emore.part_name_suffix_length = 1
@@ -75,17 +70,17 @@ dataset.emore.train_batch_size_per_device = 8
 val_dataset = edict()
 
 val_dataset.lfw = edict()
-val_dataset.lfw.val_dataset_dir = "/dataset/face/eval_ofrecord/lfw" 
+val_dataset.lfw.val_dataset_dir = "/home/sunxuexue/face_data/lfw" 
 val_dataset.lfw.val_data_part_num = 1
 val_dataset.lfw.total_images_num = 12000 
 
 val_dataset.cfp_fp = edict()
-val_dataset.cfp_fp.val_dataset_dir = "/dataset/face/eval_ofrecord/cfp_fp" 
+val_dataset.cfp_fp.val_dataset_dir = "/home/sunxuexue/face_data/cfp_fp" 
 val_dataset.cfp_fp.val_data_part_num = 1
 val_dataset.cfp_fp.total_images_num = 14000 
 
 val_dataset.agedb_30 = edict()
-val_dataset.agedb_30.val_dataset_dir = "/dataset/face/eval_ofrecord/agedb_30" 
+val_dataset.agedb_30.val_dataset_dir = "/home/sunxuexue/face_data/agedb_30" 
 val_dataset.agedb_30.val_data_part_num = 1
 val_dataset.agedb_30.total_images_num = 12000 
 
@@ -126,7 +121,7 @@ loss.combined.loss_m3 = 0.2
 default = edict()
 
 default.dataset = 'emore'
-default.network = 'r100'
+default.network = 'y1'
 default.loss = 'arcface'
 default.val_dataset = 'lfw'
 

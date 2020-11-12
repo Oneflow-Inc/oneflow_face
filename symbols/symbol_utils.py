@@ -142,6 +142,37 @@ def _batch_norm(
         name=name,
     )
 
+def Linear(                                                                      
+    input_blob,                                                                  
+    num_filter=1,                                                                
+    kernel=None,                                                                 
+    stride=None,                                                                 
+    pad="valid",                                                                 
+    num_group=1,                                                                 
+    bn_is_training=True,                                                         
+    name=None,                                                                   
+    suffix="",                                                                   
+):                                                                               
+    conv = _conv2d_layer(                                                        
+        name="%s%s_conv2d" % (name, suffix),                                     
+        input=input_blob,                                                        
+        filters=num_filter,                                                      
+        kernel_size=kernel,                                                      
+        strides=stride,                                                          
+        padding=pad,                                                             
+        group_num=num_group,                                                     
+        use_bias=False,                                                          
+        dilation_rate=1,                                                         
+        activation=None,                                                         
+    )                                                                            
+    bn = _batch_norm(                                                            
+        conv,                                                                    
+        epsilon=0.001,                                                           
+        is_training=bn_is_training,                                              
+        name="%s%s_batchnorm" % (name, suffix),                                  
+    )                                                                            
+    return bn  
+
 def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
     body = last_conv
     if fc_type == "Z": # TODO: test
