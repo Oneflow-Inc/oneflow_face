@@ -13,8 +13,8 @@ config.net_blocks = [1,4,6,2]
 #config.net_output = 'E'
 #config.channel_last = False
 config.ce_loss = True
-config.fc7_lr_mult = 1.0
-config.fc7_wd_mult = 1.0
+#config.fc7_lr_mult = 1.0
+#config.fc7_wd_mult = 1.0
 config.fc7_no_bias = False
 config.max_steps = 0
 #config.data_cutoff = False
@@ -94,20 +94,19 @@ default = edict()
 
 default.dataset = 'emore'
 default.network = 'r100'
-default.loss = 'cosface'
-default.val_dataset = 'lfw'
+default.loss = 'arcface'
+#default.val_dataset = 'lfw'
 
 default.node_ips = ["192.168.1.13", "192.168.1.14"]
 default.num_nodes = 1
-default.device_num_per_node = 1
-#default.bn_mom = 0.9
+default.device_num_per_node = 4
 default.model_parallel = 0
 
-default.train_batch_size_per_device = 8
+default.train_batch_size_per_device = 128
 default.use_synthetic_data = False
 default.do_validation_while_train = True
 
-default.total_batch_num = 100
+default.total_batch_num = 159214 # 14*（5822653/512）= 159213.1679
 default.lr = 0.1
 default.lr_steps = [100000,160000,220000]
 default.wd = 0.0005
@@ -118,15 +117,15 @@ default.models_root = './models'
 default.log_dir = "output/log"
 default.ckpt = 3
 default.loss_print_frequency = 20
-default.batch_num_in_snapshot = 100
+default.batch_num_in_snapshot = 22658
 
 default.use_fp16 = False
 default.pad_output = True
 default.nccl_fusion_threshold_mb = 0
 default.nccl_fusion_max_ops = 0
 
-default.val_batch_size_per_device = 8
-default.validation_interval = 2 
+default.val_batch_size_per_device = 128
+default.validation_interval = 5000 
 default.val_data_part_num = 1
 default.val_dataset_dir = "/datasets/insightface/eval_ofrecord" 
 default.nrof_folds = 10
