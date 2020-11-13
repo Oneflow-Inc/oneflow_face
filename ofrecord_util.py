@@ -1,11 +1,14 @@
+import os
 import oneflow as flow
 from sample_config import config
 
 def train_dataset_reader(
     data_dir, batch_size, data_part_num, part_name_suffix_length=1
 ):
-
-    print("Loading train data from {}".format(data_dir))
+    if os.path.exists(data_dir):
+        print("Loading train data from {}".format(data_dir))
+    else:
+        raise Exception("Invalid validation dataset dir", data_dir)
     image_blob_conf = flow.data.BlobConf(
         "encoded",
         shape=(112, 112, 3),
@@ -32,9 +35,9 @@ def train_dataset_reader(
         (label_blob_conf, image_blob_conf),
         batch_size=batch_size,
         data_part_num=data_part_num,
-        part_name_prefix = "part-0000",
-        part_name_suffix_length=part_name_suffix_length,
-        shuffle=True,
+        part_name_prefix=config.part_name_prefix, 
+        part_name_suffix_length=config.part_name_suffix_length,
+        shuffle=config.shuffle,
         buffer_size=16384,
     )
 
@@ -45,8 +48,10 @@ def validation_dataset_reader(
     # lfw: (12000L, 3L, 112L, 112L)
     # cfp_fp: (14000L, 3L, 112L, 112L)
     # agedb_30: (12000L, 3L, 112L, 112L)
-    print("Loading validation data from {}".format(val_dataset_dir))
-
+    if os.path.exists(val_dataset_dir):
+        print("Loading validation data from {}".format(val_dataset_dir))
+    else:
+        raise Exception("Invalid validation dataset dir", val_dataset_dir)
     color_space = "RGB"
     ofrecord = flow.data.ofrecord_reader(
         val_dataset_dir,
@@ -102,7 +107,7 @@ def load_synthetic(config):
 
 def load_train_dataset(args):
     data_dir = config.dataset_dir
-    batch_size = config.train_batch_size_per_device
+    batch_size = args.train_batch_size_per_device
     data_part_num = config.train_data_part_num
     part_name_suffix_length = config.part_name_suffix_length
 
@@ -111,11 +116,10 @@ def load_train_dataset(args):
     )
     return labels, images
 
-
-def load_validation_dataset(args):
-    data_dir = config.val_dataset_dir
+def load_lfw_dataset(args):
+    data_dir = args.lfw_dataset_dir
     batch_size = args.val_batch_size_per_device
-    data_part_num = config.val_data_part_num
+    data_part_num = args.val_data_part_num
 
     (issame, images) = validation_dataset_reader(
         val_dataset_dir=data_dir,
@@ -123,3 +127,40 @@ def load_validation_dataset(args):
         val_data_part_num=data_part_num,
     )
     return issame, images
+
+
+def load_cfp_fp_dataset(args):
+    data_dir = args.cfp_fp_dataset_dir
+    batch_size = args.val_batch_size_per_device
+    data_part_num = args.val_data_part_num
+
+    (issame, images) = validation_dataset_reader(
+        val_dataset_dir=data_dir,
+        val_batch_size=batch_size,
+        val_data_part_num=data_part_num,
+    )
+    return issame, images
+
+
+def load_agedb_30_dataset(args):
+    data_dir = args.agedb_30_dataset_dir
+    batch_size = args.val_batch_size_per_device
+    data_part_num = args.val_data_part_num
+
+    (issame, images) = validation_dataset_reader(
+        val_dataset_dir=data_dir,
+        val_batch_size=batch_size,
+        val_data_part_num=data_part_num,
+    )
+    return issame, images
+#def load_validation_dataset(args):
+#    data_dir = config.val_dataset_dir
+#    batch_size = args.val_batch_size_per_device
+#    data_part_num = config.val_data_part_num
+#
+#    (issame, images) = validation_dataset_reader(
+#        val_dataset_dir=data_dir,
+#        val_batch_size=batch_size,
+#        val_data_part_num=data_part_num,
+#    )
+#    return issame, images

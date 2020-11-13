@@ -230,5 +230,5 @@ def get_symbol(input_blob):
         bn_is_training=config.bn_is_training,
         name="conv_6sep",
     )
-    fc1 = get_fc1(conv_6_sep, num_classes,fc_type, input_channel=config.input_channel)
+    fc1 = get_fc1(conv_6_sep, num_classes,fc_type, input_channel=512)
     return fc1

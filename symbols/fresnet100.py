@@ -34,7 +34,6 @@ def Linear(
     )
     return bn
 
-
 def residual_unit_v3(
     in_data, num_filter, stride, dim_match, bn_is_training, name
 ):

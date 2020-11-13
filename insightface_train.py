@@ -3,9 +3,9 @@ import math
 import argparse
 import numpy as np
 import oneflow as flow
-#import oneflow.typing as oft
+import oneflow.typing as oft
 
-from sample_config import config, default, generate_config, generate_val_config
+from sample_config import config, default, generate_config
 import ofrecord_util
 import validation_util
 from callback_util import TrainMetric
@@ -30,10 +30,8 @@ parser = argparse.ArgumentParser(description="flags for train")
 parser.add_argument('--dataset', default=default.dataset, help='dataset config')
 parser.add_argument('--network', default=default.network, help='network config')
 parser.add_argument('--loss', default=default.loss, help='loss config')
-parser.add_argument("--val_dataset", default=default.val_dataset, help="validation dataset config")
 args, rest = parser.parse_known_args()
 generate_config(args.network, args.dataset, args.loss)
-generate_val_config(args.val_dataset)
 # distrubution config
 parser.add_argument("--device_num_per_node", type=int, default=default.device_num_per_node,
          help="the number of gpus used per node")
@@ -47,10 +45,11 @@ parser.add_argument(
     help='nodes ip list for training, devided by ",", length >= num_nodes')
 parser.add_argument("--model_parallel", type=str2bool, nargs="?", const=default.model_parallel, help="whether use model parallel")
 # train config
+parser.add_argument("--train_batch_size_per_device", type=int, default=default.train_batch_size_per_device, help="train batch size per device")
 parser.add_argument("--use_synthetic_data", type=str2bool,
 nargs="?", const=default.use_synthetic_data, help="whether use synthetic data")
 parser.add_argument(
-    "--do_validation_while_train", type=str2bool, nargs="?", const=default.do_validation_while_train, help="whether do validation while training")
+    "--do_validation_while_train", action="store_true", default=default.do_validation_while_train, help="whether do validation while training")
 # hyperparameters
 parser.add_argument("--total_batch_num", type=int,  
         default=default.total_batch_num, help="total number of batches running")
@@ -79,29 +78,15 @@ parser.add_argument("--batch_num_in_snapshot", type=int,
 parser.add_argument(
     '--use_fp16', type=str2bool, nargs='?', const=default.use_fp16, help='Whether to use use fp16'
 )
-parser.add_argument(
-    '--channel_last',
-    type=str2bool,
-    nargs='?',
-    const=config.channel_last,
-    help='Whether to use use channel last mode(nhwc)'
-)
-parser.add_argument(
-    '--pad_output',
-    type=str2bool,
-    nargs='?',
-    const=default.pad_output,
-    help='Whether to pad the output to number of image channels to 4.'
-)
 parser.add_argument("--nccl_fusion_threshold_mb", type=int, default=default.nccl_fusion_threshold_mb,
                     help="NCCL fusion threshold megabytes, set to 0 to compatible with previous version of OneFlow.")
 parser.add_argument("--nccl_fusion_max_ops", type=int, default=default.nccl_fusion_max_ops,
                     help="Maximum number of ops of NCCL fusion, set to 0 to compatible with previous version of OneFlow.")
-
 # validation config
-parser.add_argument("--val_data_part_num", type=int, default=config.val_data_part_num, help="data part_num of validation")
 parser.add_argument("--val_batch_size_per_device", type=int, default=default.val_batch_size_per_device, help="validation batch size per device")
-
+parser.add_argument("--validation_interval", type=int, default=default.validation_interval, help="validation interval while training")
+parser.add_argument("--val_dataset_dir", type=str, default=default.val_dataset_dir, help="validation dataset dir prefix")
+parser.add_argument("--nrof_folds", type=int, default=default.nrof_folds, help="")
 args = parser.parse_args()
 if not os.path.exists(args.models_root):
     os.makedirs(args.models_root)
@@ -119,7 +104,10 @@ def get_symbol_train_job():
         (labels, images) = ofrecord_util.load_synthetic(args)
     else:
         labels, images = ofrecord_util.load_train_dataset(args)
-    print("train image_size: ", images.shape)
+    image_size = images.shape[1:-1]
+    assert len(image_size) == 2
+    assert image_size[0] == image_size[1]
+    print("train image_size: ", image_size)
     embedding = eval(config.net_name).get_symbol(images)
 
     def _get_initializer():
@@ -137,19 +125,31 @@ def get_symbol_train_job():
             fc7_data_distribute = flow.distribute.split(0)
             fc7_model_distribute = flow.distribute.broadcast()
         print("loss 0")
-        fc7 = flow.layers.dense(
-            inputs=embedding.with_distribute(fc1_distribute),
-            units=config.num_classes,
-            activation=None,
-            use_bias=False,
-            kernel_initializer=_get_initializer(),
-            bias_initializer=None,
-            trainable=trainable,
-            name="fc7",
-            model_distribute=fc7_model_distribute,
+        if config.fc7_no_bias:
+            fc7 = flow.layers.dense(
+                inputs=embedding.with_distribute(fc1_distribute),
+                units=config.num_classes,
+                activation=None,
+                use_bias=True,
+                kernel_initializer=_get_initializer(),
+                bias_initializer=_get_initializer(),
+                trainable=trainable,
+                name="fc7",
+                model_distribute=fc7_model_distribute,
+        )
+        else:
+            fc7 = flow.layers.dense(
+                inputs=embedding.with_distribute(fc1_distribute),
+                units=config.num_classes,
+                activation=None,
+                use_bias=False,
+                kernel_initializer=_get_initializer(),
+                bias_initializer=None,
+                trainable=trainable,
+                name="fc7",
+                model_distribute=fc7_model_distribute,
         )
         fc7 = fc7.with_distribute(fc7_data_distribute)
-
     elif config.loss_name == "margin_softmax":
         fc7_weight = flow.get_variable(
             name="fc7-weight",
@@ -202,7 +202,6 @@ def get_symbol_train_job():
                     dtype=flow.float,
                 )
                 body = gt_one_hot * diff
-                #body = mx.sym.broadcast_mul(gt_one_hot, diff) equal?
                 fc7 = fc7 + body
         else:
             raise NotImplementedError
@@ -210,14 +209,12 @@ def get_symbol_train_job():
     loss = flow.nn.sparse_softmax_cross_entropy_with_logits(
         labels, fc7, name="softmax_loss"
     )
-    if config.ce_loss:
-        body = flow.nn.softmax(fc7)
-        body = flow.math.log(body)
-        labels = flow.one_hot(labels, depth = config.num_classes, on_value = -1.0, off_value = 0.0, dtype=flow.float)
-        body = body * labels
-        ce_loss = flow.math.reduce_sum(body) /config.train_batch_size_per_device
-    lr_steps = [int(x) for x in args.lr_steps]
-    print('lr_steps', lr_steps)
+    #if config.ce_loss:
+    #    body = flow.nn.softmax(fc7)
+    #    body = flow.math.log(body)
+    #    labels = flow.one_hot(labels, depth = config.num_classes, on_value = -1.0, off_value = 0.0, dtype=flow.float)
+    #    body = body * labels
+    #    ce_loss = flow.math.reduce_sum(body) / args.train_batch_size_per_device
     lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.lr,
             args.lr_steps, 0.1)
     flow.optimizer.SGD(lr_scheduler, momentum=args.momentum).minimize(loss)
@@ -226,6 +223,13 @@ def get_symbol_train_job():
 def main():
     flow.config.gpu_device_num(args.device_num_per_node)
     print("gpu num: ", args.device_num_per_node)
+    prefix = os.path.join(args.models_root,
+                          "%s-%s-%s" % (args.network, args.loss, args.dataset),
+                          "model")
+    prefix_dir = os.path.dirname(prefix)
+    print("prefix: ", prefix)
+    if not os.path.exists(prefix_dir):
+        os.makedirs(prefix_dir)
     if args.use_fp16 and (args.num_nodes * args.gpu_num_per_node) > 1:
         flow.config.collective_boxing.nccl_fusion_all_reduce_use_buffer(False)
     if args.nccl_fusion_threshold_mb:
@@ -250,37 +254,50 @@ def main():
         print("Init model on demand.")
         check_point.init()
     else:
-        print("Loading model from {}".format(args.model_load_dir))
-        check_point.load(args.model_load_dir)
-    args.batch_size = config.train_batch_size_per_device * args.device_num_per_node
+        if os.path.exists(args.model_load_dir):
+            print("Loading model from {}".format(args.model_load_dir))
+            check_point.load(args.model_load_dir)
+        else:
+            raise Exception("Invalid model load dir", model_load_dir)    
+    args.batch_size = args.train_batch_size_per_device * args.device_num_per_node
     print("num_classes ", config.num_classes)
     print("Called with argument: ", args, config)
     train_metric = TrainMetric(
         desc="train", calculate_batches=1,
-        batch_size=config.train_batch_size_per_device
+        batch_size=args.train_batch_size_per_device
     )
-
+    lr = args.lr
     for step in range(args.total_batch_num):
         # train
         get_symbol_train_job().async_get(train_metric.metric_cb(step))
 
         # validation
+        print("do_validation_while_train: ",args.do_validation_while_train)
         if (
-            args.do_validation_while_train
-            and (step + 1) % args.validataion_interval == 0
+            args.do_validation_while_train and (step + 1) % args.validation_interval == 0
         ):  
             for ds in config.val_targets:
+                #val_data_dir = os.path.join(args.val_dataset_dir, ds)
+                #print("val data dir: ", val_data_dir)
+                #if os.path.exists(val_data_dir):
+                #   args.val_dataset_dir = val_data_dir
+                #   print("val dataste dir: ", args.val_dataset_dir)
+                #else:
+                #   raise Exception("Invalid validation data dir ", val_data_dir)
                 issame_list, embeddings_list = do_validation(dataset=ds)
+                print("after..................................vali,,,,,,,,,,,,,,,,,,,,,,,,,,,")
                 validation_util.cal_validation_metrics(
-                    embeddings_list, issame_list, nrof_folds=args.nrof_folds,
+                        embeddings_list, issame_list, nrof_folds=args.nrof_folds,
                 )
-
+                print("done ................. val metric")
+        if step in args.lr_steps:
+           lr *= 0.1
+           print("lr_step: ", step)
+           print("lr change to ", lr) 
         # snapshot
         if (step + 1) % args.batch_num_in_snapshot == 0:
             check_point.save(
-                args.models_root
-                + "/snapshot_"
-                + str(step // args.batch_num_in_snapshot)
+                os.path.join(prefix_dir, "snapshot_" + str(step // args.batch_num_in_snapshot))
             )
 
 
