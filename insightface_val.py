@@ -4,14 +4,18 @@ import numpy as np
 import oneflow as flow
 import oneflow.typing as oft
 
-
-from sample_config import config, default 
+from sample_config import config, default, generate_config 
 import ofrecord_util
 import validation_util
 from symbols import fmobilefacenet, fresnet100
 
-parser = argparse.ArgumentParser(description="flags for train")
-parser.add_argument("--netname", type=str, default="fmobilefacenet", required=False)
+parser = argparse.ArgumentParser(description="flags for validation")
+parser.add_argument('--dataset', default=default.dataset, help='dataset config')
+parser.add_argument('--network', default=default.network, help='network config')
+parser.add_argument('--loss', default=default.loss, help='loss config')
+args, rest = parser.parse_known_args()
+generate_config(args.network, args.dataset, args.loss)
+
 for ds in config.val_targets:
    parser.add_argument("--%s_dataset_dir" % ds, type=str, default=os.path.join(default.val_dataset_dir, ds), help="validation dataset dir prefix")
 parser.add_argument("--val_data_part_num", type=str, default=default.val_data_part_num, help="validation dataset dir prefix")
@@ -69,7 +73,7 @@ if default.do_validation_while_train:
     @flow.global_function(type="predict", function_config=get_val_config(args))
     def get_symbol_val_job(images:flow.typing.Numpy.Placeholder((args.val_batch_size_per_device, 112, 112, 3))):
         print("val batch data: ", images.shape)
-        embedding = eval(args.netname).get_symbol(images)
+        embedding = eval(config.net_name).get_symbol(images)
         return embedding
 
 
@@ -125,11 +129,14 @@ def main():
     flow.config.gpu_device_num(args.device_num_per_node)
 
     check_point = flow.train.CheckPoint()
-    print("Loading model from {}".format(args.model_load_dir))
+    if os.path.exists(args.model_load_dir):
+        print("Loading model from {}".format(args.model_load_dir))
+    else:
+       raise Exception("Invalid model load dir ", args.model_load_dir)
     check_point.load(args.model_load_dir)
 
     # validation
-    for ds in args.val_targets:
+    for ds in config.val_targets:
         issame_list, embeddings_list = do_validation(dataset=ds)
         validation_util.cal_validation_metrics(
             embeddings_list, issame_list, nrof_folds=args.nrof_folds,

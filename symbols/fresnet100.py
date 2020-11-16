@@ -1,38 +1,8 @@
 import oneflow as flow
 import oneflow.core.operator.op_conf_pb2 as op_conf_util
-from symbols.symbol_utils import _get_regularizer, _get_initializer, _batch_norm, _conv2d_layer, _dropout, _avg_pool, _prelu, get_fc1
+from symbols.symbol_utils import _get_regularizer, _get_initializer, _batch_norm, _conv2d_layer, _dropout, _avg_pool, _prelu, Linear, get_fc1
 from sample_config import config
 
-def Linear(
-    input_blob,
-    num_filter=1,
-    kernel=None,
-    stride=None,
-    pad="valid",
-    num_group=1,
-    bn_is_training=config.bn_is_training,
-    name=None,
-    suffix="",
-):
-    conv = _conv2d_layer(
-        name="%s%s_conv2d" % (name, suffix),
-        input=input_blob,
-        filters=num_filter,
-        kernel_size=kernel,
-        strides=stride,
-        padding=pad,
-        group_num=num_group,
-        use_bias=False,
-        dilation_rate=1,
-        activation=None,
-    )
-    bn = _batch_norm(
-        conv,
-        epsilon=0.001,
-        is_training=config.bn_is_training,
-        name="%s%s_batchnorm" % (name, suffix),
-    )
-    return bn
 
 def residual_unit_v3(
     in_data, num_filter, stride, dim_match, bn_is_training, name

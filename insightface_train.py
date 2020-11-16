@@ -160,6 +160,10 @@ def get_symbol_train_job():
             model_name="weight",
         )
         s = config.loss_s
+        print("margin softmax loss_s: ", s)
+        print("margin_softmax loss_m1: ", config.loss_m1)
+        print("margin_softmax loss_m2: ", config.loss_m2)
+        print("margin_softmax loss_m3: ", config.loss_m3)
         fc7_weight = flow.math.l2_normalize(
             input=fc7_weight, axis=1, epsilon=1e-10
         ) # instance?
@@ -193,7 +197,6 @@ def get_symbol_train_job():
                     body = body - config.loss_m3
                 new_zy = body * s
                 diff = new_zy - zy
-                #diff = mx.sym.expand_dims(diff, 1) 
                 gt_one_hot = flow.one_hot(
                     labels,
                     depth=config.num_classes,
@@ -272,24 +275,14 @@ def main():
         get_symbol_train_job().async_get(train_metric.metric_cb(step))
 
         # validation
-        print("do_validation_while_train: ",args.do_validation_while_train)
         if (
             args.do_validation_while_train and (step + 1) % args.validation_interval == 0
         ):  
             for ds in config.val_targets:
-                #val_data_dir = os.path.join(args.val_dataset_dir, ds)
-                #print("val data dir: ", val_data_dir)
-                #if os.path.exists(val_data_dir):
-                #   args.val_dataset_dir = val_data_dir
-                #   print("val dataste dir: ", args.val_dataset_dir)
-                #else:
-                #   raise Exception("Invalid validation data dir ", val_data_dir)
                 issame_list, embeddings_list = do_validation(dataset=ds)
-                print("after..................................vali,,,,,,,,,,,,,,,,,,,,,,,,,,,")
                 validation_util.cal_validation_metrics(
                         embeddings_list, issame_list, nrof_folds=args.nrof_folds,
                 )
-                print("done ................. val metric")
         if step in args.lr_steps:
            lr *= 0.1
            print("lr_step: ", step)

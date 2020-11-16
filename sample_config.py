@@ -12,7 +12,7 @@ config.emb_size = 512
 config.net_blocks = [1,4,6,2]
 #config.net_output = 'E'
 #config.channel_last = False
-config.ce_loss = True
+#config.ce_loss = True
 #config.fc7_lr_mult = 1.0
 #config.fc7_wd_mult = 1.0
 config.fc7_no_bias = False
@@ -95,14 +95,13 @@ default = edict()
 default.dataset = 'emore'
 default.network = 'r100'
 default.loss = 'arcface'
-#default.val_dataset = 'lfw'
 
 default.node_ips = ["192.168.1.13", "192.168.1.14"]
 default.num_nodes = 1
-default.device_num_per_node = 4
+default.device_num_per_node = 8
 default.model_parallel = 0
 
-default.train_batch_size_per_device = 128
+default.train_batch_size_per_device = 64
 default.use_synthetic_data = False
 default.do_validation_while_train = True
 
@@ -117,15 +116,15 @@ default.models_root = './models'
 default.log_dir = "output/log"
 default.ckpt = 3
 default.loss_print_frequency = 20
-default.batch_num_in_snapshot = 22658
+default.batch_num_in_snapshot = 11372 # 5822653/512 = 11372.369
 
 default.use_fp16 = False
 default.pad_output = True
 default.nccl_fusion_threshold_mb = 0
 default.nccl_fusion_max_ops = 0
 
-default.val_batch_size_per_device = 128
-default.validation_interval = 5000 
+default.val_batch_size_per_device = 20
+default.validation_interval = 11372 # 5822653/512
 default.val_data_part_num = 1
 default.val_dataset_dir = "/datasets/insightface/eval_ofrecord" 
 default.nrof_folds = 10
