@@ -250,7 +250,7 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
     elif fc_type == "GDC":
         conv_6_dw = Linear(
         last_conv,
-        num_filter=input_channel,
+        num_filter=input_channel, # 512
         num_group=input_channel, # 512
         kernel=7,
         pad="valid",

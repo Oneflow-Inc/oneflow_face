@@ -99,6 +99,7 @@ loss.arc_loss.easy_margin = 0
 default = edict()
 
 default.dataset = 'emore'
+<<<<<<< HEAD
 default.network = 'y1'
 default.loss = 'arc_loss'
 
@@ -122,7 +123,7 @@ default.models_root = './models'
 default.log_dir = "output/log"
 default.ckpt = 3
 default.loss_print_frequency = 20
-default.batch_num_in_snapshot = 11372 # 5822653/512
+default.batch_num_in_snapshot = 11372 # 5822653/512 = 11372.369
 
 default.use_fp16 = False
 default.pad_output = True
