@@ -160,6 +160,10 @@ def get_symbol_train_job():
             model_name="weight",
         )
         s = config.loss_s
+        print("margin softmax loss_s: ", s)
+        print("margin_softmax loss_m1: ", config.loss_m1)
+        print("margin_softmax loss_m2: ", config.loss_m2)
+        print("margin_softmax loss_m3: ", config.loss_m3)
         fc7_weight = flow.math.l2_normalize(
             input=fc7_weight, axis=1, epsilon=1e-10
         ) # instance?
@@ -193,7 +197,6 @@ def get_symbol_train_job():
                     body = body - config.loss_m3
                 new_zy = body * s
                 diff = new_zy - zy
-                #diff = mx.sym.expand_dims(diff, 1) 
                 gt_one_hot = flow.one_hot(
                     labels,
                     depth=config.num_classes,
@@ -203,8 +206,59 @@ def get_symbol_train_job():
                 )
                 body = gt_one_hot * diff
                 fc7 = fc7 + body
+    elif config.loss_name == "arc_loss":
+        s = config.loss_s
+        m = config.margin
+        fc1 = flow.math.l2_normalize(input=embedding, axis=1, epsilon=1e-10)
+        fc1 = flow.math.multiply(fc1, s)
+        fc7 = flow.get_variable(
+            name="fc7-weight",
+            shape=(config.num_classes, fc1.shape[1]),
+            dtype=fc1.dtype,
+            initializer=_get_initializer(),
+            trainable=trainable,
+            model_name="weight",
+        )
+        fc7 = flow.math.l2_normalize(input=fc7, axis=1, epsilon=1e-10)
+        matmul = flow.matmul(a=fc1, b=fc7, transpose_b=True)
+        labels_expand = flow.reshape(labels, (labels.shape[0], 1))
+        zy = flow.gather(matmul, labels_expand, batch_dims=1)
+        cos_t = flow.math.multiply(zy, 1 / s)
+        cos_m = math.cos(m)
+        sin_m = math.sin(m)
+        mm = math.sin(math.pi - m) * m
+        threshold = math.cos(math.pi - m)
+        if config.easy_margin:
+            cond = flow.math.relu(cos_t)
         else:
-            raise NotImplementedError
+            cond_v = cos_t - threshold
+            cond = flow.math.relu(cond_v)
+        body = flow.math.square(cos_t)
+        body = flow.math.multiply(body, -1.0)
+        body = flow.math.add(1, body)
+        sin_t = flow.math.sqrt(body)
+
+        new_zy = flow.math.multiply(cos_t, cos_m)
+        b = flow.math.multiply(sin_t, sin_m)
+        b = flow.math.multiply(b, -1.0)
+        new_zy = flow.math.add(new_zy, b)
+        new_zy = flow.math.multiply(new_zy, s)
+        if config.easy_margin:
+            zy_keep = zy
+        else:
+            zy_keep = flow.math.add(zy, -s * mm)
+        cond = flow.cast(cond, dtype=flow.int32)
+        new_zy = flow.where(cond, new_zy, zy_keep)
+        zy = flow.math.multiply(zy, -1.0)
+        diff = flow.math.add(new_zy, zy)
+
+        gt_one_hot = flow.one_hot(
+            labels, depth=config.num_classes, dtype=flow.float
+          )
+        body = flow.math.multiply(gt_one_hot, diff)
+        fc7 = flow.math.add(matmul, body)
+    else:
+        raise NotImplementedError
 
     loss = flow.nn.sparse_softmax_cross_entropy_with_logits(
         labels, fc7, name="softmax_loss"
@@ -259,12 +313,12 @@ def main():
             check_point.load(args.model_load_dir)
         else:
             raise Exception("Invalid model load dir", model_load_dir)    
-    args.batch_size = args.train_batch_size_per_device * args.device_num_per_node
+    args.batch_size = args.train_batch_size_per_device * args.device_num_per_node * args.num_nodes
     print("num_classes ", config.num_classes)
     print("Called with argument: ", args, config)
     train_metric = TrainMetric(
         desc="train", calculate_batches=1,
-        batch_size=args.train_batch_size_per_device
+        batch_size=args.batch_size
     )
     lr = args.lr
     for step in range(args.total_batch_num):
@@ -272,24 +326,14 @@ def main():
         get_symbol_train_job().async_get(train_metric.metric_cb(step))
 
         # validation
-        print("do_validation_while_train: ",args.do_validation_while_train)
         if (
             args.do_validation_while_train and (step + 1) % args.validation_interval == 0
         ):  
             for ds in config.val_targets:
-                #val_data_dir = os.path.join(args.val_dataset_dir, ds)
-                #print("val data dir: ", val_data_dir)
-                #if os.path.exists(val_data_dir):
-                #   args.val_dataset_dir = val_data_dir
-                #   print("val dataste dir: ", args.val_dataset_dir)
-                #else:
-                #   raise Exception("Invalid validation data dir ", val_data_dir)
                 issame_list, embeddings_list = do_validation(dataset=ds)
-                print("after..................................vali,,,,,,,,,,,,,,,,,,,,,,,,,,,")
                 validation_util.cal_validation_metrics(
                         embeddings_list, issame_list, nrof_folds=args.nrof_folds,
                 )
-                print("done ................. val metric")
         if step in args.lr_steps:
            lr *= 0.1
            print("lr_step: ", step)

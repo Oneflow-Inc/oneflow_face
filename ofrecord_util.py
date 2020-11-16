@@ -35,7 +35,7 @@ def train_dataset_reader(
         (label_blob_conf, image_blob_conf),
         batch_size=batch_size,
         data_part_num=data_part_num,
-        part_name_prefix=config.part_name_prefix, 
+       # part_name_prefix=config.part_name_prefix, 
         part_name_suffix_length=config.part_name_suffix_length,
         shuffle=config.shuffle,
         buffer_size=16384,
@@ -60,15 +60,15 @@ def validation_dataset_reader(
         part_name_suffix_length=1,
         shuffle_after_epoch=False,
     )
-    image = flow.data.ofrecord_image_decoder(
+    image = flow.data.OFRecordImageDecoder(
         ofrecord, "encoded", color_space=color_space
     )
-    issame = flow.data.ofrecord_raw_decoder(
+    issame = flow.data.OFRecordRawDecoder(
         ofrecord, "issame", shape=(), dtype=flow.int32
     )
 
-    rsz, scale, new_size = flow.image.Resize(
-        image, target_size=(112, 112), channels=3
+    rsz = flow.image.Resize(
+        image, resize_x=112, resize_y=112, color_space=color_space
     )
     normal = flow.image.CropMirrorNormalize(
         rsz,
