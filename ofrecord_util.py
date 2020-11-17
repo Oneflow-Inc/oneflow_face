@@ -88,7 +88,7 @@ def validation_dataset_reader(
 
 
 def load_synthetic(config):
-    batch_size = config.train_batch_size_per_device
+    batch_size = config.train_batch_size
     image_size = 112
     label = flow.data.decode_random(
         shape=(),
@@ -107,10 +107,10 @@ def load_synthetic(config):
 
 def load_train_dataset(args):
     data_dir = config.dataset_dir
-    batch_size = args.train_batch_size_per_device
+    batch_size = args.train_batch_size
     data_part_num = config.train_data_part_num
     part_name_suffix_length = config.part_name_suffix_length
-
+    print("train batch size in load train dataset: ",batch_size )
     labels, images = train_dataset_reader(
         data_dir, batch_size, data_part_num, part_name_suffix_length
     )

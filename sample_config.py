@@ -54,7 +54,6 @@ dataset.emore.part_name_prefix = ""
 dataset.emore.part_name_suffix_length = 5
 dataset.emore.train_data_part_num = 16
 dataset.emore.shuffle = True
-#dataset.emore.train_batch_size_per_device = 128
 
 # loss settings
 loss = edict()
@@ -99,7 +98,6 @@ loss.arc_loss.easy_margin = 0
 default = edict()
 
 default.dataset = 'emore'
-<<<<<<< HEAD
 default.network = 'y1'
 default.loss = 'arc_loss'
 
@@ -109,12 +107,13 @@ default.device_num_per_node = 8
 default.model_parallel = 0
 
 default.train_batch_size_per_device = 64
+default.train_batch_size = default.train_batch_size_per_device * default.device_num_per_node
 default.use_synthetic_data = False
 default.do_validation_while_train = True
 
 default.total_batch_num = 272937 # 24 x 5822653/512 = 272936.8594
 default.lr = 0.1
-default.lr_steps = [100000,160000,220000]
+default.lr_steps = [100000,140000,160000]
 default.wd = 0.0005
 default.mom = 0.9
 

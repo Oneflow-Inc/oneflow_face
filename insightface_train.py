@@ -45,7 +45,7 @@ parser.add_argument(
     help='nodes ip list for training, devided by ",", length >= num_nodes')
 parser.add_argument("--model_parallel", type=str2bool, nargs="?", const=default.model_parallel, help="whether use model parallel")
 # train config
-parser.add_argument("--train_batch_size_per_device", type=int, default=default.train_batch_size_per_device, help="train batch size per device")
+parser.add_argument("--train_batch_size", type=int, default=default.train_batch_size, help="train batch size per device")
 parser.add_argument("--use_synthetic_data", type=str2bool,
 nargs="?", const=default.use_synthetic_data, help="whether use synthetic data")
 parser.add_argument(
@@ -313,12 +313,12 @@ def main():
             check_point.load(args.model_load_dir)
         else:
             raise Exception("Invalid model load dir", model_load_dir)    
-    args.batch_size = args.train_batch_size_per_device * args.device_num_per_node * args.num_nodes
+    #args.batch_size = args.train_batch_size * args.device_num_per_node * args.num_nodes
     print("num_classes ", config.num_classes)
     print("Called with argument: ", args, config)
     train_metric = TrainMetric(
         desc="train", calculate_batches=1,
-        batch_size=args.batch_size
+        batch_size=args.train_batch_size
     )
     lr = args.lr
     for step in range(args.total_batch_num):
