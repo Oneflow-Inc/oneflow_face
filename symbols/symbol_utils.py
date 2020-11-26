@@ -11,8 +11,14 @@ def _get_initializer():
         2.0, "fan_out", "random_normal", "NCHW"
     ) 
 
-def _get_regularizer():
-    return flow.regularizers.l2(0.0005)
+#def _get_regularizer():
+#    return flow.regularizers.l2(0.0005)
+
+def _get_regularizer(name):
+    if name == "weight" or name == "gamma":
+        return flow.regularizers.l2(0.0005)
+    else:
+        return None
 
 def _dropout(input_blob, dropout_prob):
     return flow.nn.dropout(input_blob, rate=dropout_prob)
@@ -233,7 +239,7 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
         activation=None,
         use_bias=True,
         kernel_initializer=_get_initializer(),
-        bias_initializer=_get_initializer(),
+        bias_initializer=flow.zeros_initializer(),
         kernel_regularizer=_get_regularizer(),
         bias_regularizer=_get_regularizer(),
         trainable=True,

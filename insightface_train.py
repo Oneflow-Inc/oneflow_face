@@ -91,11 +91,30 @@ args = parser.parse_args()
 if not os.path.exists(args.models_root):
     os.makedirs(args.models_root)
 
+ParameterUpdateStrategy= dict(
+        learning_rate_decay=dict(
+            piecewise_scaling_conf = dict(
+            boundaries = args.lr_steps,
+            scales = [1.0, 0.1, 0.01, 0.001],
+            )
+        ),
+        momentum_conf=dict(
+            beta=args.momentum,
+        ),
+        weight_decay_conf=dict(
+          weight_decay_rate=args.weight_decay,
+        )
+    )
+
+
+
 def get_train_config(args):
     config = flow.FunctionConfig()
     config.default_logical_view(flow.scope.consistent_view())
     config.default_data_type(flow.float)
     config.cudnn_conv_heuristic_search_algo(False)
+    config.train.primary_lr(args.lr)
+    config.train.model_update_conf(ParameterUpdateStrategy)
     return config
 
 @flow.global_function(type="train", function_config=get_train_config(args))
@@ -156,6 +175,7 @@ def get_symbol_train_job():
             shape=(config.num_classes, embedding.shape[1]),
             dtype=embedding.dtype,
             initializer=_get_initializer(),
+           # regularizer=flow.regularizers.l2(0.0005),
             trainable=trainable,
             model_name="weight",
         )
@@ -216,6 +236,7 @@ def get_symbol_train_job():
             shape=(config.num_classes, fc1.shape[1]),
             dtype=fc1.dtype,
             initializer=_get_initializer(),
+            #regularizer=flow.regularizers.l2(0.0005),
             trainable=trainable,
             model_name="weight",
         )
@@ -263,15 +284,16 @@ def get_symbol_train_job():
     loss = flow.nn.sparse_softmax_cross_entropy_with_logits(
         labels, fc7, name="softmax_loss"
     )
+    flow.losses.add_loss(loss)
     #if config.ce_loss:
     #    body = flow.nn.softmax(fc7)
     #    body = flow.math.log(body)
     #    labels = flow.one_hot(labels, depth = config.num_classes, on_value = -1.0, off_value = 0.0, dtype=flow.float)
     #    body = body * labels
     #    ce_loss = flow.math.reduce_sum(body) / args.train_batch_size_per_device
-    lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.lr,
-            args.lr_steps, 0.1)
-    flow.optimizer.SGD(lr_scheduler, momentum=args.momentum).minimize(loss)
+#    lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.lr,
+#            args.lr_steps, 0.1)
+#    flow.optimizer.SGD(lr_scheduler, momentum=args.momentum).minimize(loss)
     return loss
 
 def main():
@@ -336,7 +358,7 @@ def main():
                 )
         if step in args.lr_steps:
            lr *= 0.1
-           print("lr_step: ", step)
+           print("lr_steps: ", step)
            print("lr change to ", lr) 
         # snapshot
         if (step + 1) % args.batch_num_in_snapshot == 0:

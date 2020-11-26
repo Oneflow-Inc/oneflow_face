@@ -98,8 +98,8 @@ loss.arc_loss.easy_margin = 0
 default = edict()
 
 default.dataset = 'emore'
-default.network = 'y1'
-default.loss = 'arc_loss'
+default.network = 'r100'
+default.loss = 'arcface'
 
 default.node_ips = ["192.168.1.13", "192.168.1.14"]
 default.num_nodes = 1
@@ -117,7 +117,7 @@ default.lr_steps = [100000,140000,160000]
 default.wd = 0.0005
 default.mom = 0.9
 
-default.model_load_dir = ""
+default.model_load_dir = "r100_final_models/r100-arcface-emore/snapshot_14"
 default.models_root = './models'
 default.log_dir = "output/log"
 default.ckpt = 3
@@ -130,7 +130,7 @@ default.nccl_fusion_threshold_mb = 0
 default.nccl_fusion_max_ops = 0
 
 default.val_batch_size_per_device = 20
-default.validation_interval =  11372 # 5822653/512 = 11372.369
+default.validation_interval =  5000 # 5822653/512 = 11372.369
 default.val_data_part_num = 1
 default.val_dataset_dir = "/data/insightface/eval_ofrecord" 
 default.nrof_folds = 10
