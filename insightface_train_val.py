@@ -120,6 +120,7 @@ parser.add_argument(
 )
 parser.add_argument("--margin_s", type=float, default=64, required=False)
 parser.add_argument("--network", type=str, default="resnet100", required=False)
+parser.add_argument("--fc_type", type=str, default="E", required=False)
 parser.add_argument("--loss_type", type=str, default="softmax", required=False)
 parser.add_argument("--models_name", type=str, required=False)
 parser.add_argument("--loss_m1", type=float, default=1.0, required=False)
@@ -140,6 +141,8 @@ parser.add_argument(
     help='Whether or not use partial_fc.'
 )
 parser.add_argument("--num_sample", type=int, required=True)
+parser.add_argument('--boundaries', nargs='+', type=int)
+parser.add_argument('--scales', nargs='+', type=float)
 
 
 args = parser.parse_args()
@@ -155,7 +158,7 @@ def insightface(images):
             images, embedding_size=128, bn_is_training=True
         )
     elif args.network == "resnet100":
-        embedding = Resnet100(images, embedding_size=512, fc_type="E")
+        embedding = Resnet100(images, embedding_size=512, fc_type=args.fc_type)
     elif args.network == "resnet50":
         if args.use_fp16 and args.pad_output:
             if args.channel_last: 
@@ -172,8 +175,8 @@ def insightface(images):
 ParameterUpdateStrategy= dict(
         learning_rate_decay=dict(
             piecewise_scaling_conf = dict(
-            boundaries = [100000,140000, 160000],
-            scales = [1.0, 0.1, 0.01, 0.001],
+            boundaries = args.boundaries,
+            scales = args.scales,
             )
         ),
         momentum_conf=dict(
@@ -183,6 +186,7 @@ ParameterUpdateStrategy= dict(
           weight_decay_rate=args.weight_decay,
         )
     )
+print("ParameterUpdateStrategy", ParameterUpdateStrategy)
 
 
 def get_train_config(args):
