@@ -17,7 +17,7 @@ glint360k_class_num=360232
 glint360k_num_sample=36016
 glint360k_total_batch_num=600000
 glint360k_part_name_suffix_length=5
-glint360k_data_part_num=96
+glint360k_data_part_num=200
 
 gpu_num=8
 per_gpu_batch_size=64
