@@ -32,7 +32,7 @@ parser.add_argument('--network', default=default.network, help='network config')
 parser.add_argument('--loss', default=default.loss, help='loss config')
 args, rest = parser.parse_known_args()
 generate_config(args.network, args.dataset, args.loss)
-# distrubution config
+# distribution config
 parser.add_argument("--device_num_per_node", type=int, default=default.device_num_per_node,
          help="the number of gpus used per node")
 parser.add_argument(
@@ -43,13 +43,14 @@ parser.add_argument(
     type=str_list,
     default=default.node_ips,
     help='nodes ip list for training, devided by ",", length >= num_nodes')
-parser.add_argument("--model_parallel", type=str2bool, nargs="?", const=default.model_parallel, help="whether use model parallel")
+parser.add_argument("--model_parallel", nargs="?", default=default.model_parallel, help="whether use model parallel")
+parser.add_argument("--partial_fc", type=str2bool, nargs="?", const=default.partial_fc, help="whether use partial fc")
 # train config
 parser.add_argument("--train_batch_size", type=int, default=default.train_batch_size, help="train batch size per device")
 parser.add_argument("--use_synthetic_data", type=str2bool,
 nargs="?", const=default.use_synthetic_data, help="whether use synthetic data")
 parser.add_argument(
-    "--do_validation_while_train", action="store_true", default=default.do_validation_while_train, help="whether do validation while training")
+    "--do_validation_while_train", nargs="?", const=default.do_validation_while_train, help="whether do validation while training")
 # hyperparameters
 parser.add_argument("--total_batch_num", type=int,  
         default=default.total_batch_num, help="total number of batches running")
@@ -88,6 +89,9 @@ parser.add_argument("--validation_interval", type=int, default=default.validatio
 parser.add_argument("--val_dataset_dir", type=str, default=default.val_dataset_dir, help="validation dataset dir prefix")
 parser.add_argument("--nrof_folds", type=int, default=default.nrof_folds, help="")
 args = parser.parse_args()
+print("--------------------------args: ", args)
+print("=================================parser: ", parser)
+
 if not os.path.exists(args.models_root):
     os.makedirs(args.models_root)
 
@@ -151,112 +155,44 @@ def get_symbol_train_job():
         )
         fc7 = fc7.with_distribute(fc7_data_distribute)
     elif config.loss_name == "margin_softmax":
+        if args.model_parallel:
+            print("i'm model parallel now~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            labels = labels.with_distribute(flow.distribute.broadcast())
+            fc1_distribute = flow.distribute.broadcast()
+            fc7_data_distribute = flow.distribute.split(1)
+            fc7_model_distribute = flow.distribute.split(0)
+        else:
+            fc1_distribute = flow.distribute.split(0)
+            fc7_data_distribute = flow.distribute.split(0)
+            fc7_model_distribute = flow.distribute.broadcast()
         fc7_weight = flow.get_variable(
             name="fc7-weight",
             shape=(config.num_classes, embedding.shape[1]),
             dtype=embedding.dtype,
             initializer=_get_initializer(),
+            regularizer=None,
             trainable=trainable,
             model_name="weight",
+            distribute=fc7_model_distribute,
         )
-        s = config.loss_s
-        print("margin softmax loss_s: ", s)
-        print("margin_softmax loss_m1: ", config.loss_m1)
-        print("margin_softmax loss_m2: ", config.loss_m2)
-        print("margin_softmax loss_m3: ", config.loss_m3)
+        if args.partial_fc and args.model_parallel:
+            mapped_label, sampled_label, sampled_weight = flow.distributed_partial_fc_sample(
+                weight=fc7_weight,
+                label=labels,
+                num_sample=args.num_sample,
+            )
+            labels = mapped_label
+            fc7_weight = sampled_weight
         fc7_weight = flow.math.l2_normalize(
             input=fc7_weight, axis=1, epsilon=1e-10
-        ) # instance?
-        nembedding = (
-            flow.math.l2_normalize(input=embedding, axis=1, epsilon=1e-10,
-                name="fc1n") * s
         )
-        fc7 = flow.matmul(a=nembedding, b=fc7_weight, transpose_b=True) # whether dense?
-        if config.loss_m1 != 1.0 or config.loss_m2 != 0.0 or config.loss_m3 != 0.0:
-            if config.loss_m1 == 1.0 and config.loss_m2 == 0.0:
-                s_m = s * config.loss_m3
-                gt_one_hot = flow.one_hot(
-                    labels,
-                    depth=config.num_classes,
-                    on_value=s_m,
-                    off_value=0.0,
-                    dtype=flow.float,
-                )
-                fc7 = fc7 - gt_one_hot
-            else:
-                labels_expand = flow.reshape(labels, (labels.shape[0], 1))
-                zy = flow.gather(fc7, labels_expand, batch_dims=1) # equal?
-                cos_t = zy * (1 / s)
-                t = flow.math.acos(cos_t)
-                if config.loss_m1 != 1.0:
-                    t = t * config.loss_m1
-                if config.loss_m2 > 0.0:
-                    t = t + config.loss_m2
-                body = flow.math.cos(t)
-                if config.loss_m3 > 0.0:
-                    body = body - config.loss_m3
-                new_zy = body * s
-                diff = new_zy - zy
-                gt_one_hot = flow.one_hot(
-                    labels,
-                    depth=config.num_classes,
-                    on_value=1.0,
-                    off_value=0.0,
-                    dtype=flow.float,
-                )
-                body = gt_one_hot * diff
-                fc7 = fc7 + body
-    elif config.loss_name == "arc_loss":
-        s = config.loss_s
-        m = config.margin
-        fc1 = flow.math.l2_normalize(input=embedding, axis=1, epsilon=1e-10)
-        fc1 = flow.math.multiply(fc1, s)
-        fc7 = flow.get_variable(
-            name="fc7-weight",
-            shape=(config.num_classes, fc1.shape[1]),
-            dtype=fc1.dtype,
-            initializer=_get_initializer(),
-            trainable=trainable,
-            model_name="weight",
-        )
-        fc7 = flow.math.l2_normalize(input=fc7, axis=1, epsilon=1e-10)
-        matmul = flow.matmul(a=fc1, b=fc7, transpose_b=True)
-        labels_expand = flow.reshape(labels, (labels.shape[0], 1))
-        zy = flow.gather(matmul, labels_expand, batch_dims=1)
-        cos_t = flow.math.multiply(zy, 1 / s)
-        cos_m = math.cos(m)
-        sin_m = math.sin(m)
-        mm = math.sin(math.pi - m) * m
-        threshold = math.cos(math.pi - m)
-        if config.easy_margin:
-            cond = flow.math.relu(cos_t)
-        else:
-            cond_v = cos_t - threshold
-            cond = flow.math.relu(cond_v)
-        body = flow.math.square(cos_t)
-        body = flow.math.multiply(body, -1.0)
-        body = flow.math.add(1, body)
-        sin_t = flow.math.sqrt(body)
-
-        new_zy = flow.math.multiply(cos_t, cos_m)
-        b = flow.math.multiply(sin_t, sin_m)
-        b = flow.math.multiply(b, -1.0)
-        new_zy = flow.math.add(new_zy, b)
-        new_zy = flow.math.multiply(new_zy, s)
-        if config.easy_margin:
-            zy_keep = zy
-        else:
-            zy_keep = flow.math.add(zy, -s * mm)
-        cond = flow.cast(cond, dtype=flow.int32)
-        new_zy = flow.where(cond, new_zy, zy_keep)
-        zy = flow.math.multiply(zy, -1.0)
-        diff = flow.math.add(new_zy, zy)
-
-        gt_one_hot = flow.one_hot(
-            labels, depth=config.num_classes, dtype=flow.float
-          )
-        body = flow.math.multiply(gt_one_hot, diff)
-        fc7 = flow.math.add(matmul, body)
+        fc1 = (
+            flow.math.l2_normalize(input=embedding, axis=1, epsilon=1e-10)
+        )        
+        fc7 = flow.matmul(a=fc1.with_distribute(fc1_distribute), b=fc7_weight, transpose_b=True)
+        fc7 = fc7.with_distribute(fc7_data_distribute)
+        fc7 = flow.combined_margin_loss(fc7, labels, m1=config.loss_m1, m2=config.loss_m2, m3=config.loss_m3) * config.loss_s
+        fc7 = fc7.with_distribute(fc7_data_distribute) 
     else:
         raise NotImplementedError
 
