@@ -76,19 +76,21 @@ parser.add_argument(
 parser.add_argument("--ckpt", type=int, default=default.ckpt, help="checkpoint saving option. 0: discard saving. 1: save when necessary. 2: always save")
 parser.add_argument("--loss_print_frequency", type=int,
         default=default.loss_print_frequency,  help="frequency of printing loss")
-parser.add_argument("--batch_num_in_snapshot", type=int,  
-        default=default.batch_num_in_snapshot, help="the number of batches in the snapshot")
+parser.add_argument("--iter_num_in_snapshot", type=int,  
+        default=default.iter_num_in_snapshot, help="the number of train unit iter in the snapshot")
 parser.add_argument("--num_sample", type=int,  
         default=default.num_sample, help="the number of sample to sample")
 
 # validation config
 parser.add_argument("--val_batch_size_per_device", type=int, default=default.val_batch_size_per_device, help="validation batch size per device")
-parser.add_argument("--validation_interval", type=int, default=default.validation_interval, help="validation interval while training")
+parser.add_argument("--validation_interval", type=int, default=default.validation_interval, help="validation interval while training, using train unit as interval unit")
 parser.add_argument("--val_dataset_dir", type=str, default=default.val_dataset_dir, help="validation dataset dir prefix")
 parser.add_argument("--nrof_folds", type=int, default=default.nrof_folds, help="")
 args = parser.parse_args()
 
 total_img_num = 5822653
+steps_per_epoch = math.ceil(total_img_num / args.train_iter)
+
 if not os.path.exists(args.models_root):
     os.makedirs(args.models_root)
 
@@ -252,12 +254,15 @@ def main():
         batch_size=args.train_batch_size
     )
     lr = args.lr
+    assert(args.train_iter > 0), "Train iter must be greater thatn 0!"
     if args.train_unit is "epoch":
-        total_iter_num = math.ceil((total_img_num / args.train_batch_size) * args.train_iter)
-        print("type of epoch: ", type(total_iter_num))
+        total_iter_num = steps_per_epoch * args.train_iter
+        iter_num_in_snapshot = steps_per_epoch * args.iter_num_in_snapshot
+        validation_interval = steps_per_epoch + args.validation_interval
     elif args.train_unit is "batch":
         total_iter_num = args.train_iter
-        print("type of batch: ", type(total_iter_num))
+        iter_num_in_snapshot = args.iter_num_in_snapshot
+        validation_interval = args.validation_interval
     else:
         raise Exception("Invalid train unit!")
     for step in range(total_iter_num):
@@ -266,7 +271,7 @@ def main():
 
         # validation
         if (
-            args.do_validation_while_train and (step + 1) % args.validation_interval == 0
+            args.do_validation_while_train and (step + 1) % validation_interval == 0
         ):  
             for ds in config.val_targets:
                 issame_list, embeddings_list = do_validation(dataset=ds)
@@ -278,9 +283,9 @@ def main():
            print("lr_step: ", step)
            print("lr change to ", lr) 
         # snapshot
-        if (step + 1) % args.batch_num_in_snapshot == 0:
+        if (step + 1) % iter_num_in_snapshot == 0:
             check_point.save(
-                os.path.join(prefix_dir, "snapshot_" + str(step // args.batch_num_in_snapshot))
+                os.path.join(prefix_dir, "snapshot_" + str(step // iter_num_in_snapshot))
             )
 
 

@@ -3,19 +3,12 @@ from easydict import EasyDict as edict
 
 config = edict()
 
-#config.workspace = 256
 config.emb_size = 512
-#config.net_se = 0
-#config.net_act = 'prelu'
-#config.net_unit = 3
-#config.net_input = 1
 config.net_blocks = [1,4,6,2]
-#config.net_output = 'E'
 config.channel_last = False
 #config.ce_loss = True
 config.fc7_no_bias = False
 config.max_steps = 0
-#config.data_images_filter = 0
 config.count_flops = True
 config.bn_is_training = True
 config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
@@ -105,7 +98,6 @@ default.train_batch_size = default.train_batch_size_per_device * default.device_
 default.use_synthetic_data = False
 default.do_validation_while_train = False
 
-default.total_batch_num = 150 # 24 x 5822653/512 = 272936.8594
 default.train_unit = "epoch"
 default.train_iter = 15
 default.lr = 0.1
@@ -118,11 +110,9 @@ default.models_root = './models'
 default.log_dir = "output/log"
 default.ckpt = 3
 default.loss_print_frequency = 1
-default.batch_num_in_snapshot = 11372 # 5822653/512 = 11372.369
+default.iter_num_in_snapshot = 11372 # 5822653/512 = 11372.369
 
 default.use_fp16 = False
-#default.nccl_fusion_threshold_mb = 0
-#default.nccl_fusion_max_ops = 0
 
 default.val_batch_size_per_device = 20
 default.validation_interval =  11372 # 5822653/512 = 11372.369
