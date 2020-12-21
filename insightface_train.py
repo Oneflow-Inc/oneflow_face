@@ -10,9 +10,6 @@ import ofrecord_util
 import validation_util
 from callback_util import TrainMetric
 from symbols import fmobilefacenet, fresnet100
-
-#from symbols.fmobilefacenet import MobileFacenet
-#from symbols.fresnet100 import Resnet100
 from insightface_val import do_validation, flip_data
 
 def str_list(x):
@@ -32,6 +29,7 @@ parser.add_argument('--network', default=default.network, help='network config')
 parser.add_argument('--loss', default=default.loss, help='loss config')
 args, rest = parser.parse_known_args()
 generate_config(args.network, args.dataset, args.loss)
+
 # distribution config
 parser.add_argument("--device_num_per_node", type=int, default=default.device_num_per_node,
          help="the number of gpus used per node")
@@ -44,16 +42,20 @@ parser.add_argument(
     default=default.node_ips,
     help='nodes ip list for training, devided by ",", length >= num_nodes')
 parser.add_argument("--model_parallel", nargs="?", default=default.model_parallel, help="whether use model parallel")
-parser.add_argument("--partial_fc", type=str2bool, nargs="?", const=default.partial_fc, help="whether use partial fc")
+parser.add_argument("--partial_fc", nargs="?", default=default.partial_fc, help="whether use partial fc")
+
 # train config
-parser.add_argument("--train_batch_size", type=int, default=default.train_batch_size, help="train batch size per device")
+parser.add_argument("--train_batch_size", type=int, default=default.train_batch_size, help="train batch size totally")
 parser.add_argument("--use_synthetic_data", type=str2bool,
 nargs="?", const=default.use_synthetic_data, help="whether use synthetic data")
 parser.add_argument(
     "--do_validation_while_train", nargs="?", const=default.do_validation_while_train, help="whether do validation while training")
+parser.add_argument("--use_fp16", nargs="?", const=default.use_fp16, help="whether use fp16")
+
 # hyperparameters
-parser.add_argument("--total_batch_num", type=int,  
-        default=default.total_batch_num, help="total number of batches running")
+parser.add_argument("--train_unit", type=str,  
+        default=default.train_unit, help="choose train unit of iteration, batch or epoch")
+parser.add_argument("--train_iter", type=int, default=default.train_iter, help="iteration for training")
 parser.add_argument("--lr", type=float, default=default.lr, 
         help="start learning rate")
 parser.add_argument("--lr_steps", type=str_list,  default=default.lr_steps,
@@ -63,6 +65,7 @@ parser.add_argument(
     help="weight decay")
 parser.add_argument("-mom", "--momentum", type=float, default=default.mom,
         help="momentum")
+
 # model and log
 parser.add_argument("--model_load_dir", type=str,
         default=default.model_load_dir,  help="dir to load model")
@@ -75,32 +78,28 @@ parser.add_argument("--loss_print_frequency", type=int,
         default=default.loss_print_frequency,  help="frequency of printing loss")
 parser.add_argument("--batch_num_in_snapshot", type=int,  
         default=default.batch_num_in_snapshot, help="the number of batches in the snapshot")
-# resnet50 fp16
-parser.add_argument(
-    '--use_fp16', type=str2bool, nargs='?', const=default.use_fp16, help='Whether to use use fp16'
-)
-parser.add_argument("--nccl_fusion_threshold_mb", type=int, default=default.nccl_fusion_threshold_mb,
-                    help="NCCL fusion threshold megabytes, set to 0 to compatible with previous version of OneFlow.")
-parser.add_argument("--nccl_fusion_max_ops", type=int, default=default.nccl_fusion_max_ops,
-                    help="Maximum number of ops of NCCL fusion, set to 0 to compatible with previous version of OneFlow.")
+parser.add_argument("--num_sample", type=int,  
+        default=default.num_sample, help="the number of sample to sample")
+
 # validation config
 parser.add_argument("--val_batch_size_per_device", type=int, default=default.val_batch_size_per_device, help="validation batch size per device")
 parser.add_argument("--validation_interval", type=int, default=default.validation_interval, help="validation interval while training")
 parser.add_argument("--val_dataset_dir", type=str, default=default.val_dataset_dir, help="validation dataset dir prefix")
 parser.add_argument("--nrof_folds", type=int, default=default.nrof_folds, help="")
 args = parser.parse_args()
-print("--------------------------args: ", args)
-print("=================================parser: ", parser)
 
+total_img_num = 5822653
 if not os.path.exists(args.models_root):
     os.makedirs(args.models_root)
 
 def get_train_config(args):
-    config = flow.FunctionConfig()
-    config.default_logical_view(flow.scope.consistent_view())
-    config.default_data_type(flow.float)
-    config.cudnn_conv_heuristic_search_algo(False)
-    return config
+    func_config = flow.FunctionConfig()
+    func_config.default_logical_view(flow.scope.consistent_view())
+    func_config.default_data_type(flow.float)
+    func_config.cudnn_conv_heuristic_search_algo(config.cudnn_conv_heuristic_search_algo)
+    func_config.enable_fuse_model_update_ops(config.enable_fuse_model_update_ops)
+    func_config.enable_fuse_add_to_output(config.enable_fuse_add_to_output)
+    return func_config
 
 @flow.global_function(type="train", function_config=get_train_config(args))
 def get_symbol_train_job():
@@ -120,6 +119,7 @@ def get_symbol_train_job():
     trainable = True
     if config.loss_name == "softmax": # softmax
         if args.model_parallel:
+            print("Training is using model parallelism now.")
             labels = labels.with_distribute(flow.distribute.broadcast())
             fc1_distribute = flow.distribute.broadcast()
             fc7_data_distribute = flow.distribute.split(1)
@@ -128,7 +128,6 @@ def get_symbol_train_job():
             fc1_distribute = flow.distribute.split(0)
             fc7_data_distribute = flow.distribute.split(0)
             fc7_model_distribute = flow.distribute.broadcast()
-        print("loss 0")
         if config.fc7_no_bias:
             fc7 = flow.layers.dense(
                 inputs=embedding.with_distribute(fc1_distribute),
@@ -156,7 +155,7 @@ def get_symbol_train_job():
         fc7 = fc7.with_distribute(fc7_data_distribute)
     elif config.loss_name == "margin_softmax":
         if args.model_parallel:
-            print("i'm model parallel now~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            print("Training is using model parallelism now.")
             labels = labels.with_distribute(flow.distribute.broadcast())
             fc1_distribute = flow.distribute.broadcast()
             fc7_data_distribute = flow.distribute.split(1)
@@ -176,6 +175,7 @@ def get_symbol_train_job():
             distribute=fc7_model_distribute,
         )
         if args.partial_fc and args.model_parallel:
+            print("Training is using model parallelism and optimized by partial_fc now.")
             mapped_label, sampled_label, sampled_weight = flow.distributed_partial_fc_sample(
                 weight=fc7_weight,
                 label=labels,
@@ -222,10 +222,6 @@ def main():
         os.makedirs(prefix_dir)
     if args.use_fp16 and (args.num_nodes * args.gpu_num_per_node) > 1:
         flow.config.collective_boxing.nccl_fusion_all_reduce_use_buffer(False)
-    if args.nccl_fusion_threshold_mb:
-        flow.config.collective_boxing.nccl_fusion_threshold_mb(args.nccl_fusion_threshold_mb)
-    if args.nccl_fusion_max_ops:
-        flow.config.collective_boxing.nccl_fusion_max_ops(args.nccl_fusion_max_ops)
 
     if args.num_nodes > 1:
         assert args.num_nodes <= len(args.node_ips)
@@ -249,7 +245,6 @@ def main():
             check_point.load(args.model_load_dir)
         else:
             raise Exception("Invalid model load dir", model_load_dir)    
-    #args.batch_size = args.train_batch_size * args.device_num_per_node * args.num_nodes
     print("num_classes ", config.num_classes)
     print("Called with argument: ", args, config)
     train_metric = TrainMetric(
@@ -257,7 +252,15 @@ def main():
         batch_size=args.train_batch_size
     )
     lr = args.lr
-    for step in range(args.total_batch_num):
+    if args.train_unit is "epoch":
+        total_iter_num = math.ceil((total_img_num / args.train_batch_size) * args.train_iter)
+        print("type of epoch: ", type(total_iter_num))
+    elif args.train_unit is "batch":
+        total_iter_num = args.train_iter
+        print("type of batch: ", type(total_iter_num))
+    else:
+        raise Exception("Invalid train unit!")
+    for step in range(total_iter_num):
         # train
         get_symbol_train_job().async_get(train_metric.metric_cb(step))
 

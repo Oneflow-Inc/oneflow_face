@@ -11,14 +11,10 @@ config.emb_size = 512
 #config.net_input = 1
 config.net_blocks = [1,4,6,2]
 #config.net_output = 'E'
-#config.channel_last = False
+config.channel_last = False
 #config.ce_loss = True
-#config.fc7_lr_mult = 1.0
-#config.fc7_wd_mult = 1.0
 config.fc7_no_bias = False
 config.max_steps = 0
-#config.data_cutoff = False
-#config.data_color = 0
 #config.data_images_filter = 0
 config.count_flops = True
 config.bn_is_training = True
@@ -26,6 +22,9 @@ config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
 config.lfw_total_images_num = 12000 
 config.cfp_fp_total_images_num = 14000 
 config.agedb_30_total_images_num = 12000
+config.cudnn_conv_heuristic_search_algo = False
+config.enable_fuse_model_update_ops = True
+config.enable_fuse_add_to_output = True
 
 # network settings
 network = edict()
@@ -48,8 +47,8 @@ dataset = edict()
 
 dataset.emore = edict()
 dataset.emore.dataset = 'emore'
-dataset.emore.dataset_dir = "/data/insightface/train_ofrecord/faces_emore"
-dataset.emore.num_classes = 85742
+dataset.emore.dataset_dir = "/datasets/insightface/faces_emore"
+dataset.emore.num_classes = 85744
 dataset.emore.part_name_prefix = ""
 dataset.emore.part_name_suffix_length = 5
 dataset.emore.train_data_part_num = 16
@@ -99,7 +98,7 @@ default.node_ips = ["192.168.1.13", "192.168.1.14"]
 default.num_nodes = 1
 default.device_num_per_node = 2
 default.model_parallel = 1
-default.partial_fc = 0
+default.partial_fc = 1
 
 default.train_batch_size_per_device = 256
 default.train_batch_size = default.train_batch_size_per_device * default.device_num_per_node
@@ -107,6 +106,8 @@ default.use_synthetic_data = False
 default.do_validation_while_train = False
 
 default.total_batch_num = 150 # 24 x 5822653/512 = 272936.8594
+default.train_unit = "epoch"
+default.train_iter = 15
 default.lr = 0.1
 default.lr_steps = [100000,140000,160000]
 default.wd = 0.0005
@@ -120,14 +121,13 @@ default.loss_print_frequency = 1
 default.batch_num_in_snapshot = 11372 # 5822653/512 = 11372.369
 
 default.use_fp16 = False
-default.pad_output = True
-default.nccl_fusion_threshold_mb = 0
-default.nccl_fusion_max_ops = 0
+#default.nccl_fusion_threshold_mb = 0
+#default.nccl_fusion_max_ops = 0
 
 default.val_batch_size_per_device = 20
 default.validation_interval =  11372 # 5822653/512 = 11372.369
 default.val_data_part_num = 1
-default.val_dataset_dir = "/data/insightface/eval_ofrecord" 
+default.val_dataset_dir = "/datasets/insightface/eval_ofrecord" 
 default.nrof_folds = 10
 default.num_sample = 8568 # num_classes * 0.1 向下取整
 
