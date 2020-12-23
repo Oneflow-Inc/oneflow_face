@@ -84,22 +84,22 @@ loss.combined.loss_m3 = 0.2
 default = edict()
 
 default.dataset = 'emore'
-default.network = 'y1'
+default.network = 'r100'
 default.loss = 'arcface'
 
 default.node_ips = ["192.168.1.13", "192.168.1.14"]
 default.num_nodes = 1
-default.device_num_per_node = 2
+default.device_num_per_node = 8
 default.model_parallel = 1
-default.partial_fc = 1
+default.partial_fc = 0
 
-default.train_batch_size_per_device = 256
+default.train_batch_size_per_device = 64
 default.train_batch_size = default.train_batch_size_per_device * default.device_num_per_node
 default.use_synthetic_data = False
-default.do_validation_while_train = False
+default.do_validation_while_train = True
 
-default.train_unit = "epoch"
-default.train_iter = 15
+default.train_unit = "batch"
+default.train_iter = 170586
 default.lr = 0.1
 default.lr_steps = [100000,140000,160000]
 default.wd = 0.0005
@@ -110,16 +110,16 @@ default.models_root = './models'
 default.log_dir = "output/log"
 default.ckpt = 3
 default.loss_print_frequency = 1
-default.iter_num_in_snapshot = 11372 # 5822653/512 = 11372.369
+default.iter_num_in_snapshot = 5000
 
 default.use_fp16 = False
 
 default.val_batch_size_per_device = 20
-default.validation_interval =  11372 # 5822653/512 = 11372.369
+default.validation_interval = 5000
 default.val_data_part_num = 1
 default.val_dataset_dir = "/datasets/insightface/eval_ofrecord" 
 default.nrof_folds = 10
-default.num_sample = 8568 # num_classes * 0.1 向下取整
+default.num_sample = 8568 # int(num_classes * 0.1)
 
 def generate_config(_network, _dataset, _loss):
     for k, v in loss[_loss].items():

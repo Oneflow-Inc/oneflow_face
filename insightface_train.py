@@ -49,7 +49,7 @@ parser.add_argument("--train_batch_size", type=int, default=default.train_batch_
 parser.add_argument("--use_synthetic_data", type=str2bool,
 nargs="?", const=default.use_synthetic_data, help="whether use synthetic data")
 parser.add_argument(
-    "--do_validation_while_train", nargs="?", const=default.do_validation_while_train, help="whether do validation while training")
+    "--do_validation_while_train", nargs="?", default=default.do_validation_while_train, help="whether do validation while training")
 parser.add_argument("--use_fp16", nargs="?", const=default.use_fp16, help="whether use fp16")
 
 # hyperparameters
@@ -256,10 +256,12 @@ def main():
     lr = args.lr
     assert(args.train_iter > 0), "Train iter must be greater thatn 0!"
     if args.train_unit is "epoch":
+        print("Using epoch as training unit now.")
         total_iter_num = steps_per_epoch * args.train_iter
         iter_num_in_snapshot = steps_per_epoch * args.iter_num_in_snapshot
         validation_interval = steps_per_epoch + args.validation_interval
     elif args.train_unit is "batch":
+        print("Using batch as training unit now.")
         total_iter_num = args.train_iter
         iter_num_in_snapshot = args.iter_num_in_snapshot
         validation_interval = args.validation_interval
