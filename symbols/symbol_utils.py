@@ -15,10 +15,11 @@ def _get_initializer():
 #    return flow.regularizers.l2(0.0005)
 
 def _get_regularizer(name):
-    if name == "weight" or name == "gamma":
-        return flow.regularizers.l2(0.0005)
-    else:
-        return None
+#    if name == "weight" or name == "gamma":
+#        return flow.regularizers.l2(0.0005)
+#    else:
+#        return None
+    return None
 
 def _dropout(input_blob, dropout_prob):
     return flow.nn.dropout(input_blob, rate=dropout_prob)

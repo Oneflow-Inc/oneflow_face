@@ -40,7 +40,7 @@ dataset = edict()
 
 dataset.emore = edict()
 dataset.emore.dataset = 'emore'
-dataset.emore.dataset_dir = "/datasets/insightface/train_ofrecord/faces_emore"
+dataset.emore.dataset_dir = "/datasets/insightface/faces_emore"
 dataset.emore.num_classes = 85744
 dataset.emore.part_name_prefix = ""
 dataset.emore.part_name_suffix_length = 5
@@ -84,7 +84,7 @@ loss.combined.loss_m3 = 0.2
 default = edict()
 
 default.dataset = 'emore'
-default.network = 'y1'
+default.network = 'r100'
 default.loss = 'arcface'
 
 default.node_ips = ["192.168.1.13", "192.168.1.14"]
@@ -99,7 +99,7 @@ default.use_synthetic_data = False
 default.do_validation_while_train = True
 
 default.train_unit = "batch"
-default.train_iter = 273937
+default.train_iter = 170586
 default.lr = 0.1
 default.lr_steps = [100000,140000,160000]
 default.wd = 0.0005

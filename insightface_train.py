@@ -225,9 +225,9 @@ def get_symbol_train_job():
     #    labels = flow.one_hot(labels, depth = config.num_classes, on_value = -1.0, off_value = 0.0, dtype=flow.float)
     #    body = body * labels
     #    ce_loss = flow.math.reduce_sum(body) / args.train_batch_size_per_device
-#    lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.lr,
-#            args.lr_steps, 0.1)
-#    flow.optimizer.SGD(lr_scheduler, momentum=args.momentum).minimize(loss)
+    lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.lr,
+            args.lr_steps, 0.1)
+    flow.optimizer.SGD(lr_scheduler, momentum=args.momentum).minimize(loss)
     return loss
 
 def main():
@@ -241,6 +241,7 @@ def main():
     if not os.path.exists(prefix_dir):
         os.makedirs(prefix_dir)
     if args.use_fp16 and (args.num_nodes * args.gpu_num_per_node) > 1:
+        print("Training with FP16 now.")
         flow.config.collective_boxing.nccl_fusion_all_reduce_use_buffer(False)
 
     if args.num_nodes > 1:
