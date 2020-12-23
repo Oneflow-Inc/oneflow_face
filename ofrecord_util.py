@@ -8,7 +8,7 @@ def train_dataset_reader(
     if os.path.exists(data_dir):
         print("Loading train data from {}".format(data_dir))
     else:
-        raise Exception("Invalid validation dataset dir", data_dir)
+        raise Exception("Invalid train dataset dir", data_dir)
     image_blob_conf = flow.data.BlobConf(
         "encoded",
         shape=(112, 112, 3),
