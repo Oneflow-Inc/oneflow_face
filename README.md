@@ -196,5 +196,74 @@ Accuracy-Flip: 0.98033+-0.00710
 ```
 
 
+12-25
+训练结果更新：
+commit：00206cd51652227da7651f2d1acfeb68c6d25935
+userop and general pr templates added
+```
+emore_data_dir=/data/insightface/train_ofrecord/faces_emore
+lfw_data_dir=/data/insightface/eval_ofrecord/lfw
+cfp_fp_data_dir=/data/insightface/eval_ofrecord/cfp_fp
+agedb_30_data_dir=/data/insightface/eval_ofrecord/agedb_30
 
+emore_class_num=85742
+gpu_num=8
+data_part_num=16
+per_gpu_batch_size=64
+
+network="resnet100"
+loss_type="margin_softmax"
+model_save_dir="output/resnet100_save_model"
+log_dir="output/log"
+
+rm -r $model_save_dir
+rm -r $log_dir
+
+/home/leinao/anaconda3/envs/python36/bin/python3 insightface_train_val.py \
+--part_name_suffix_length=5 \
+--class_num=$emore_class_num \
+--train_data_dir=$emore_data_dir \
+--train_batch_size=$(expr $gpu_num '*' $per_gpu_batch_size) \
+--train_data_part_num=$data_part_num \
+\
+--do_validataion_while_train \
+--val_batch_size=20 \
+--lfw_data_dir=$lfw_data_dir \
+--cfp_fp_data_dir=$cfp_fp_data_dir \
+--agedb_30_data_dir=$agedb_30_data_dir \
+--validataion_interval=2000 \
+\
+--total_batch_num=180001 \
+--gpu_num_per_node=$gpu_num \
+--num_of_batches_in_snapshot=180000 \
+--base_lr=0.1 \
+--models_name=fc7 \
+--model_save_dir=$model_save_dir \
+--log_dir=$log_dir \
+--network=$network \
+--loss_type=$loss_type \
+--model_parallel=False \
+--partial_fc=False \
+--num_sample=8568 \
+--boundaries 100000 140000 160000 \
+--scales 1.0 0.1 0.01 0.001
+```
+
+```
+Validation on [lfw]:
+train: iter 161997, loss 0.783291220664978, throughput: 1882.118
+train: iter 161998, loss 1.486567497253418, throughput: 1877.066
+train: iter 161999, loss 1.3680737018585205, throughput: 1882.514
+Embedding shape: (12000, 512)
+XNorm: 21.842192
+Accuracy-Flip: 0.99817+-0.00273
+Validation on [cfp_fp]:
+Embedding shape: (14000, 512)
+XNorm: 23.108341
+Accuracy-Flip: 0.98443+-0.00608
+Validation on [agedb_30]:
+Embedding shape: (12000, 512)
+XNorm: 22.849064
+Accuracy-Flip: 0.98217+-0.00730
+```
 
