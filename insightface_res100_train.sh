@@ -42,6 +42,8 @@ python3 insightface_train_val.py \
 --log_dir=$log_dir \
 --network=$network \
 --loss_type=$loss_type \
---model_parallel=True \
+--model_parallel=False \
 --partial_fc=True \
---num_sample=8568
+--num_sample=8568 \
+--boundaries 100000 140000 160000 \
+--scales 1.0 0.1 0.01 0.001
