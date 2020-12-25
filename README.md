@@ -132,3 +132,5 @@ python insightface_val.py \
 ```
 
 其中，用`--model_load_dir`指定想要加载的预训练模型的路径。
+
+精度结果记录可参考：https://github.com/Oneflow-Inc/oneflow_face/tree/partial_fc
