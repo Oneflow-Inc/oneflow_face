@@ -345,7 +345,7 @@ def insightface_train_job():
         labels, fc7, name="softmax_loss"
     )
     
-    lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.base_lr, [100000, 140000, 160000], 0.1)
+    lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.base_lr, [100000, 140000, 160000], [0.1, 0.01, 0.001])
     flow.optimizer.SGD(lr_scheduler, momentum=0.9).minimize(loss)
     return loss
 
