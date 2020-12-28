@@ -16,8 +16,8 @@ config.lfw_total_images_num = 12000
 config.cfp_fp_total_images_num = 14000 
 config.agedb_30_total_images_num = 12000
 config.cudnn_conv_heuristic_search_algo = False
-config.enable_fuse_model_update_ops = True
-config.enable_fuse_add_to_output = True
+config.enable_fuse_model_update_ops = False
+config.enable_fuse_add_to_output = False
 
 # network settings
 network = edict()

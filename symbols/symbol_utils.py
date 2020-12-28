@@ -1,18 +1,10 @@
 import oneflow as flow
 from sample_config import config 
 
-#from fmobilefacenet import MobileFacenet                                                        
-#from fresnet100 import Resnet100
-#from fresnet50 import Resnet50
-
-
 def _get_initializer():
     return flow.variance_scaling_initializer(
         2.0, "fan_out", "random_normal", "NCHW"
     ) 
-
-#def _get_regularizer():
-#    return flow.regularizers.l2(0.0005)
 
 def _get_regularizer(name):
 #    if name == "weight" or name == "gamma":
@@ -23,6 +15,7 @@ def _get_regularizer(name):
 
 def _dropout(input_blob, dropout_prob):
     return flow.nn.dropout(input_blob, rate=dropout_prob)
+
 def _prelu(inputs, name=None):
     return flow.layers.prelu(
         inputs,
@@ -197,8 +190,6 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
         body = _batch_norm(
                body,
                epsilon=2e-5,
-              # scale=False,
-              # center=True,
                is_training=config.bn_is_training,
                name="bn1"
                )

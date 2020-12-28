@@ -108,7 +108,7 @@ ParameterUpdateStrategy= dict(
           weight_decay_rate=args.weight_decay,
         )
     )
-
+print("ParameterUpdateStrategy", ParameterUpdateStrategy)
 
 
 def get_train_config(args):
@@ -116,6 +116,8 @@ def get_train_config(args):
     func_config.default_logical_view(flow.scope.consistent_view())
     func_config.default_data_type(flow.float)
     func_config.cudnn_conv_heuristic_search_algo(config.cudnn_conv_heuristic_search_algo)
+    func_config.train.primary_lr(args.lr)
+    func_config.train.model_update_conf(ParameterUpdateStrategy)
     func_config.enable_fuse_model_update_ops(config.enable_fuse_model_update_ops)
     func_config.enable_fuse_add_to_output(config.enable_fuse_add_to_output)
     return func_config
@@ -225,9 +227,9 @@ def get_symbol_train_job():
     #    labels = flow.one_hot(labels, depth = config.num_classes, on_value = -1.0, off_value = 0.0, dtype=flow.float)
     #    body = body * labels
     #    ce_loss = flow.math.reduce_sum(body) / args.train_batch_size_per_device
-    lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.lr,
-            args.lr_steps, 0.1)
-    flow.optimizer.SGD(lr_scheduler, momentum=args.momentum).minimize(loss)
+    #lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(args.lr,
+    #        args.lr_steps, 0.1)
+    #flow.optimizer.SGD(lr_scheduler, momentum=args.momentum).minimize(loss)
     return loss
 
 def main():
