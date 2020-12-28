@@ -28,6 +28,12 @@ network.r100.num_layers = 100
 network.r100.emb_size = 512
 network.r100.fc_type = "E"
 
+network.r100_glint360k = edict()
+network.r100_glint360k.net_name = 'fresnet100'
+network.r100_glint360k.num_layers = 100
+network.r100_glint360k.emb_size = 512
+network.r100_glint360k.fc_type = "FC"
+
 network.y1 = edict()
 network.y1.net_name = 'fmobilefacenet'
 network.y1.emb_size = 128
@@ -46,6 +52,13 @@ dataset.emore.part_name_prefix = ""
 dataset.emore.part_name_suffix_length = 5
 dataset.emore.train_data_part_num = 16
 dataset.emore.shuffle = True
+
+dataset.glint360k_8GPU = edict()
+dataset.glint360k_8GPU.dataset = "glint360k"
+dataset.glint360k_8GPU.part_name_prefix = ""
+dataset.glint360k_8GPU.part_name_suffix_length = 5
+dataset.glint360k_8GPU.train_data_part_num = 200
+dataset.glint360k_8GPU.shuffle = True
 
 # loss settings
 loss = edict()
