@@ -55,6 +55,7 @@ dataset.emore.shuffle = True
 
 dataset.glint360k_8GPU = edict()
 dataset.glint360k_8GPU.dataset = "glint360k"
+dataset.glint360k_8GPU.dataset_dir = "/data/glint/glint360k_ofrecord/glint360k"
 dataset.glint360k_8GPU.part_name_prefix = ""
 dataset.glint360k_8GPU.part_name_suffix_length = 5
 dataset.glint360k_8GPU.train_data_part_num = 200
@@ -114,7 +115,7 @@ default.do_validation_while_train = True
 default.train_unit = "batch"
 default.train_iter = 170586
 default.lr = 0.1
-default.lr_steps = [100000,140000,160000]
+default.lr_steps = [200000,400000,500000,550000]  #[100000,140000,160000]
 default.wd = 0.0005
 default.mom = 0.9
 
