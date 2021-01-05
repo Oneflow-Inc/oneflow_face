@@ -2,23 +2,23 @@ import math, os
 import argparse
 import numpy as np
 import oneflow as flow
-import oneflow.typing as oft
 
-from sample_config import config, default, generate_config
+from sample_config import config, default, generate_val_config
 import ofrecord_util
 import validation_util
-from symbols import fmobilefacenet, fresnet100
-
+from symbols import fresnet100, fmobilefacenet
 
 def get_val_args():
     val_parser = argparse.ArgumentParser(description="flags for validation")
-
+    val_parser.add_argument("-network", default=default.network)
+    args, rest = val_parser.parse_known_args()
+    generate_val_config(args.network)
     for ds in config.val_targets:
         val_parser.add_argument(
             "--%s_dataset_dir" % ds,
             type=str,
             default=os.path.join(default.val_dataset_dir, ds),
-            help="validation dataset dir prefix",
+            help="validation dataset dir",
         )
     val_parser.add_argument(
         "--val_data_part_num",
@@ -35,7 +35,6 @@ def get_val_args():
     val_parser.add_argument(
         "--agedb_30_total_images_num", type=int, default=12000, required=False
     )
-    # val_parser.add_argument("--nrof_folds", type=int, default=default.nrof_folds, help="")
 
     # distribution config
     val_parser.add_argument(
@@ -58,7 +57,7 @@ def get_val_args():
         help="validation batch size per device",
     )
     val_parser.add_argument(
-        "--nrof_folds", default=default.nrof_folds, type=int, help=""
+        "--nrof_folds", default=default.nrof_folds, type=int, help="nrof folds"
     )
     # model and log
     val_parser.add_argument(
@@ -67,7 +66,6 @@ def get_val_args():
     val_parser.add_argument(
         "--model_load_dir", default=default.model_load_dir, help="path to load model."
     )
-
     return val_parser.parse_args()
 
 
@@ -76,7 +74,7 @@ def flip_data(images):
     return images_flipped
 
 
-def get_val_config(self):
+def get_val_config():
     config = flow.function_config()
     config.default_logical_view(flow.scope.consistent_view())
     config.default_data_type(flow.float)
@@ -103,7 +101,7 @@ class Validator(object):
                     issame, images = ofrecord_util.load_cfp_fp_dataset(self.args)
                     return issame, images
 
-            self.get_validation_dataset_agedb_30_fn = get_validation_dataset_cfp_fp_job
+            self.get_validation_dataset_cfp_fp_fn = get_validation_dataset_cfp_fp_job
 
             @flow.global_function(type="predict", function_config=function_config)
             def get_validation_dataset_agedb_30_job():
@@ -127,7 +125,7 @@ class Validator(object):
 
             self.get_symbol_val_fn = get_symbol_val_job
 
-    def do_validation(dataset="lfw"):
+    def do_validation(self, dataset="lfw"):
         print("Validation on [{}]:".format(dataset))
         _issame_list = []
         _em_list = []
@@ -138,17 +136,17 @@ class Validator(object):
             val_job = self.get_validation_datset_lfw_fn
         if dataset == "cfp_fp":
             total_images_num = self.args.cfp_fp_total_images_num
-            val_job = self.get_validation_datset_cfp_fp_fn
+            val_job = self.get_validation_dataset_cfp_fp_fn
         if dataset == "agedb_30":
             total_images_num = self.args.agedb_30_total_images_num
-            val_job = self.get_validation_datset_agedb_30_fn
+            val_job = self.get_validation_dataset_agedb_30_fn
 
         val_iter_num = math.ceil(total_images_num / batch_size)
         for i in range(val_iter_num):
             _issame, images = val_job().get()
             images_flipped = flip_data(images.numpy())
-            _em = get_symbol_val_job(images.numpy()).get()
-            _em_flipped = get_symbol_val_job(images_flipped).get()
+            _em = self.get_symbol_val_fn(images.numpy()).get()
+            _em_flipped = self.get_symbol_val_fn(images_flipped).get()
             _issame_list.append(_issame.numpy())
             _em_list.append(_em.numpy())
             _em_flipped_list.append(_em_flipped.numpy())
@@ -167,10 +165,6 @@ class Validator(object):
         return issame_list, embeddings_list
 
     def load_checkpoint(self):
-        if os.path.exists(self.args.model_load_dir):
-            print("Loading model from {}".format(self.args.model_load_dir))
-        else:
-            raise ValueError("Invalid model load dir ", self.args.model_load_dir)
         flow.load_variables(flow.checkpoint.get(self.args.model_load_dir))
 
 

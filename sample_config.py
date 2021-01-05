@@ -4,8 +4,9 @@ from easydict import EasyDict as edict
 config = edict()
 
 config.emb_size = 512
-config.net_blocks = [1,4,6,2]
+config.net_blocks = [1, 4, 6, 2]
 config.channel_last = False
+
 #config.ce_loss = True
 config.fc7_no_bias = False
 config.max_steps = 0
@@ -48,7 +49,7 @@ dataset.emore = edict()
 dataset.emore.dataset = 'emore'
 dataset.emore.dataset_dir = "/datasets/insightface/faces_emore"
 dataset.emore.num_classes = 85744
-dataset.emore.part_name_prefix = ""
+dataset.emore.part_name_prefix = "part-"
 dataset.emore.part_name_suffix_length = 5
 dataset.emore.train_data_part_num = 16
 dataset.emore.shuffle = True
@@ -56,7 +57,8 @@ dataset.emore.shuffle = True
 dataset.glint360k_8GPU = edict()
 dataset.glint360k_8GPU.dataset = "glint360k"
 dataset.glint360k_8GPU.dataset_dir = "/data/glint/glint360k_ofrecord/glint360k"
-dataset.glint360k_8GPU.part_name_prefix = ""
+dataset.glint360k_8GPU.num_classes = 360232
+dataset.glint360k_8GPU.part_name_prefix = "part-"
 dataset.glint360k_8GPU.part_name_suffix_length = 5
 dataset.glint360k_8GPU.train_data_part_num = 200
 dataset.glint360k_8GPU.shuffle = True
@@ -115,7 +117,7 @@ default.do_validation_while_train = True
 default.train_unit = "batch"
 default.train_iter = 170586
 default.lr = 0.1
-default.lr_steps = [200000,400000,500000,550000]  #[100000,140000,160000]
+default.lr_steps = [200000, 400000, 500000, 550000]  #[100000,140000,160000]
 default.wd = 0.0005
 default.mom = 0.9
 
@@ -129,11 +131,12 @@ default.iter_num_in_snapshot = 5000
 default.use_fp16 = False
 
 default.val_batch_size_per_device = 20
-default.validation_interval =  5000 # 5822653/512 = 11372.369
+default.validation_interval = 5000  # 5822653/512 = 11372.369
 default.val_data_part_num = 1
-default.val_dataset_dir = "/datasets/insightface/eval_ofrecord" 
+default.val_dataset_dir = "/data/insightface/eval_ofrecord" 
 default.nrof_folds = 10
-default.num_sample = 8568 # int(num_classes * 0.1)
+default.num_sample = 8568  # int(num_classes * 0.1)
+
 
 def generate_config(_network, _dataset, _loss):
     for k, v in loss[_loss].items():
@@ -153,3 +156,11 @@ def generate_config(_network, _dataset, _loss):
     config.network = _network
     config.dataset = _dataset
 
+def generate_val_config(_network):
+    for k, v in network[_network].items():
+      config[k] = v
+      if k in default:
+        default[k] = v
+    
+    config.network = _network
+ 

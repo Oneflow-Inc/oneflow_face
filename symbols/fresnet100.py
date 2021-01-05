@@ -1,6 +1,5 @@
 import oneflow as flow
-import oneflow.core.operator.op_conf_pb2 as op_conf_util
-from symbols.symbol_utils import _get_regularizer, _get_initializer, _batch_norm, _conv2d_layer, _dropout, _avg_pool, _prelu, Linear, get_fc1
+from symbols.symbol_utils import _batch_norm, _conv2d_layer, _avg_pool, _prelu, get_fc1
 from sample_config import config
 
 

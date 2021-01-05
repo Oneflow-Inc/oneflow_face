@@ -23,7 +23,13 @@ rm -r $log_dir
 mkdir -p $model_save_dir
 mkdir -p $log_dir
 echo "lr_step: " ${lr_steps}
+
+time=$(date "+%Y-%m-%d %H:%M:%S")
+echo $time
+
 python insightface_train.py \
+--network=${network} \
+--dataset="glint360k_8GPU" \
 --train_batch_size=$(expr $num_nodes '*' $gpu_num_per_node '*' $batch_size_per_device) \
 --do_validation_while_train=True \
 --val_batch_size=20 \

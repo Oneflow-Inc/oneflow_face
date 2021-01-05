@@ -3,14 +3,14 @@ import math
 import argparse
 import numpy as np
 import oneflow as flow
-import oneflow.typing as oft
 
 from sample_config import config, default, generate_config
 import ofrecord_util
 import validation_util
 from callback_util import TrainMetric
-from symbols import fmobilefacenet, fresnet100
-from insightface_val import Validator, flip_data
+from insightface_val import Validator, get_val_args
+
+from symbols import fresnet100, fmobilefacenet
 
 
 def str_list(x):
@@ -179,11 +179,27 @@ def get_train_args():
         help="validation interval while training, using train unit as interval unit",
     )
     train_parser.add_argument(
-        "--val_dataset_dir",
+        "--val_data_part_num",
         type=str,
-        default=default.val_dataset_dir,
+        default=default.val_data_part_num,
         help="validation dataset dir prefix",
     )
+    train_parser.add_argument(
+        "--lfw_total_images_num", type=int, default=12000, required=False
+    )
+    train_parser.add_argument(
+        "--cfp_fp_total_images_num", type=int, default=14000, required=False
+    )
+    train_parser.add_argument(
+        "--agedb_30_total_images_num", type=int, default=12000, required=False
+    )
+    for ds in config.val_targets:
+        train_parser.add_argument(
+            "--%s_dataset_dir" % ds,
+            type=str,
+            default=os.path.join(default.val_dataset_dir, ds),
+            help="validation dataset dir",
+        )
     train_parser.add_argument(
         "--nrof_folds", type=int, default=default.nrof_folds, help=""
     )
@@ -194,7 +210,7 @@ def get_train_config(args):
     ParameterUpdateStrategy = dict(
         learning_rate_decay=dict(
             piecewise_scaling_conf=dict(
-                boundaries=args.lr_steps, scales=[1.0, 0.1, 0.01, 0.001],
+                boundaries=args.lr_steps, scales=[1.0, 0.1, 0.01, 0.001, 0.0001],
             )
         ),
         momentum_conf=dict(beta=args.momentum,),
@@ -357,7 +373,9 @@ def main(args):
 
     flow.env.log_dir(args.log_dir)
     train_func = make_train_func(args)
+    validator = Validator(args)
     check_point = flow.train.CheckPoint()
+   
     if not args.model_load_dir:
         print("Init model on demand.")
         check_point.init()
@@ -386,7 +404,7 @@ def main(args):
         validation_interval = args.validation_interval
     else:
         raise ValueError("Invalid train unit!")
-    validator = Validator(args)
+    
     for step in range(total_iter_num):
         # train
         train_func().async_get(train_metric.metric_cb(step))

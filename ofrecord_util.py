@@ -2,6 +2,7 @@ import os
 import oneflow as flow
 from sample_config import config
 
+
 def train_dataset_reader(
     data_dir, batch_size, data_part_num, part_name_suffix_length=1
 ):
@@ -35,16 +36,14 @@ def train_dataset_reader(
         (label_blob_conf, image_blob_conf),
         batch_size=batch_size,
         data_part_num=data_part_num,
-       # part_name_prefix=config.part_name_prefix, 
+        part_name_prefix=config.part_name_prefix,
         part_name_suffix_length=config.part_name_suffix_length,
         shuffle=config.shuffle,
         buffer_size=16384,
     )
 
 
-def validation_dataset_reader(
-    val_dataset_dir, val_batch_size=1, val_data_part_num=1
-):
+def validation_dataset_reader(val_dataset_dir, val_batch_size=1, val_data_part_num=1):
     # lfw: (12000L, 3L, 112L, 112L)
     # cfp_fp: (14000L, 3L, 112L, 112L)
     # agedb_30: (12000L, 3L, 112L, 112L)
@@ -60,16 +59,12 @@ def validation_dataset_reader(
         part_name_suffix_length=1,
         shuffle_after_epoch=False,
     )
-    image = flow.data.OFRecordImageDecoder(
-        ofrecord, "encoded", color_space=color_space
-    )
+    image = flow.data.OFRecordImageDecoder(ofrecord, "encoded", color_space=color_space)
     issame = flow.data.OFRecordRawDecoder(
         ofrecord, "issame", shape=(), dtype=flow.int32
     )
 
-    rsz = flow.image.Resize(
-        image, resize_x=112, resize_y=112, color_space=color_space
-    )
+    rsz = flow.image.Resize(image, resize_x=112, resize_y=112, color_space=color_space)
     normal = flow.image.CropMirrorNormalize(
         rsz,
         color_space=color_space,
@@ -98,9 +93,7 @@ def load_synthetic(config):
     )
 
     image = flow.data.decode_random(
-        shape=(image_size, image_size, 3),
-        dtype=flow.float,
-        batch_size=batch_size,
+        shape=(image_size, image_size, 3), dtype=flow.float, batch_size=batch_size,
     )
     return label, image
 
@@ -110,11 +103,12 @@ def load_train_dataset(args):
     batch_size = args.train_batch_size
     data_part_num = config.train_data_part_num
     part_name_suffix_length = config.part_name_suffix_length
-    print("train batch size in load train dataset: ",batch_size )
+    print("train batch size in load train dataset: ", batch_size)
     labels, images = train_dataset_reader(
         data_dir, batch_size, data_part_num, part_name_suffix_length
     )
     return labels, images
+
 
 def load_lfw_dataset(args):
     data_dir = args.lfw_dataset_dir
@@ -153,7 +147,9 @@ def load_agedb_30_dataset(args):
         val_data_part_num=data_part_num,
     )
     return issame, images
-#def load_validation_dataset(args):
+
+
+# def load_validation_dataset(args):
 #    data_dir = config.val_dataset_dir
 #    batch_size = args.val_batch_size_per_device
 #    data_part_num = config.val_data_part_num
