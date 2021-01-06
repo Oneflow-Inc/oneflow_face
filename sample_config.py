@@ -6,7 +6,7 @@ config = edict()
 config.emb_size = 512
 config.net_blocks = [1, 4, 6, 2]
 config.channel_last = False
-
+config.data_format = "NCHW"
 #config.ce_loss = True
 config.fc7_no_bias = False
 config.max_steps = 0

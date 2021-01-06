@@ -4,7 +4,7 @@ from sample_config import config
 
 
 def residual_unit_v3(
-    in_data, num_filter, stride, dim_match, bn_is_training, name
+    in_data, num_filter, stride, dim_match, bn_is_training, data_format, name
 ):
 
     suffix = ""
@@ -13,6 +13,7 @@ def residual_unit_v3(
         in_data,
         epsilon=2e-5,
         is_training=bn_is_training,
+        data_format=data_format,
         name="%s%s_bn1" % (name, suffix),
     )
     conv1 = _conv2d_layer(
@@ -22,6 +23,7 @@ def residual_unit_v3(
         kernel_size=3,
         strides=[1, 1],
         padding="same",
+        data_format=data_format,
         use_bias=False,
         dilation_rate=1,
         activation=None,
@@ -30,9 +32,10 @@ def residual_unit_v3(
         conv1,
         epsilon=2e-5,
         is_training=bn_is_training,
+        data_format=data_format,
         name="%s%s_bn2" % (name, suffix),
     )
-    prelu = _prelu(bn2, name="%s%s_relu1" % (name, suffix))
+    prelu = _prelu(bn2, data_format=data_format, name="%s%s_relu1" % (name, suffix))
     conv2 = _conv2d_layer(
         name="%s%s_conv2" % (name, suffix),
         input=prelu,
@@ -40,6 +43,7 @@ def residual_unit_v3(
         kernel_size=3,
         strides=stride,
         padding="same",
+        data_format=data_format,
         use_bias=False,
         dilation_rate=1,
         activation=None,
@@ -48,6 +52,7 @@ def residual_unit_v3(
         conv2,
         epsilon=2e-5,
         is_training=bn_is_training,
+        data_format=data_format,
         name="%s%s_bn3" % (name, suffix),
     )
 
@@ -63,6 +68,7 @@ def residual_unit_v3(
             kernel_size=1,
             strides=[1, 1],
             padding="valid",
+            data_format=data_format,
             use_bias=True,
             dilation_rate=1,
             activation=None,
@@ -75,6 +81,7 @@ def residual_unit_v3(
             kernel_size=1,
             strides=[1, 1],
             padding="valid",
+            data_format=data_format,
             use_bias=True,
             dilation_rate=1,
             activation=None,
@@ -93,6 +100,7 @@ def residual_unit_v3(
             kernel_size=1,
             strides=stride,
             padding="valid",
+            data_format=data_format,
             use_bias=False,
             dilation_rate=1,
             activation=None,
@@ -101,6 +109,7 @@ def residual_unit_v3(
             input_blob,
             epsilon=2e-5,
             is_training=bn_is_training,
+            data_format=data_format,
             name="%s%s_sc" % (name, suffix),
         )
 
@@ -115,6 +124,7 @@ def get_symbol(input_blob):
     num_classes = config.emb_size
     fc_type = config.fc_type
     bn_is_training = config.bn_is_training
+    data_format = config.data_format
     input_blob = flow.transpose(
         input_blob, name="transpose", perm=[0, 3, 1, 2]
     )
@@ -125,6 +135,7 @@ def get_symbol(input_blob):
         kernel_size=3,
         strides=[1, 1],
         padding="same",
+        data_format=data_format,
         use_bias=False,
         dilation_rate=1,
         activation=None,
@@ -141,6 +152,7 @@ def get_symbol(input_blob):
             [2, 2],
             False,
             bn_is_training=bn_is_training,
+            data_format=data_format,
             name="stage%d_unit%d" % (i + 1, 1),
         )
         for j in range(units[i] - 1):
@@ -150,6 +162,7 @@ def get_symbol(input_blob):
                 [1, 1],
                 True,
                 bn_is_training=bn_is_training,
+                data_format=data_format,
                 name="stage%d_unit%d" % (i + 1, j + 2),
             )
     fc1 = get_fc1(input_blob, num_classes, fc_type)

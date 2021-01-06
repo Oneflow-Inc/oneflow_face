@@ -1,6 +1,5 @@
 export ONEFLOW_DEBUG_MODE=""
 
-glint360k_class_num=360232
 lr_steps=200000,400000,500000,550000
 network=${1:-"r100_glint360k"}
 dataset=${2:-"glint360k_8GPU"}
@@ -37,7 +36,6 @@ python insightface_train.py \
 --do_validation_while_train=True \
 --val_batch_size=20 \
 --validation_interval=5000 \
---class_num=$glint360k_class_num \
 --train_unit="batch"
 --train_iter=600000 \
 --device_num_per_node=$gpu_num_per_node \
