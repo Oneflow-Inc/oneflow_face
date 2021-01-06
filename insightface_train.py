@@ -60,12 +60,14 @@ def get_train_args():
     )
     train_parser.add_argument(
         "--model_parallel",
+        type=str2bool,
         nargs="?",
         default=default.model_parallel,
         help="whether use model parallel",
     )
     train_parser.add_argument(
         "--partial_fc",
+        type=str2bool,
         nargs="?",
         default=default.partial_fc,
         help="whether use partial fc",
@@ -87,6 +89,7 @@ def get_train_args():
     )
     train_parser.add_argument(
         "--do_validation_while_train",
+        type=str2bool,
         nargs="?",
         default=default.do_validation_while_train,
         help="whether do validation while training",
