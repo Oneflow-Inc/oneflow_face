@@ -125,7 +125,8 @@ def get_symbol(input_blob):
     fc_type = config.fc_type
     bn_is_training = config.bn_is_training
     data_format = config.data_format
-    input_blob = flow.transpose(
+    if data_format.upper() == "NCHW":
+        input_blob = flow.transpose(
         input_blob, name="transpose", perm=[0, 3, 1, 2]
     )
     input_blob = _conv2d_layer(
@@ -141,9 +142,9 @@ def get_symbol(input_blob):
         activation=None,
     )
     input_blob = _batch_norm(
-        input_blob, epsilon=2e-5, is_training=bn_is_training, name="bn0"
+        input_blob, epsilon=2e-5, is_training=bn_is_training, data_format=data_format, name="bn0"
     )
-    input_blob = _prelu(input_blob, name="relu0")
+    input_blob = _prelu(input_blob, data_format=data_format, name="relu0")
 
     for i in range(num_stages):
         input_blob = residual_unit_v3(

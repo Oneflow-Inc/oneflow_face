@@ -36,12 +36,13 @@ python insightface_train.py \
 --do_validation_while_train=True \
 --val_batch_size=20 \
 --validation_interval=5000 \
---train_unit="batch"
+--train_unit="batch" \
 --train_iter=600000 \
 --device_num_per_node=$gpu_num_per_node \
 --lr=0.1 \
---model_parallel=0 \
+--model_parallel=1 \
 --partial_fc=0 \
 --models_root=$model_save_dir \
 --network=$network \
+--use_fp16=True \
 --log_dir=$log_dir 

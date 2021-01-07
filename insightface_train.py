@@ -19,9 +19,9 @@ def str_list(x):
 
 
 def str2bool(v):
-    if v.lower() in ("yes", "true", "t", "y", "1"):
+    if v.lower() in ("yes", "true", "t", "y", "1", "True"):
         return True
-    elif v.lower() in ("no", "false", "f", "n", "0"):
+    elif v.lower() in ("no", "false", "f", "n", "0", "False"):
         return False
     else:
         raise argparse.ArgumentTypeError("Unsupported value encountered.")
@@ -30,12 +30,13 @@ def str2bool(v):
 def get_train_args():
     train_parser = argparse.ArgumentParser(description="flags for train")
     train_parser.add_argument(
-        "--dataset", default=default.dataset, help="dataset config"
+        "--dataset", default=default.dataset, required=True, help="dataset config"
     )
     train_parser.add_argument(
-        "--network", default=default.network, help="network config"
+        "--network", default=default.network, required=True, help="network config"
     )
-    train_parser.add_argument("--loss", default=default.loss, help="loss config")
+    train_parser.add_argument(
+        "--loss", default=default.loss, required=True, help="loss config")
     args, rest = train_parser.parse_known_args()
     generate_config(args.network, args.dataset, args.loss)
 
@@ -84,7 +85,7 @@ def get_train_args():
         "--use_synthetic_data",
         type=str2bool,
         nargs="?",
-        const=default.use_synthetic_data,
+        default=default.use_synthetic_data,
         help="whether use synthetic data",
     )
     train_parser.add_argument(
@@ -95,8 +96,12 @@ def get_train_args():
         help="whether do validation while training",
     )
     train_parser.add_argument(
-        "--use_fp16", nargs="?", const=default.use_fp16, help="whether use fp16"
+        "--use_fp16", type=str2bool, nargs="?", default=default.use_fp16, help="whether to use fp16"
     )
+    train_parser.add_argument("--nccl_fusion_threshold_mb", type=int, default=default.nccl_fusion_threshold_mb,
+                              help="NCCL fusion threshold megabytes, set to 0 to compatible with previous version of OneFlow.")
+    train_parser.add_argument("--nccl_fusion_max_ops", type=int, default=default.nccl_fusion_max_ops,
+                              help="Maximum number of ops of NCCL fusion, set to 0 to compatible with previous version of OneFlow.")
 
     # hyperparameters
     train_parser.add_argument(
@@ -126,7 +131,8 @@ def get_train_args():
     train_parser.add_argument(
         "-mom", "--momentum", type=float, default=default.mom, help="momentum"
     )
-    train_parser.add_argument("--scales", nargs="+", type=float, help="lr step sacles")
+    train_parser.add_argument("--scales", nargs="+",
+                              type=float, help="lr step sacles")
     # model and log
     train_parser.add_argument(
         "--model_load_dir",
@@ -213,7 +219,8 @@ def get_train_config(args):
     ParameterUpdateStrategy = dict(
         learning_rate_decay=dict(
             piecewise_scaling_conf=dict(
-                boundaries=args.lr_steps, scales=[1.0, 0.1, 0.01, 0.001, 0.0001],
+                boundaries=args.lr_steps, scales=[
+                    1.0, 0.1, 0.01, 0.001, 0.0001],
             )
         ),
         momentum_conf=dict(beta=args.momentum,),
@@ -228,8 +235,12 @@ def get_train_config(args):
     )
     func_config.train.primary_lr(args.lr)
     func_config.train.model_update_conf(ParameterUpdateStrategy)
-    func_config.enable_fuse_model_update_ops(config.enable_fuse_model_update_ops)
+    func_config.enable_fuse_model_update_ops(
+        config.enable_fuse_model_update_ops)
     func_config.enable_fuse_add_to_output(config.enable_fuse_add_to_output)
+    if args.use_fp16:
+        print("Training with FP16 now.")
+        func_config.enable_auto_mixed_precision(True)
     return func_config
 
 
@@ -320,8 +331,10 @@ def make_train_func(args):
                 )
                 labels = mapped_label
                 fc7_weight = sampled_weight
-            fc7_weight = flow.math.l2_normalize(input=fc7_weight, axis=1, epsilon=1e-10)
-            fc1 = flow.math.l2_normalize(input=embedding, axis=1, epsilon=1e-10)
+            fc7_weight = flow.math.l2_normalize(
+                input=fc7_weight, axis=1, epsilon=1e-10)
+            fc1 = flow.math.l2_normalize(
+                input=embedding, axis=1, epsilon=1e-10)
             fc7 = flow.matmul(
                 a=fc1.with_distribute(fc1_distribute), b=fc7_weight, transpose_b=True
             )
@@ -346,23 +359,27 @@ def make_train_func(args):
 
 
 def main(args):
-    total_img_num = 5822653
-    steps_per_epoch = math.ceil(total_img_num / args.train_iter)
+    steps_per_epoch = math.ceil(config.total_img_num / args.train_iter)
     flow.config.gpu_device_num(args.device_num_per_node)
     print("gpu num: ", args.device_num_per_node)
     if not os.path.exists(args.models_root):
         os.makedirs(args.models_root)
     prefix = os.path.join(
-        args.models_root, "%s-%s-%s" % (args.network, args.loss, args.dataset), "model"
+        args.models_root, "%s-%s-%s" % (args.network,
+                                        args.loss, args.dataset), "model"
     )
     prefix_dir = os.path.dirname(prefix)
     print("prefix: ", prefix)
     if not os.path.exists(prefix_dir):
         os.makedirs(prefix_dir)
-    if args.use_fp16 and (args.num_nodes * args.gpu_num_per_node) > 1:
-        print("Training with FP16 now.")
+    if args.use_fp16 and (args.num_nodes * args.device_num_per_node) > 1:
         flow.config.collective_boxing.nccl_fusion_all_reduce_use_buffer(False)
-
+    if args.nccl_fusion_threshold_mb:
+        flow.config.collective_boxing.nccl_fusion_threshold_mb(
+            args.nccl_fusion_threshold_mb)
+    if args.nccl_fusion_max_ops:
+        flow.config.collective_boxing.nccl_fusion_max_ops(
+            args.nccl_fusion_max_ops)
     if args.num_nodes > 1:
         assert args.num_nodes <= len(args.node_ips)
         flow.env.ctrl_port(12138)
@@ -374,12 +391,12 @@ def main(args):
 
         flow.env.machine(nodes)
     if config.data_format.upper() != "NCHW" and config.data_format.upper() != "NHWC":
-        raise ValueError("Invalid data format") 
+        raise ValueError("Invalid data format")
     flow.env.log_dir(args.log_dir)
     train_func = make_train_func(args)
     validator = Validator(args)
     check_point = flow.train.CheckPoint()
-   
+
     if not args.model_load_dir:
         print("Init model on demand.")
         check_point.init()
@@ -408,7 +425,7 @@ def main(args):
         validation_interval = args.validation_interval
     else:
         raise ValueError("Invalid train unit!")
-    
+
     for step in range(total_iter_num):
         # train
         train_func().async_get(train_metric.metric_cb(step))
@@ -416,7 +433,8 @@ def main(args):
         # validation
         if args.do_validation_while_train and (step + 1) % validation_interval == 0:
             for ds in config.val_targets:
-                issame_list, embeddings_list = validator.do_validation(dataset=ds)
+                issame_list, embeddings_list = validator.do_validation(
+                    dataset=ds)
                 validation_util.cal_validation_metrics(
                     embeddings_list, issame_list, nrof_folds=args.nrof_folds,
                 )

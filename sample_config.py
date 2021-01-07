@@ -5,12 +5,8 @@ config = edict()
 
 config.emb_size = 512
 config.net_blocks = [1, 4, 6, 2]
-config.channel_last = False
 config.data_format = "NCHW"
-#config.ce_loss = True
 config.fc7_no_bias = False
-config.max_steps = 0
-config.count_flops = True
 config.bn_is_training = True
 config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
 config.lfw_total_images_num = 12000 
@@ -49,6 +45,7 @@ dataset.emore = edict()
 dataset.emore.dataset = 'emore'
 dataset.emore.dataset_dir = "/datasets/insightface/faces_emore"
 dataset.emore.num_classes = 85744
+dataset.emore.total_img_num = 5822653
 dataset.emore.part_name_prefix = "part-"
 dataset.emore.part_name_suffix_length = 5
 dataset.emore.train_data_part_num = 16
@@ -57,6 +54,7 @@ dataset.emore.shuffle = True
 dataset.glint360k_8GPU = edict()
 dataset.glint360k_8GPU.dataset = "glint360k"
 dataset.glint360k_8GPU.dataset_dir = "/data/glint/glint360k_ofrecord/glint360k"
+dataset.glint360k_8GPU.total_img_num = 17091657
 dataset.glint360k_8GPU.num_classes = 360232
 dataset.glint360k_8GPU.part_name_prefix = "part-"
 dataset.glint360k_8GPU.part_name_suffix_length = 5
@@ -129,6 +127,8 @@ default.loss_print_frequency = 1
 default.iter_num_in_snapshot = 5000
 
 default.use_fp16 = False
+default.nccl_fusion_threshold_mb = 0
+default.nccl_fusion_max_ops = 0
 
 default.val_batch_size_per_device = 20
 default.validation_interval = 5000  # 5822653/512 = 11372.369
