@@ -373,7 +373,7 @@ def main(args):
             nodes.append(addr_dict)
 
         flow.env.machine(nodes)
-    if config.data_format.upper() != "NCHW" and args.data_format.upper() != "NHWC":
+    if config.data_format.upper() != "NCHW" and config.data_format.upper() != "NHWC":
         raise ValueError("Invalid data format") 
     flow.env.log_dir(args.log_dir)
     train_func = make_train_func(args)
