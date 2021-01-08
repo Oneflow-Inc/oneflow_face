@@ -3,9 +3,10 @@ import oneflow.core.operator.op_conf_pb2 as op_conf_util
 
 
 def _get_initializer():
-    return flow.variance_scaling_initializer(
-        2.0, "fan_out", "random_normal", "NCHW"
-    )
+    return flow.random_normal_initializer(mean=0.0, stddev=0.1)
+    #return flow.variance_scaling_initializer(
+    #    2.0, "fan_out", "random_normal", "NCHW"
+    #)
 
 def _get_regularizer(name):
     return None

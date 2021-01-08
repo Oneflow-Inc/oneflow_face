@@ -196,9 +196,9 @@ def get_train_config(args):
     if args.use_fp16:
         config.enable_auto_mixed_precision(True)
     config.cudnn_conv_heuristic_search_algo(False)
-    config.enable_fuse_model_update_ops(True)
     config.train.primary_lr(args.base_lr)
     config.train.model_update_conf(ParameterUpdateStrategy)
+    config.indexed_slices_optimizer_conf(dict(include_op_names=dict(op_name=['fc7-weight'])))
     return config
 
 
