@@ -5,7 +5,7 @@ config = edict()
 
 config.emb_size = 512
 config.net_blocks = [1, 4, 6, 2]
-config.data_format = "NCHW"
+config.data_format = "NHWC"
 config.fc7_no_bias = False
 config.bn_is_training = True
 config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']

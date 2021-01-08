@@ -9,7 +9,7 @@ num_nodes=${5:-1}
 gpu_num_per_node=${6:-8}
 batch_size_per_device=${7:-64}
 model_load_dir=${8:-''}
-model_save_dir=${network}_b${batch_size_per_device}_model_saved
+model_save_dir=${network}_b${batch_size_per_device}_model_saved_20210108
 
 if [ $gpu_num_per_node -gt 1 ]; then
     data_part_num=200

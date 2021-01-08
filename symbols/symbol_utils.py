@@ -226,23 +226,3 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
         name="fc1",
     )   
     return fc1
-
-#def get_symbol(args, images):
-#    if config.network == "y1":
-#        embedding = MobileFacenet(
-#            images, embedding_size=config.emb_size, bn_is_training=config.bn_is_training
-#        )   
-#    elif config.network == "r100":
-#        embedding = Resnet100(images, embedding_size=config.emb_size, fc_type=config.fc_type)
-#    elif config.network == "r50":
-#        if args.use_fp16 and args.pad_output:
-#            if config.channel_last:
-#                paddings = ((0, 0), (0, 0), (0, 0), (0, 1)) 
-#            else:
-#                paddings = ((0, 0), (0, 1), (0, 0), (0, 0)) 
-#            images = flow.pad(images, paddings=paddings)
-#        embedding = Resnet50(images, embedding_size=config.emb_size, fc_type=config.fc_type, channel_last=config.channel_last)
-#    else:
-#        raise NotImplementedError
-#        
- #   return embedding
