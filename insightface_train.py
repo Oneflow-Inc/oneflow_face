@@ -14,29 +14,29 @@ from symbols import fresnet100, fmobilefacenet
 
 
 def str_list(x):
-    x = [y.lstrip().rstrip(",") for y in x if x.strip(",") != ""]
-    return list(filter(None, x))
+    x = [int(y) for y in x.split(',')]
+    return x
 
 
 def str2bool(v):
-    if v.lower() in ("yes", "true", "t", "y", "1", "True"):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ("no", "false", "f", "n", "0", "False"):
+    elif v.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
         raise argparse.ArgumentTypeError("Unsupported value encountered.")
 
 
 def get_train_args():
-    train_parser = argparse.ArgumentParser(description="flags for train")
+    train_parser = argparse.ArgumentParser(description="Flags for train")
     train_parser.add_argument(
-        "--dataset", default=default.dataset, required=True, help="dataset config"
+        "--dataset", default=default.dataset, required=True, help="Dataset config"
     )
     train_parser.add_argument(
-        "--network", default=default.network, required=True, help="network config"
+        "--network", default=default.network, required=True, help="Network config"
     )
     train_parser.add_argument(
-        "--loss", default=default.loss, required=True, help="loss config")
+        "--loss", default=default.loss, required=True, help="Loss config")
     args, rest = train_parser.parse_known_args()
     generate_config(args.network, args.dataset, args.loss)
 
@@ -45,33 +45,33 @@ def get_train_args():
         "--device_num_per_node",
         type=int,
         default=default.device_num_per_node,
-        help="the number of gpus used per node",
+        help="The number of GPUs used per node",
     )
     train_parser.add_argument(
         "--num_nodes",
         type=int,
         default=default.num_nodes,
-        help="node/machine number for training",
+        help="Node/Machine number for training",
     )
     train_parser.add_argument(
         "--node_ips",
         type=str_list,
         default=default.node_ips,
-        help='nodes ip list for training, devided by ",", length >= num_nodes',
+        help='Nodes ip list for training, devided by ",", length >= num_nodes',
     )
     train_parser.add_argument(
         "--model_parallel",
         type=str2bool,
         nargs="?",
         default=default.model_parallel,
-        help="whether use model parallel",
+        help="Whether to use model parallel",
     )
     train_parser.add_argument(
         "--partial_fc",
         type=str2bool,
         nargs="?",
         default=default.partial_fc,
-        help="whether use partial fc",
+        help="Whether to use partial fc",
     )
 
     # train config
@@ -79,24 +79,24 @@ def get_train_args():
         "--train_batch_size",
         type=int,
         default=default.train_batch_size,
-        help="train batch size totally",
+        help="Train batch size totally",
     )
     train_parser.add_argument(
         "--use_synthetic_data",
         type=str2bool,
         nargs="?",
         default=default.use_synthetic_data,
-        help="whether use synthetic data",
+        help="Whether to use synthetic data",
     )
     train_parser.add_argument(
         "--do_validation_while_train",
         type=str2bool,
         nargs="?",
         default=default.do_validation_while_train,
-        help="whether do validation while training",
+        help="Whether do validation while training",
     )
     train_parser.add_argument(
-        "--use_fp16", type=str2bool, nargs="?", default=default.use_fp16, help="whether to use fp16"
+        "--use_fp16", type=str2bool, nargs="?", default=default.use_fp16, help="Whether to use fp16"
     )
     train_parser.add_argument("--nccl_fusion_threshold_mb", type=int, default=default.nccl_fusion_threshold_mb,
                               help="NCCL fusion threshold megabytes, set to 0 to compatible with previous version of OneFlow.")
@@ -108,70 +108,71 @@ def get_train_args():
         "--train_unit",
         type=str,
         default=default.train_unit,
-        help="choose train unit of iteration, batch or epoch",
+        help="Choose train unit of iteration, batch or epoch",
     )
     train_parser.add_argument(
         "--train_iter",
         type=int,
         default=default.train_iter,
-        help="iteration for training",
+        help="Iteration for training",
     )
     train_parser.add_argument(
-        "--lr", type=float, default=default.lr, help="start learning rate"
+        "--lr", type=float, default=default.lr, help="Initial start learning rate"
     )
     train_parser.add_argument(
         "--lr_steps",
         type=str_list,
         default=default.lr_steps,
-        help="steps of lr changing",
+        help="Steps of lr changing",
     )
     train_parser.add_argument(
-        "-wd", "--weight_decay", type=float, default=default.wd, help="weight decay"
+        "-wd", "--weight_decay", type=float, default=default.wd, help="Weight decay"
     )
     train_parser.add_argument(
-        "-mom", "--momentum", type=float, default=default.mom, help="momentum"
+        "-mom", "--momentum", type=float, default=default.mom, help="Momentum"
     )
     train_parser.add_argument("--scales", nargs="+",
-                              type=float, help="lr step sacles")
+                              type=float, help="Lr step sacles")
+    
     # model and log
     train_parser.add_argument(
         "--model_load_dir",
         type=str,
         default=default.model_load_dir,
-        help="dir to load model",
+        help="Path to load model",
     )
     train_parser.add_argument(
         "--models_root",
         type=str,
         default=default.models_root,
-        help="root directory to save model.",
+        help="Root directory to save model.",
     )
     train_parser.add_argument(
-        "--log_dir", type=str, default=default.log_dir, help="log info save directory"
+        "--log_dir", type=str, default=default.log_dir, help="Log info save directory"
     )
     train_parser.add_argument(
         "--ckpt",
         type=int,
         default=default.ckpt,
-        help="checkpoint saving option. 0: discard saving. 1: save when necessary. 2: always save",
+        help="Checkpoint saving option. 0: discard saving. 1: save when necessary. 2: always save",
     )
     train_parser.add_argument(
         "--loss_print_frequency",
         type=int,
         default=default.loss_print_frequency,
-        help="frequency of printing loss",
+        help="Frequency of printing loss",
     )
     train_parser.add_argument(
         "--iter_num_in_snapshot",
         type=int,
         default=default.iter_num_in_snapshot,
-        help="the number of train unit iter in the snapshot",
+        help="The number of train unit iter in the snapshot",
     )
     train_parser.add_argument(
-        "--num_sample",
+        "--sample_ratio",
         type=int,
-        default=default.num_sample,
-        help="the number of sample to sample",
+        default=default.sample_ratio,
+        help="The ratio for sampling",
     )
 
     # validation config
@@ -179,19 +180,19 @@ def get_train_args():
         "--val_batch_size_per_device",
         type=int,
         default=default.val_batch_size_per_device,
-        help="validation batch size per device",
+        help="Validation batch size per device",
     )
     train_parser.add_argument(
         "--validation_interval",
         type=int,
         default=default.validation_interval,
-        help="validation interval while training, using train unit as interval unit",
+        help="Validation interval while training, using train unit as interval unit",
     )
     train_parser.add_argument(
         "--val_data_part_num",
         type=str,
         default=default.val_data_part_num,
-        help="validation dataset dir prefix",
+        help="Validation dataset dir prefix",
     )
     train_parser.add_argument(
         "--lfw_total_images_num", type=int, default=12000, required=False
@@ -207,15 +208,16 @@ def get_train_args():
             "--%s_dataset_dir" % ds,
             type=str,
             default=os.path.join(default.val_dataset_dir, ds),
-            help="validation dataset dir",
+            help="Validation dataset path",
         )
     train_parser.add_argument(
-        "--nrof_folds", type=int, default=default.nrof_folds, help=""
+        "--nrof_folds", type=int, default=default.nrof_folds,
     )
     return train_parser.parse_args()
 
 
 def get_train_config(args):
+    print("lr_step type: ", type(args.lr_steps))
     ParameterUpdateStrategy = dict(
         learning_rate_decay=dict(
             piecewise_scaling_conf=dict(
@@ -261,7 +263,7 @@ def make_train_func(args):
             return flow.random_normal_initializer(mean=0.0, stddev=0.01)
 
         trainable = True
-        if config.loss_name == "softmax":  # softmax
+        if config.loss_name == "softmax": 
             if args.model_parallel:
                 print("Training is using model parallelism now.")
                 labels = labels.with_distribute(flow.distribute.broadcast())
@@ -322,12 +324,15 @@ def make_train_func(args):
                 print(
                     "Training is using model parallelism and optimized by partial_fc now."
                 )
+                size = args.device_num_per_node * args.num_nodes
+                num_local = (config.num_classes + size - 1) // size
+                num_sample = int(num_local * config.sample_ratio)
                 (
                     mapped_label,
                     sampled_label,
                     sampled_weight,
                 ) = flow.distributed_partial_fc_sample(
-                    weight=fc7_weight, label=labels, num_sample=args.num_sample,
+                    weight=fc7_weight, label=labels, num_sample= (config.num_classes * args.sample_ratio),
                 )
                 labels = mapped_label
                 fc7_weight = sampled_weight
@@ -442,6 +447,7 @@ def main(args):
             lr *= 0.1
             print("lr_steps: ", step)
             print("lr change to ", lr)
+
         # snapshot
         if (step + 1) % iter_num_in_snapshot == 0:
             check_point.save(

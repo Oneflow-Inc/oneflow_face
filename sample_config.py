@@ -43,7 +43,7 @@ dataset = edict()
 
 dataset.emore = edict()
 dataset.emore.dataset = 'emore'
-dataset.emore.dataset_dir = "/datasets/insightface/faces_emore"
+dataset.emore.dataset_dir = "/data/insightface/train_ofrecord/faces_emore"
 dataset.emore.num_classes = 85744
 dataset.emore.total_img_num = 5822653
 dataset.emore.part_name_prefix = "part-"
@@ -101,7 +101,7 @@ default.dataset = 'emore'
 default.network = 'r100'
 default.loss = 'arcface'
 
-default.node_ips = ["192.168.1.13", "192.168.1.14"]
+default.node_ips = ["192.168.1.13"]
 default.num_nodes = 1
 default.device_num_per_node = 8
 default.model_parallel = 0
@@ -115,7 +115,7 @@ default.do_validation_while_train = True
 default.train_unit = "batch"
 default.train_iter = 170586
 default.lr = 0.1
-default.lr_steps = [200000, 400000, 500000, 550000]  #[100000,140000,160000]
+default.lr_steps = [100000,140000,160000]
 default.wd = 0.0005
 default.mom = 0.9
 
@@ -131,11 +131,11 @@ default.nccl_fusion_threshold_mb = 0
 default.nccl_fusion_max_ops = 0
 
 default.val_batch_size_per_device = 20
-default.validation_interval = 5000  # 5822653/512 = 11372.369
+default.validation_interval = 1  
 default.val_data_part_num = 1
 default.val_dataset_dir = "/data/insightface/eval_ofrecord" 
 default.nrof_folds = 10
-default.num_sample = 8568  # int(num_classes * 0.1)
+default.sample_ratio = 0.1 # 8568   int(num_classes * 0.1)
 
 
 def generate_config(_network, _dataset, _loss):

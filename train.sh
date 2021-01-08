@@ -1,17 +1,25 @@
 export ONEFLOW_DEBUG_MODE=""
 
-lr_steps=200000,400000,500000,550000
 network=${1:-"r100"}
 dataset=${2:-"emore"}
-loss=${3:-"arcface"}
+loss=${3:-"softmax"}
 num_nodes=${4:-1}
 gpu_num_per_node=${5:-8}
 batch_size_per_device=${6:-64}
-model_load_dir=${7:-''}
+do_validation_while_train=${7:-do_validation_while_train}
+val_batch_size=${8:-20}
+validation_interval=${9:-5000} 
+train_unit=${10:-"batch"} 
+train_iter=${11:-180000} 
+lr=${12:-0.1} 
+lr_steps=${13:-"100000,140000,160000"}
+model_parallel=${14:-1} 
+partial_fc=${15:-0} 
+model_load_dir=${16:-''}
 model_save_dir=${network}_b${batch_size_per_device}_model_saved
 
 if [ $gpu_num_per_node -gt 1 ]; then
-    data_part_num=200
+    data_part_num=16
 else
     data_part_num=1
 fi
@@ -22,24 +30,24 @@ rm -r $model_save_dir
 rm -r $log_dir
 mkdir -p $model_save_dir
 mkdir -p $log_dir
-echo "lr_step: " ${lr_steps}
 
 time=$(date "+%Y-%m-%d %H:%M:%S")
 echo $time
 
-python insightface_train.py \
+python3 insightface_train.py \
 --network=${network} \
 --dataset=${dataset} \
 --loss=${loss} \
 --train_batch_size=$(expr $num_nodes '*' $gpu_num_per_node '*' $batch_size_per_device) \
---do_validation_while_train=True \
---val_batch_size=20 \
---validation_interval=5000 \
---train_unit="batch"
---train_iter=180000 \
+--do_validation_while_train=${do_validation_while_train} \
+--val_batch_size=${val_batch_size} \
+--validation_interval=${validation_interval} \
+--train_unit=${train_unit} \
+--train_iter=${train_iter} \
 --device_num_per_node=$gpu_num_per_node \
---lr=0.1 \
---model_parallel=1 \
---partial_fc=0 \
+--lr=${lr} \
+--lr_steps=${lr_steps} \
+--model_parallel=${model_parallel} \
+--partial_fc=${partial_fc} \
 --models_root=$model_save_dir \
 --log_dir=$log_dir 

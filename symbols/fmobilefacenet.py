@@ -128,7 +128,7 @@ def get_symbol(input_blob):
     num_classes = config.emb_size
     fc_type = config.fc_type
     data_format = config.data_format
-    bn_is_training = config,bn_is_training
+    bn_is_training = config.bn_is_training
     input_blob = flow.transpose(
         input_blob, name="transpose", perm=[0, 3, 1, 2]
     )
