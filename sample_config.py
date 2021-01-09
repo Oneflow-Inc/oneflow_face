@@ -5,7 +5,7 @@ config = edict()
 
 config.emb_size = 512
 config.net_blocks = [1, 4, 6, 2]
-config.data_format = "NHWC"
+config.data_format = "NCHW"
 config.fc7_no_bias = False
 config.bn_is_training = True
 config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
@@ -116,6 +116,7 @@ default.train_unit = "batch"
 default.train_iter = 170586
 default.lr = 0.1
 default.lr_steps = [100000,140000,160000]
+default.scales = [1.0, 0.1, 0.01, 0.001, 0.0001]
 default.wd = 0.0005
 default.mom = 0.9
 

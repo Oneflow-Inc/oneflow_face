@@ -13,13 +13,13 @@ train_iter=${10:-600000}
 gpu_num_per_node=${11:-8}
 lr=${12:-0.1}
 lr_steps=${13:-"200000,400000,500000,550000"}
-model_parallel=${14:-0}
-partial_fc=${15:-0}
+model_parallel=${14:-1}
+partial_fc=${15:-1}
 sample_ratio=${16:-1}
-use_fp16=${17:-False}
+use_fp16=${17:-True}
 data_dir_root=${18:-"/datasets"}
 model_load_dir=${19:-''}
-model_save_dir=${network}_b${batch_size_per_device}_model_saved_20210108_fp16
+model_save_dir=${network}_b${batch_size_per_device}_model_saved
 
 if [ $gpu_num_per_node -gt 1 ]; then
     data_part_num=200

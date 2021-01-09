@@ -131,8 +131,8 @@ def get_train_args():
     train_parser.add_argument(
         "-mom", "--momentum", type=float, default=default.mom, help="Momentum"
     )
-    train_parser.add_argument("--scales", nargs="+",
-                              type=float, help="Lr step sacles")
+    train_parser.add_argument("--scales", type=str_list,
+                              default=default.scales, help="Learning rate step sacles")
     
     # model and log
     train_parser.add_argument(
@@ -221,8 +221,7 @@ def get_train_config(args):
     ParameterUpdateStrategy = dict(
         learning_rate_decay=dict(
             piecewise_scaling_conf=dict(
-                boundaries=args.lr_steps, scales=[
-                    1.0, 0.1, 0.01, 0.001, 0.0001],
+                boundaries=args.lr_steps, scales=args.scales,
             )
         ),
         momentum_conf=dict(beta=args.momentum,),
@@ -243,6 +242,7 @@ def get_train_config(args):
     if args.use_fp16:
         print("Training with FP16 now.")
         func_config.enable_auto_mixed_precision(True)
+    func_config.indexed_slices_optimizer_conf(dict(include_op_names=dict(op_name=['fc7-weight'])))
     return func_config
 
 
@@ -324,15 +324,16 @@ def make_train_func(args):
                 print(
                     "Training is using model parallelism and optimized by partial_fc now."
                 )
-                size = args.device_num_per_node * args.num_nodes
-                num_local = (config.num_classes + size - 1) // size
-                num_sample = int(num_local * config.sample_ratio)
+                size = args.device_num_per_node * args.num_nodes  
+               # num_local = (config.num_classes + size - 1) // size   #85744
+               # num_sample = int(num_local * args.sample_ratio) 
+                num_sample = (config.num_classes * args.sample_ratio // size * size)
                 (
                     mapped_label,
                     sampled_label,
                     sampled_weight,
                 ) = flow.distributed_partial_fc_sample(
-                    weight=fc7_weight, label=labels, num_sample= (config.num_classes * args.sample_ratio),
+                    weight=fc7_weight, label=labels, num_sample= num_sample,
                 )
                 labels = mapped_label
                 fc7_weight = sampled_weight
