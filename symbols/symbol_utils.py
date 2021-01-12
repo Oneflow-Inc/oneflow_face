@@ -37,13 +37,12 @@ def _batch_norm(
     scale=True,
     trainable=True,
     is_training=True,
-    shape_dims=4,
     data_format="NCHW",
     name=None,
 ):
     return flow.layers.batch_normalization(
         inputs=inputs,
-        axis=3 if data_format == "NHWC" and shape_dims == 4 else 1,
+        axis=3 if data_format == "NHWC" and inputs.shape == 4 else 1,
         momentum=0.9,
         epsilon=epsilon,
         center=center,
@@ -157,7 +156,6 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             scale=False,
             center=True,
             is_training=config.bn_is_training,
-            shape_dims=2,
             data_format=config.data_format,
             name="fc1",
         )
@@ -188,7 +186,6 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             scale=False,
             center=True,
             is_training=config.bn_is_training,
-            shape_dims=2,
             data_format=config.data_format,
             name="fc1"
         )
@@ -223,7 +220,6 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             scale=False,
             center=True,
             is_training=config.bn_is_training,  # fix_gamma=True
-            shape_dims=2,
             data_format=config.data_format,
             name="fc1",
         )

@@ -133,7 +133,7 @@ def get_train_args():
     )
     train_parser.add_argument("--scales", type=str_list,
                               default=default.scales, help="Learning rate step sacles")
-    
+
     # model and log
     train_parser.add_argument(
         "--model_load_dir",
@@ -150,12 +150,7 @@ def get_train_args():
     train_parser.add_argument(
         "--log_dir", type=str, default=default.log_dir, help="Log info save directory"
     )
-    train_parser.add_argument(
-        "--ckpt",
-        type=int,
-        default=default.ckpt,
-        help="Checkpoint saving option. 0: discard saving. 1: save when necessary. 2: always save",
-    )
+
     train_parser.add_argument(
         "--loss_print_frequency",
         type=int,
@@ -217,7 +212,6 @@ def get_train_args():
 
 
 def get_train_config(args):
-    print("lr_step type: ", type(args.lr_steps))
     ParameterUpdateStrategy = dict(
         learning_rate_decay=dict(
             piecewise_scaling_conf=dict(
@@ -242,7 +236,10 @@ def get_train_config(args):
     if args.use_fp16:
         print("Training with FP16 now.")
         func_config.enable_auto_mixed_precision(True)
-    func_config.indexed_slices_optimizer_conf(dict(include_op_names=dict(op_name=['fc7-weight'])))
+    if args.partial_fc:
+        func_config.enable_fuse_model_update_ops(False)
+        func_config.indexed_slices_optimizer_conf(
+            dict(include_op_names=dict(op_name=['fc7-weight'])))
     return func_config
 
 
@@ -263,7 +260,7 @@ def make_train_func(args):
             return flow.random_normal_initializer(mean=0.0, stddev=0.01)
 
         trainable = True
-        if config.loss_name == "softmax": 
+        if config.loss_name == "softmax":
             if args.model_parallel:
                 print("Training is using model parallelism now.")
                 labels = labels.with_distribute(flow.distribute.broadcast())
@@ -274,30 +271,18 @@ def make_train_func(args):
                 fc1_distribute = flow.distribute.split(0)
                 fc7_data_distribute = flow.distribute.split(0)
                 fc7_model_distribute = flow.distribute.broadcast()
-            if config.fc7_no_bias:
-                fc7 = flow.layers.dense(
-                    inputs=embedding.with_distribute(fc1_distribute),
-                    units=config.num_classes,
-                    activation=None,
-                    use_bias=True,
-                    kernel_initializer=_get_initializer(),
-                    bias_initializer=_get_initializer(),
-                    trainable=trainable,
-                    name="fc7",
-                    model_distribute=fc7_model_distribute,
-                )
-            else:
-                fc7 = flow.layers.dense(
-                    inputs=embedding.with_distribute(fc1_distribute),
-                    units=config.num_classes,
-                    activation=None,
-                    use_bias=False,
-                    kernel_initializer=_get_initializer(),
-                    bias_initializer=None,
-                    trainable=trainable,
-                    name="fc7",
-                    model_distribute=fc7_model_distribute,
-                )
+
+            fc7 = flow.layers.dense(
+                inputs=embedding.with_distribute(fc1_distribute),
+                units=config.num_classes,
+                activation=None,
+                use_bias=False,
+                kernel_initializer=_get_initializer(),
+                bias_initializer=None,
+                trainable=trainable,
+                name="fc7",
+                model_distribute=fc7_model_distribute,
+            )
             fc7 = fc7.with_distribute(fc7_data_distribute)
         elif config.loss_name == "margin_softmax":
             if args.model_parallel:
@@ -324,16 +309,16 @@ def make_train_func(args):
                 print(
                     "Training is using model parallelism and optimized by partial_fc now."
                 )
-                size = args.device_num_per_node * args.num_nodes  
-               # num_local = (config.num_classes + size - 1) // size   #85744
-               # num_sample = int(num_local * args.sample_ratio) 
-                num_sample = (config.num_classes * args.sample_ratio // size * size)
+                size = args.device_num_per_node * args.num_nodes
+                num_local = (config.num_classes + size - 1) // size
+                num_sample = int(num_local * args.sample_ratio)
+                total_num_sample = num_sample * size
                 (
                     mapped_label,
                     sampled_label,
                     sampled_weight,
                 ) = flow.distributed_partial_fc_sample(
-                    weight=fc7_weight, label=labels, num_sample= num_sample,
+                    weight=fc7_weight, label=labels, num_sample=total_num_sample,
                 )
                 labels = mapped_label
                 fc7_weight = sampled_weight
@@ -365,7 +350,7 @@ def make_train_func(args):
 
 
 def main(args):
-    steps_per_epoch = math.ceil(config.total_img_num / args.train_iter)
+    steps_per_epoch = math.ceil(config.total_img_num / args.train_batch_size)
     flow.config.gpu_device_num(args.device_num_per_node)
     print("gpu num: ", args.device_num_per_node)
     if not os.path.exists(args.models_root):
@@ -401,21 +386,15 @@ def main(args):
     flow.env.log_dir(args.log_dir)
     train_func = make_train_func(args)
     validator = Validator(args)
-    check_point = flow.train.CheckPoint()
+    if os.path.exists(args.model_load_dir):
+        print("Loading model from {}".format(args.model_load_dir))
+        variables = flow.checkpoint.get(args.model_load_dir)
+        flow.load_variables(variables)
 
-    if not args.model_load_dir:
-        print("Init model on demand.")
-        check_point.init()
-    else:
-        if os.path.exists(args.model_load_dir):
-            print("Loading model from {}".format(args.model_load_dir))
-            check_point.load(args.model_load_dir)
-        else:
-            raise ValueError("Invalid model load dir", args.model_load_dir)
     print("num_classes ", config.num_classes)
     print("Called with argument: ", args, config)
     train_metric = TrainMetric(
-        desc="train", calculate_batches=1, batch_size=args.train_batch_size
+        desc="train", calculate_batches=args.loss_print_frequency, batch_size=args.train_batch_size
     )
     lr = args.lr
     assert args.train_iter > 0, "Train iter must be greater thatn 0!"
@@ -439,6 +418,7 @@ def main(args):
         # validation
         if args.do_validation_while_train and (step + 1) % validation_interval == 0:
             for ds in config.val_targets:
+                assert ds == 'lfw' or 'cfp_fp' or 'agedb_30'
                 issame_list, embeddings_list = validator.do_validation(
                     dataset=ds)
                 validation_util.cal_validation_metrics(
@@ -451,11 +431,9 @@ def main(args):
 
         # snapshot
         if (step + 1) % iter_num_in_snapshot == 0:
-            check_point.save(
-                os.path.join(
-                    prefix_dir, "snapshot_" + str(step // iter_num_in_snapshot)
-                )
-            )
+            path = os.path.join(
+                prefix_dir, "snapshot_" + str(step // iter_num_in_snapshot))
+            flow.checkpoint.save(path)
 
 
 if __name__ == "__main__":

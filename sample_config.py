@@ -6,7 +6,6 @@ config = edict()
 config.emb_size = 512
 config.net_blocks = [1, 4, 6, 2]
 config.data_format = "NCHW"
-config.fc7_no_bias = False
 config.bn_is_training = True
 config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
 config.lfw_total_images_num = 12000 
@@ -21,13 +20,11 @@ network = edict()
 
 network.r100 = edict()
 network.r100.net_name = 'fresnet100'
-network.r100.num_layers = 100
 network.r100.emb_size = 512
 network.r100.fc_type = "E"
 
 network.r100_glint360k = edict()
 network.r100_glint360k.net_name = 'fresnet100'
-network.r100_glint360k.num_layers = 100
 network.r100_glint360k.emb_size = 512
 network.r100_glint360k.fc_type = "FC"
 
@@ -108,7 +105,7 @@ default.model_parallel = 0
 default.partial_fc = 0
 
 default.train_batch_size_per_device = 64
-default.train_batch_size = default.train_batch_size_per_device * default.device_num_per_node
+default.train_batch_size = default.train_batch_size_per_device * default.device_num_per_node * default.num_nodes
 default.use_synthetic_data = False
 default.do_validation_while_train = True
 
@@ -123,20 +120,19 @@ default.mom = 0.9
 default.model_load_dir = ""
 default.models_root = './models'
 default.log_dir = "output/log"
-default.ckpt = 3
 default.loss_print_frequency = 1
-default.iter_num_in_snapshot = 5000
+default.iter_num_in_snapshot = 10
 
 default.use_fp16 = False
-default.nccl_fusion_threshold_mb = 0
-default.nccl_fusion_max_ops = 0
+default.nccl_fusion_threshold_mb = 16
+default.nccl_fusion_max_ops = 64
 
 default.val_batch_size_per_device = 20
-default.validation_interval = 1  
+default.validation_interval = 5  
 default.val_data_part_num = 1
 default.val_dataset_dir = "/data/insightface/eval_ofrecord" 
 default.nrof_folds = 10
-default.sample_ratio = 0.1 # 8568   int(num_classes * 0.1)
+default.sample_ratio = 0.1 
 
 
 def generate_config(_network, _dataset, _loss):
