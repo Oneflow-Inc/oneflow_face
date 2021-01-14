@@ -12,7 +12,7 @@ config.lfw_total_images_num = 12000
 config.cfp_fp_total_images_num = 14000 
 config.agedb_30_total_images_num = 12000
 config.cudnn_conv_heuristic_search_algo = False
-config.enable_fuse_model_update_ops = True
+config.enable_fuse_model_update_ops = False
 config.enable_fuse_add_to_output = False
 
 # network settings
@@ -124,8 +124,8 @@ default.loss_print_frequency = 1
 default.iter_num_in_snapshot = 10
 
 default.use_fp16 = False
-default.nccl_fusion_threshold_mb = 16
-default.nccl_fusion_max_ops = 64
+default.nccl_fusion_threshold_mb = 0 #16
+default.nccl_fusion_max_ops = 0 #64
 
 default.val_batch_size_per_device = 20
 default.validation_interval = 5  
@@ -133,7 +133,6 @@ default.val_data_part_num = 1
 default.val_dataset_dir = "/data/insightface/eval_ofrecord" 
 default.nrof_folds = 10
 default.sample_ratio = 0.1 
-
 
 def generate_config(_network, _dataset, _loss):
     for k, v in loss[_loss].items():

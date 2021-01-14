@@ -169,7 +169,11 @@ def get_train_args():
         default=default.sample_ratio,
         help="The ratio for sampling",
     )
-
+    size = default.device_num_per_node * default.num_nodes
+    num_local = (config.num_classes + size - 1) // size
+    num_sample = int(num_local * default.sample_ratio)
+    total_num_sample = num_sample * size
+    train_parser.add_argument("--total_num_sample", type=int, default=total_num_sample)
     # validation config
     train_parser.add_argument(
         "--val_batch_size_per_device",
@@ -244,6 +248,10 @@ def get_train_config(args):
 
 
 def make_train_func(args):
+    #size = args.device_num_per_node * args.num_nodes
+    #num_local = (config.num_classes + size - 1) // size
+    #num_sample = int(num_local * args.sample_ratio)
+    #total_num_sample = num_sample * size
     @flow.global_function(type="train", function_config=get_train_config(args))
     def get_symbol_train_job():
         if args.use_synthetic_data:
@@ -309,16 +317,19 @@ def make_train_func(args):
                 print(
                     "Training is using model parallelism and optimized by partial_fc now."
                 )
-                size = args.device_num_per_node * args.num_nodes
-                num_local = (config.num_classes + size - 1) // size
-                num_sample = int(num_local * args.sample_ratio)
-                total_num_sample = num_sample * size
+                #size = args.device_num_per_node * args.num_nodes
+                #num_local = (config.num_classes + size - 1) // size
+                #num_sample = int(num_local * args.sample_ratio)
+                #total_num_sample = num_sample * size
+                print(
+                    "-----------------------total num_sample: ",  args.total_num_sample
+                )
                 (
                     mapped_label,
                     sampled_label,
                     sampled_weight,
                 ) = flow.distributed_partial_fc_sample(
-                    weight=fc7_weight, label=labels, num_sample=total_num_sample,
+                    weight=fc7_weight, label=labels, num_sample=args.total_num_sample,
                 )
                 labels = mapped_label
                 fc7_weight = sampled_weight
