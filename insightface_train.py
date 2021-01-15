@@ -165,7 +165,7 @@ def get_train_args():
     )
     train_parser.add_argument(
         "--sample_ratio",
-        type=int,
+        type=float,
         default=default.sample_ratio,
         help="The ratio for sampling",
     )
@@ -248,10 +248,6 @@ def get_train_config(args):
 
 
 def make_train_func(args):
-    #size = args.device_num_per_node * args.num_nodes
-    #num_local = (config.num_classes + size - 1) // size
-    #num_sample = int(num_local * args.sample_ratio)
-    #total_num_sample = num_sample * size
     @flow.global_function(type="train", function_config=get_train_config(args))
     def get_symbol_train_job():
         if args.use_synthetic_data:
@@ -316,13 +312,6 @@ def make_train_func(args):
             if args.partial_fc and args.model_parallel:
                 print(
                     "Training is using model parallelism and optimized by partial_fc now."
-                )
-                #size = args.device_num_per_node * args.num_nodes
-                #num_local = (config.num_classes + size - 1) // size
-                #num_sample = int(num_local * args.sample_ratio)
-                #total_num_sample = num_sample * size
-                print(
-                    "-----------------------total num_sample: ",  args.total_num_sample
                 )
                 (
                     mapped_label,
