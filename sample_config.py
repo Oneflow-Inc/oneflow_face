@@ -113,7 +113,7 @@ default.train_unit = "batch"
 default.train_iter = 170586
 default.lr = 0.1
 default.lr_steps = [100000,140000,160000]
-default.scales = [1.0, 0.1, 0.01, 0.001, 0.0001]
+default.scales = [1.0, 0.1, 0.01, 0.001]
 default.wd = 0.0005
 default.mom = 0.9
 
@@ -124,8 +124,8 @@ default.loss_print_frequency = 1
 default.iter_num_in_snapshot = 10
 
 default.use_fp16 = False
-default.nccl_fusion_threshold_mb = 0 #16
-default.nccl_fusion_max_ops = 0 #64
+default.nccl_fusion_threshold_mb = 16
+default.nccl_fusion_max_ops = 64
 
 default.val_batch_size_per_device = 20
 default.validation_interval = 5  

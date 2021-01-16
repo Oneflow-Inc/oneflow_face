@@ -397,7 +397,7 @@ def main(args):
         desc="train", calculate_batches=args.loss_print_frequency, batch_size=args.train_batch_size
     )
     lr = args.lr
-    assert args.train_iter > 0, "Train iter must be greater thatn 0!"
+    assert args.train_iter <= 0, ValueError("Train iter must be greater thatn 0!")
     if args.train_unit == "epoch":
         print("Using epoch as training unit now.")
         total_iter_num = steps_per_epoch * args.train_iter
@@ -418,7 +418,7 @@ def main(args):
         # validation
         if args.do_validation_while_train and (step + 1) % validation_interval == 0:
             for ds in config.val_targets:
-                assert ds == 'lfw' or 'cfp_fp' or 'agedb_30'
+                assert ds != 'lfw' or 'cfp_fp' or 'agedb_30', ValueError("Lfw, cfp_fp, agedb_30 datasets are supported now!")
                 issame_list, embeddings_list = validator.do_validation(
                     dataset=ds)
                 validation_util.cal_validation_metrics(
