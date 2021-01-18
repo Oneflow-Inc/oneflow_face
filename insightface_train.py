@@ -13,8 +13,8 @@ from insightface_val import Validator, get_val_args
 from symbols import fresnet100, fmobilefacenet
 
 
-def str_list(x):
-    x = [int(y) for y in x.split(',')]
+def str2list(x):
+    x = [float(y) if type(eval(y)) == float else int(y) for y in x.split(',')]
     return x
 
 
@@ -55,7 +55,7 @@ def get_train_args():
     )
     train_parser.add_argument(
         "--node_ips",
-        type=str_list,
+        type=str2list,
         default=default.node_ips,
         help='Nodes ip list for training, devided by ",", length >= num_nodes',
     )
@@ -121,7 +121,7 @@ def get_train_args():
     )
     train_parser.add_argument(
         "--lr_steps",
-        type=str_list,
+        type=str2list,
         default=default.lr_steps,
         help="Steps of lr changing",
     )
@@ -131,7 +131,7 @@ def get_train_args():
     train_parser.add_argument(
         "-mom", "--momentum", type=float, default=default.mom, help="Momentum"
     )
-    train_parser.add_argument("--scales", type=str_list,
+    train_parser.add_argument("--scales", type=str2list,
                               default=default.scales, help="Learning rate step sacles")
 
     # model and log
@@ -173,7 +173,8 @@ def get_train_args():
     num_local = (config.num_classes + size - 1) // size
     num_sample = int(num_local * default.sample_ratio)
     total_num_sample = num_sample * size
-    train_parser.add_argument("--total_num_sample", type=int, default=total_num_sample)
+    train_parser.add_argument("--total_num_sample",
+                              type=int, default=total_num_sample, help="Total num_sample = num_sample per gpu * num_gpu")
     # validation config
     train_parser.add_argument(
         "--val_batch_size_per_device",
@@ -194,15 +195,16 @@ def get_train_args():
         help="Validation dataset dir prefix",
     )
     train_parser.add_argument(
-        "--lfw_total_images_num", type=int, default=12000, required=False
+        "--lfw_total_images_num", type=int, default=12000,
     )
     train_parser.add_argument(
-        "--cfp_fp_total_images_num", type=int, default=14000, required=False
+        "--cfp_fp_total_images_num", type=int, default=14000,
     )
     train_parser.add_argument(
-        "--agedb_30_total_images_num", type=int, default=12000, required=False
+        "--agedb_30_total_images_num", type=int, default=12000,
     )
     for ds in config.val_targets:
+        assert ds == 'lfw' or 'cfp_fp' or 'agedb_30', "Lfw, cfp_fp, agedb_30 datasets are supported now!"
         train_parser.add_argument(
             "--%s_dataset_dir" % ds,
             type=str,
@@ -244,6 +246,28 @@ def get_train_config(args):
         func_config.enable_fuse_model_update_ops(False)
         func_config.indexed_slices_optimizer_conf(
             dict(include_op_names=dict(op_name=['fc7-weight'])))
+    if args.use_fp16 and (args.num_nodes * args.device_num_per_node) > 1:
+        flow.config.collective_boxing.nccl_fusion_all_reduce_use_buffer(False)
+    if args.nccl_fusion_threshold_mb:
+        flow.config.collective_boxing.nccl_fusion_threshold_mb(
+            args.nccl_fusion_threshold_mb)
+    if args.nccl_fusion_max_ops:
+        flow.config.collective_boxing.nccl_fusion_max_ops(
+            args.nccl_fusion_max_ops)
+    assert args.train_iter > 0, "Train iter must be greater than 0!"
+    steps_per_epoch = math.ceil(config.total_img_num / args.train_batch_size)
+    if args.train_unit == "epoch":
+        print("Using epoch as training unit now.")
+        args.total_iter_num = steps_per_epoch * args.train_iter
+        args.iter_num_in_snapshot = steps_per_epoch * args.iter_num_in_snapshot
+        args.validation_interval = steps_per_epoch + args.validation_interval
+    elif args.train_unit == "batch":
+        print("Using batch as training unit now.")
+        args.total_iter_num = args.train_iter
+        args.iter_num_in_snapshot = args.iter_num_in_snapshot
+        args.validation_interval = args.validation_interval
+    else:
+        raise ValueError("Invalid train unit!")
     return func_config
 
 
@@ -255,8 +279,9 @@ def make_train_func(args):
         else:
             labels, images = ofrecord_util.load_train_dataset(args)
         image_size = images.shape[1:-1]
-        assert len(image_size) == 2
-        assert image_size[0] == image_size[1]
+        assert len(
+            image_size) == 2, "The length of image size must be equal to 2."
+        assert image_size[0] == image_size[1], "image_size[0] should be equal to image_size[1]."
         print("train image_size: ", image_size)
         embedding = eval(config.net_name).get_symbol(images)
 
@@ -350,7 +375,7 @@ def make_train_func(args):
 
 
 def main(args):
-    steps_per_epoch = math.ceil(config.total_img_num / args.train_batch_size)
+    
     flow.config.gpu_device_num(args.device_num_per_node)
     print("gpu num: ", args.device_num_per_node)
     if not os.path.exists(args.models_root):
@@ -363,16 +388,10 @@ def main(args):
     print("prefix: ", prefix)
     if not os.path.exists(prefix_dir):
         os.makedirs(prefix_dir)
-    if args.use_fp16 and (args.num_nodes * args.device_num_per_node) > 1:
-        flow.config.collective_boxing.nccl_fusion_all_reduce_use_buffer(False)
-    if args.nccl_fusion_threshold_mb:
-        flow.config.collective_boxing.nccl_fusion_threshold_mb(
-            args.nccl_fusion_threshold_mb)
-    if args.nccl_fusion_max_ops:
-        flow.config.collective_boxing.nccl_fusion_max_ops(
-            args.nccl_fusion_max_ops)
+
     if args.num_nodes > 1:
-        assert args.num_nodes <= len(args.node_ips)
+        assert args.num_nodes <= len(
+            args.node_ips), "The number of nodes should not be greater than length of node_ips list."
         flow.env.ctrl_port(12138)
         nodes = []
         for ip in args.node_ips:
@@ -397,42 +416,28 @@ def main(args):
         desc="train", calculate_batches=args.loss_print_frequency, batch_size=args.train_batch_size
     )
     lr = args.lr
-    assert args.train_iter <= 0, ValueError("Train iter must be greater thatn 0!")
-    if args.train_unit == "epoch":
-        print("Using epoch as training unit now.")
-        total_iter_num = steps_per_epoch * args.train_iter
-        iter_num_in_snapshot = steps_per_epoch * args.iter_num_in_snapshot
-        validation_interval = steps_per_epoch + args.validation_interval
-    elif args.train_unit == "batch":
-        print("Using batch as training unit now.")
-        total_iter_num = args.train_iter
-        iter_num_in_snapshot = args.iter_num_in_snapshot
-        validation_interval = args.validation_interval
-    else:
-        raise ValueError("Invalid train unit!")
 
-    for step in range(total_iter_num):
+
+    for step in range(args.total_iter_num):
         # train
         train_func().async_get(train_metric.metric_cb(step))
 
         # validation
-        if args.do_validation_while_train and (step + 1) % validation_interval == 0:
-            for ds in config.val_targets:
-                assert ds != 'lfw' or 'cfp_fp' or 'agedb_30', ValueError("Lfw, cfp_fp, agedb_30 datasets are supported now!")
-                issame_list, embeddings_list = validator.do_validation(
-                    dataset=ds)
-                validation_util.cal_validation_metrics(
-                    embeddings_list, issame_list, nrof_folds=args.nrof_folds,
-                )
+        if args.do_validation_while_train and (step + 1) % args.validation_interval == 0:
+            issame_list, embeddings_list = validator.do_validation(
+                dataset=ds)
+            validation_util.cal_validation_metrics(
+                embeddings_list, issame_list, nrof_folds=args.nrof_folds,
+            )
         if step in args.lr_steps:
             lr *= 0.1
             print("lr_steps: ", step)
             print("lr change to ", lr)
 
         # snapshot
-        if (step + 1) % iter_num_in_snapshot == 0:
+        if (step + 1) % args.iter_num_in_snapshot == 0:
             path = os.path.join(
-                prefix_dir, "snapshot_" + str(step // iter_num_in_snapshot))
+                prefix_dir, "snapshot_" + str(step // args.iter_num_in_snapshot))
             flow.checkpoint.save(path)
 
 

@@ -8,8 +8,8 @@ config.net_blocks = [1, 4, 6, 2]
 config.data_format = "NCHW"
 config.bn_is_training = True
 config.val_targets = ['lfw', 'cfp_fp', 'agedb_30']
-config.lfw_total_images_num = 12000 
-config.cfp_fp_total_images_num = 14000 
+config.lfw_total_images_num = 12000
+config.cfp_fp_total_images_num = 14000
 config.agedb_30_total_images_num = 12000
 config.cudnn_conv_heuristic_search_algo = False
 config.enable_fuse_model_update_ops = False
@@ -105,14 +105,15 @@ default.model_parallel = 0
 default.partial_fc = 0
 
 default.train_batch_size_per_device = 64
-default.train_batch_size = default.train_batch_size_per_device * default.device_num_per_node * default.num_nodes
+default.train_batch_size = default.train_batch_size_per_device * \
+    default.device_num_per_node * default.num_nodes
 default.use_synthetic_data = False
 default.do_validation_while_train = True
 
 default.train_unit = "batch"
 default.train_iter = 170586
 default.lr = 0.1
-default.lr_steps = [100000,140000,160000]
+default.lr_steps = [100000, 140000, 160000]
 default.scales = [1.0, 0.1, 0.01, 0.001]
 default.wd = 0.0005
 default.mom = 0.9
@@ -128,35 +129,36 @@ default.nccl_fusion_threshold_mb = 16
 default.nccl_fusion_max_ops = 64
 
 default.val_batch_size_per_device = 20
-default.validation_interval = 5  
+default.validation_interval = 5
 default.val_data_part_num = 1
-default.val_dataset_dir = "/data/insightface/eval_ofrecord" 
+default.val_dataset_dir = "/data/insightface/eval_ofrecord"
 default.nrof_folds = 10
-default.sample_ratio = 0.1 
+default.sample_ratio = 0.1
+
 
 def generate_config(_network, _dataset, _loss):
     for k, v in loss[_loss].items():
-      config[k] = v
-      if k in default:
-        default[k] = v
+        config[k] = v
+        if k in default:
+            default[k] = v
     for k, v in network[_network].items():
-      config[k] = v
-      if k in default:
-        default[k] = v
+        config[k] = v
+        if k in default:
+            default[k] = v
     for k, v in dataset[_dataset].items():
-      config[k] = v
-      if k in default:
-        default[k] = v
+        config[k] = v
+        if k in default:
+            default[k] = v
 
     config.loss = _loss
     config.network = _network
     config.dataset = _dataset
 
+
 def generate_val_config(_network):
     for k, v in network[_network].items():
-      config[k] = v
-      if k in default:
-        default[k] = v
-    
+        config[k] = v
+        if k in default:
+            default[k] = v
+
     config.network = _network
- 
