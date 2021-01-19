@@ -169,12 +169,7 @@ def get_train_args():
         default=default.sample_ratio,
         help="The ratio for sampling",
     )
-    size = default.device_num_per_node * default.num_nodes
-    num_local = (config.num_classes + size - 1) // size
-    num_sample = int(num_local * default.sample_ratio)
-    total_num_sample = num_sample * size
-    train_parser.add_argument("--total_num_sample",
-                              type=int, default=total_num_sample, help="Total num_sample = num_sample per gpu * num_gpu")
+ 
     # validation config
     train_parser.add_argument(
         "--val_batch_size_per_device",
@@ -254,6 +249,11 @@ def get_train_config(args):
     if args.nccl_fusion_max_ops:
         flow.config.collective_boxing.nccl_fusion_max_ops(
             args.nccl_fusion_max_ops)
+    size = args.device_num_per_node * args.num_nodes
+    num_local = (config.num_classes + size - 1) // size
+    num_sample = int(num_local * args.sample_ratio)
+    args.total_num_sample = num_sample * size
+    
     assert args.train_iter > 0, "Train iter must be greater than 0!"
     steps_per_epoch = math.ceil(config.total_img_num / args.train_batch_size)
     if args.train_unit == "epoch":
@@ -375,7 +375,7 @@ def make_train_func(args):
 
 
 def main(args):
-    
+
     flow.config.gpu_device_num(args.device_num_per_node)
     print("gpu num: ", args.device_num_per_node)
     if not os.path.exists(args.models_root):
@@ -416,7 +416,6 @@ def main(args):
         desc="train", calculate_batches=args.loss_print_frequency, batch_size=args.train_batch_size
     )
     lr = args.lr
-
 
     for step in range(args.total_iter_num):
         # train
