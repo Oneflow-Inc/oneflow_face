@@ -13,9 +13,9 @@ train_iter=${10:-600000}
 gpu_num_per_node=${11:-8}
 lr=${12:-0.1}
 lr_steps=${13:-"200000,400000,500000,550000"}
-scales=${14:-"1.0,0.1,0.01,0.001,0.0001"}
-model_parallel=${15:-1}
-partial_fc=${16:-1}
+scales=${14:-"0.1,0.01,0.001,0.0001"}
+model_parallel=${15:-True}
+partial_fc=${16:-True}
 sample_ratio=${17:-0.1}
 use_fp16=${18:-False}
 data_dir_root=${19:-"/datasets"}
@@ -57,4 +57,6 @@ python3 insightface_train.py \
     --sample_ratio=${sample_ratio} \
     --use_fp16=${use_fp16} \
     --models_root=${model_save_dir} \
-    --log_dir=$log_dir |& tee $log_file
+    --log_dir=$log_dir 2>&1 | tee $log_file
+
+

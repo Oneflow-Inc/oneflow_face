@@ -213,24 +213,26 @@ def get_train_args():
 
 
 def get_train_config(args):
-    ParameterUpdateStrategy = dict(
-        learning_rate_decay=dict(
-            piecewise_scaling_conf=dict(
-                boundaries=args.lr_steps, scales=args.scales,
-            )
-        ),
-        momentum_conf=dict(beta=args.momentum,),
-        weight_decay_conf=dict(weight_decay_rate=args.weight_decay,),
-    )
-    print("ParameterUpdateStrategy", ParameterUpdateStrategy)
     func_config = flow.FunctionConfig()
     func_config.default_logical_view(flow.scope.consistent_view())
     func_config.default_data_type(flow.float)
     func_config.cudnn_conv_heuristic_search_algo(
         config.cudnn_conv_heuristic_search_algo
     )
-    func_config.train.primary_lr(args.lr)
-    func_config.train.model_update_conf(ParameterUpdateStrategy)
+    # ParameterUpdateStrategy = dict(
+    #     learning_rate_decay=dict(
+    #         piecewise_scaling_conf=dict(
+    #             boundaries=args.lr_steps, scales=args.scales,
+    #         )
+    #     ),
+    #     momentum_conf=dict(beta=args.momentum,),
+    #     weight_decay_conf=dict(weight_decay_rate=args.weight_decay,),
+    # )
+    # print("ParameterUpdateStrategy", ParameterUpdateStrategy)
+    # func_config.train.primary_lr(args.lr)
+    # func_config.train.model_update_conf(ParameterUpdateStrategy)
+
+
     func_config.enable_fuse_model_update_ops(
         config.enable_fuse_model_update_ops)
     func_config.enable_fuse_add_to_output(config.enable_fuse_add_to_output)
@@ -368,7 +370,19 @@ def make_train_func(args):
         loss = flow.nn.sparse_softmax_cross_entropy_with_logits(
             labels, fc7, name="softmax_loss"
         )
-        flow.losses.add_loss(loss)
+
+        lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(
+            base_lr=args.lr, 
+            boundaries=args.lr_steps, 
+            scale=args.scales, 
+            warmup=None
+        )
+        flow.optimizer.SGD(lr_scheduler,
+            momentum=args.momentum if args.momentum>0 else None,
+            grad_clipping = None,
+            loss_scale_policy = None
+        ).minimize(loss)
+
         return loss
 
     return get_symbol_train_job
