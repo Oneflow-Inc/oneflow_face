@@ -2,7 +2,7 @@
 
 本文介绍如何在 OneFlow 中训练 InsightFace，并在验证数据集上对训练好的网络进行验证。
 
-## 实现背景介绍
+## 背景介绍
 
 ###  InsightFace 开源项目
 
@@ -106,41 +106,29 @@ python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces
 
 ### 训练
 
-为了减小用户使用的迁移成本，OneFlow 的脚本已经修改为 MxNet 实现的风格，用户既可以使用 sample_config.py 直接修改参数，也可以使用 bash、python 脚本传入参数。同时，还可以通过添加命令行参数 `--do_validataion_while_train`，实现一边训练一边验证。
+为了减小用户使用的迁移成本，OneFlow 的脚本已经修改为 MxNet 实现的风格，用户可以使用 sample_config.py 直接修改参数。同时，还可以通过添加命令行参数 `--do_validataion_while_train`，实现一边训练一边验证。
 
-- 使用 sample.config.py 直接传参
-
-对于想要修改的参数可以直接在 sample_config.py 中修改，根据 Insightface 的使用方法
+对于想要修改的参数可以直接在 sample_config.py 中修改，修改后根据 Insightface 的使用方法
 
 ```
-mv sample_config config
+cp sample_config config
 ```
-
-将脚本中的 `import sample_config as config` 修改为 `import config as config` ，
 
 运行脚本：
 
 ```
-python insightface_train_val.py 
+python insightface_train.py --dataset emore  --network r100 --loss arcface
 ```
 
-即可进行训练和验证。
+即可进行基于 Face_emore 数据集使用 ResNet100 作为 backbone 的训练和验证。
 
-- 使用 python 和 bash 脚本传参
-
-对于 sample_comfig.py 中 `default` 域中的参数，都可以使用 python 和 bash 脚本传参，使用 bash 脚本执行
+若想尝试更大数据集，运行脚本
 
 ```
-bash train_glint360k.sh
+python insightface_train.py --dataset glint360k_8GPU --network r100_glint360k --loss cosface 
 ```
 
-或者 
-
-```
-bash train_emore.sh
-```
-
-可以直接训练基于不同数据集 ResNet100 网络。
+即可进行基于 Glint360k 数据集使用 ResNet100 作为 backbone 的训练和验证。
 
 
 
@@ -158,4 +146,4 @@ python insightface_val.py \
 
 其中，用 `--model_load_dir` 指定想要加载的预训练模型的路径。
 
-精度结果记录可参考：https://github.com/Oneflow-Inc/oneflow_face/tree/partial_fc
+精度结果记录可参考：https://github.com/O-Inc/oneflow_face/tree/partial_fc

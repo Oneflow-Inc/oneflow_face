@@ -122,14 +122,14 @@ default.model_load_dir = ""
 default.models_root = './models'
 default.log_dir = "output/log"
 default.loss_print_frequency = 1
-default.iter_num_in_snapshot = 10
+default.iter_num_in_snapshot = 5000
 
 default.use_fp16 = False
 default.nccl_fusion_threshold_mb = 16
 default.nccl_fusion_max_ops = 64
 
 default.val_batch_size_per_device = 20
-default.validation_interval = 5
+default.validation_interval = 5000
 default.val_data_part_num = 1
 default.val_dataset_dir = "/data/insightface/eval_ofrecord"
 default.nrof_folds = 10
@@ -145,6 +145,21 @@ def generate_config(_network, _dataset, _loss):
         config[k] = v
         if k in default:
             default[k] = v
+    if _dataset == "glint360k_8GPU":
+        config["lr_steps"] = [200000, 400000, 500000, 550000]
+        config["scales"] = [1.0, 0.1, 0.01, 0.001, 0.0001]
+        config["train_unit"] = "batch"
+        config["train_iter"] = 600000
+        config["model_parallel"] = 1
+        config["partial_fc"] = 1
+        config["sample_ratio"] = 0.1
+    elif _dataset == "emore":
+        config["lr_steps"] = [100000, 140000, 160000]
+        config["scales"] = [1.0, 0.1, 0.01, 0.001]
+        config["train_unit"] = "epoch"
+        config["train_iter"] = 17
+        config["model_parallel"] = 0
+        config["partial_fc"] = 0
     for k, v in dataset[_dataset].items():
         config[k] = v
         if k in default:

@@ -426,9 +426,10 @@ def main(args):
 
         # validation
         if args.do_validation_while_train and (step + 1) % args.validation_interval == 0:
-            issame_list, embeddings_list = validator.do_validation(
+            for ds in config.val_targets:
+                issame_list, embeddings_list = validator.do_validation(
                 dataset=ds)
-            validation_util.cal_validation_metrics(
+                validation_util.cal_validation_metrics(
                 embeddings_list, issame_list, nrof_folds=args.nrof_folds,
             )
         if step in args.lr_steps:
