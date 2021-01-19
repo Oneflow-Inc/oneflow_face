@@ -259,12 +259,15 @@ def get_train_config(args):
     assert args.train_iter > 0, "Train iter must be greater than 0!"
     steps_per_epoch = math.ceil(config.total_img_num / args.train_batch_size)
     if args.train_unit == "epoch":
-        print("Using epoch as training unit now.")
+        print("Using epoch as training unit now. Each unit of iteration is epoch, including train_iter, iter_num_in_snapshot and validation interval")
         args.total_iter_num = steps_per_epoch * args.train_iter
         args.iter_num_in_snapshot = steps_per_epoch * args.iter_num_in_snapshot
-        args.validation_interval = steps_per_epoch + args.validation_interval
+        if args.validation_interval <= args.total_iter_num:
+            args.validation_interval = steps_per_epoch * args.validation_interval
+        else:
+            print("It doesn't do validation because validation_interval is greater than train_iter.")
     elif args.train_unit == "batch":
-        print("Using batch as training unit now.")
+        print("Using batch as training unit now. Each unit of iteration is batch, including train_iter, iter_num_in_snapshot and validation interval")
         args.total_iter_num = args.train_iter
         args.iter_num_in_snapshot = args.iter_num_in_snapshot
         args.validation_interval = args.validation_interval
