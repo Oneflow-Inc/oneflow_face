@@ -213,24 +213,13 @@ def get_train_args():
 
 
 def get_train_config(args):
-    ParameterUpdateStrategy = dict(
-        learning_rate_decay=dict(
-            piecewise_scaling_conf=dict(
-                boundaries=args.lr_steps, scales=args.scales,
-            )
-        ),
-        momentum_conf=dict(beta=args.momentum,),
-        weight_decay_conf=dict(weight_decay_rate=args.weight_decay,),
-    )
-    print("ParameterUpdateStrategy", ParameterUpdateStrategy)
     func_config = flow.FunctionConfig()
     func_config.default_logical_view(flow.scope.consistent_view())
     func_config.default_data_type(flow.float)
     func_config.cudnn_conv_heuristic_search_algo(
         config.cudnn_conv_heuristic_search_algo
     )
-    func_config.train.primary_lr(args.lr)
-    func_config.train.model_update_conf(ParameterUpdateStrategy)
+
     func_config.enable_fuse_model_update_ops(
         config.enable_fuse_model_update_ops)
     func_config.enable_fuse_add_to_output(config.enable_fuse_add_to_output)
@@ -263,7 +252,8 @@ def get_train_config(args):
         if args.validation_interval <= args.total_iter_num:
             args.validation_interval = steps_per_epoch * args.validation_interval
         else:
-            print("It doesn't do validation because validation_interval is greater than train_iter.")
+            print(
+                "It doesn't do validation because validation_interval is greater than train_iter.")
     elif args.train_unit == "batch":
         print("Using batch as training unit now. Each unit of iteration is batch, including train_iter, iter_num_in_snapshot and validation interval")
         args.total_iter_num = args.train_iter
@@ -371,7 +361,18 @@ def make_train_func(args):
         loss = flow.nn.sparse_softmax_cross_entropy_with_logits(
             labels, fc7, name="softmax_loss"
         )
-        flow.losses.add_loss(loss)
+
+        lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(
+            base_lr=args.lr,
+            boundaries=args.lr_steps,
+            scale=args.scales,
+            warmup=None
+        )
+        flow.optimizer.SGDW(lr_scheduler,
+                            momentum=args.momentum if args.momentum > 0 else None,
+                            weight_decay=args.weight_decay
+                            ).minimize(loss)
+
         return loss
 
     return get_symbol_train_job
@@ -428,10 +429,10 @@ def main(args):
         if args.do_validation_while_train and (step + 1) % args.validation_interval == 0:
             for ds in config.val_targets:
                 issame_list, embeddings_list = validator.do_validation(
-                dataset=ds)
+                    dataset=ds)
                 validation_util.cal_validation_metrics(
-                embeddings_list, issame_list, nrof_folds=args.nrof_folds,
-            )
+                    embeddings_list, issame_list, nrof_folds=args.nrof_folds,
+                )
         if step in args.lr_steps:
             lr *= 0.1
             print("lr_steps: ", step)
