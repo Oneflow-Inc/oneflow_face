@@ -169,7 +169,7 @@ def get_train_args():
         default=default.sample_ratio,
         help="The ratio for sampling",
     )
- 
+
     # validation config
     train_parser.add_argument(
         "--val_batch_size_per_device",
@@ -253,14 +253,14 @@ def get_train_config(args):
     num_local = (config.num_classes + size - 1) // size
     num_sample = int(num_local * args.sample_ratio)
     args.total_num_sample = num_sample * size
-    
+
     assert args.train_iter > 0, "Train iter must be greater than 0!"
     steps_per_epoch = math.ceil(config.total_img_num / args.train_batch_size)
     if args.train_unit == "epoch":
         print("Using epoch as training unit now.")
         args.total_iter_num = steps_per_epoch * args.train_iter
         args.iter_num_in_snapshot = steps_per_epoch * args.iter_num_in_snapshot
-        args.validation_interval = steps_per_epoch + args.validation_interval
+        args.validation_interval = steps_per_epoch * args.validation_interval
     elif args.train_unit == "batch":
         print("Using batch as training unit now.")
         args.total_iter_num = args.train_iter
