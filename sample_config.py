@@ -114,7 +114,7 @@ default.train_unit = "batch"
 default.train_iter = 170586
 default.lr = 0.1
 default.lr_steps = [100000, 140000, 160000]
-default.scales = [1.0, 0.1, 0.01, 0.001]
+default.scales = [0.1, 0.01, 0.001]
 default.wd = 0.0005
 default.mom = 0.9
 
@@ -147,7 +147,7 @@ def generate_config(_network, _dataset, _loss):
             default[k] = v
     if _dataset == "glint360k_8GPU":
         config["lr_steps"] = [200000, 400000, 500000, 550000]
-        config["scales"] = [1.0, 0.1, 0.01, 0.001, 0.0001]
+        config["scales"] = [0.1, 0.01, 0.001, 0.0001]
         config["train_unit"] = "batch"
         config["train_iter"] = 600000
         config["model_parallel"] = 1
@@ -155,7 +155,7 @@ def generate_config(_network, _dataset, _loss):
         config["sample_ratio"] = 0.1
     elif _dataset == "emore":
         config["lr_steps"] = [100000, 140000, 160000]
-        config["scales"] = [1.0, 0.1, 0.01, 0.001]
+        config["scales"] = [0.1, 0.01, 0.001]
         config["train_unit"] = "epoch"
         config["train_iter"] = 17
         config["model_parallel"] = 0

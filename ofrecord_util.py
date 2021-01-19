@@ -64,7 +64,7 @@ def validation_dataset_reader(val_dataset_dir, val_batch_size=1, val_data_part_n
         ofrecord, "issame", shape=(), dtype=flow.int32
     )
 
-    rsz = flow.image.Resize(image, resize_x=112, resize_y=112, color_space=color_space)
+    rsz, scale, new_size = flow.image.Resize(image, target_size=(112,112), channels=3)
     normal = flow.image.CropMirrorNormalize(
         rsz,
         color_space=color_space,
@@ -160,3 +160,5 @@ def load_agedb_30_dataset(args):
 #        val_data_part_num=data_part_num,
 #    )
 #    return issame, images
+
+
