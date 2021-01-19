@@ -219,19 +219,6 @@ def get_train_config(args):
     func_config.cudnn_conv_heuristic_search_algo(
         config.cudnn_conv_heuristic_search_algo
     )
-    # ParameterUpdateStrategy = dict(
-    #     learning_rate_decay=dict(
-    #         piecewise_scaling_conf=dict(
-    #             boundaries=args.lr_steps, scales=args.scales,
-    #         )
-    #     ),
-    #     momentum_conf=dict(beta=args.momentum,),
-    #     weight_decay_conf=dict(weight_decay_rate=args.weight_decay,),
-    # )
-    # print("ParameterUpdateStrategy", ParameterUpdateStrategy)
-    # func_config.train.primary_lr(args.lr)
-    # func_config.train.model_update_conf(ParameterUpdateStrategy)
-
 
     func_config.enable_fuse_model_update_ops(
         config.enable_fuse_model_update_ops)
@@ -380,10 +367,9 @@ def make_train_func(args):
             scale=args.scales, 
             warmup=None
         )
-        flow.optimizer.SGD(lr_scheduler,
+        flow.optimizer.SGDW(lr_scheduler,
             momentum=args.momentum if args.momentum>0 else None,
-            grad_clipping = None,
-            loss_scale_policy = None
+            weight_decay=args.weight_decay
         ).minimize(loss)
 
         return loss
