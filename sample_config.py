@@ -145,24 +145,23 @@ def generate_config(_network, _dataset, _loss):
         config[k] = v
         if k in default:
             default[k] = v
-
+    if _dataset == "glint360k_8GPU":
+        default["lr_steps"] = [200000, 400000, 500000, 550000]
+        default["scales"] = [0.1, 0.01, 0.001, 0.0001]
+        default["train_unit"] = "batch"
+        default["train_iter"] = 600000
+        default["model_parallel"] = 1
+        default["partial_fc"] = 1
+        default["sample_ratio"] = 0.1
+    elif _dataset == "emore":
+        default["lr_steps"] = [100000, 140000, 160000]
+        default["scales"] = [0.1, 0.01, 0.001]
+        default["train_unit"] = "epoch"
+        default["train_iter"] = 17
+        default["model_parallel"] = 0
+        default["partial_fc"] = 0
     for k, v in dataset[_dataset].items():
-        if k == "glint360k_8GPU":
-            config["lr_steps"] = [200000, 400000, 500000, 550000]
-            config["scales"] = [1.0, 0.1, 0.01, 0.001, 0.0001]
-            config["train_unit"] = "batch"
-            config["train_iter"] = 600000
-            config["model_parallel"] = 1
-            config["partial_fc"] = 1
-            config["sample_ratio"] = 0.1
-        elif k == "emore":
-            config["lr_steps"] = [100000, 140000, 160000]
-            config["scales"] = [1.0, 0.1, 0.01, 0.001]
-            config["train_unit"] = "epoch"
-            config["train_iter"] = 17
-            config["model_parallel"] = 0
-            config["partial_fc"] = 0
-            config[k] = v
+        config[k] = v
         if k in default:
             default[k] = v
 
