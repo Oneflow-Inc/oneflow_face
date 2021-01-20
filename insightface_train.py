@@ -219,7 +219,6 @@ def get_train_config(args):
     func_config.cudnn_conv_heuristic_search_algo(
         config.cudnn_conv_heuristic_search_algo
     )
-
     func_config.enable_fuse_model_update_ops(
         config.enable_fuse_model_update_ops)
     func_config.enable_fuse_add_to_output(config.enable_fuse_add_to_output)
