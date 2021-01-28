@@ -15,7 +15,7 @@ def parse_arguement(argv):
     parser.add_argument(
         "--data_dir",
         type=str,
-        default="/data/face_test/dataset/faces_emore",
+        default="insightface/datasets/faces_emore",
         help="Root directory to mxnet dataset.",
     )
     parser.add_argument(
@@ -27,7 +27,7 @@ def parse_arguement(argv):
     parser.add_argument(
         "--num_part",
         type=int,
-        default=16,
+        default=96,
         help="num_part of OFRecord to generate.",
     )
     return parser.parse_args(argv)
