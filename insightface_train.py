@@ -163,6 +163,7 @@ def get_train_args():
         default=default.iter_num_in_snapshot,
         help="The number of train unit iter in the snapshot",
     )
+    train_parser.add_argument("--save_last_snapshot", type=bool, default=default.save_last_snapshot, help="Whether to save last snapshot")
     train_parser.add_argument(
         "--sample_ratio",
         type=float,
@@ -443,6 +444,9 @@ def main(args):
                 prefix_dir, "snapshot_" + str(step // args.iter_num_in_snapshot))
             flow.checkpoint.save(path)
 
+    if args.save_last_snapshot is True:
+        flow.checkpoint.save(os.path.join(
+                prefix_dir, "snapshot_last"))
 
 if __name__ == "__main__":
     args = get_train_args()

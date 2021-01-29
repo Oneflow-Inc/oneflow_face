@@ -123,6 +123,7 @@ default.models_root = './models'
 default.log_dir = "output/log"
 default.loss_print_frequency = 1
 default.iter_num_in_snapshot = 5000
+default.save_last_snapshot = True
 
 default.use_fp16 = False
 default.nccl_fusion_threshold_mb = 16
@@ -153,6 +154,8 @@ def generate_config(_network, _dataset, _loss):
         default["model_parallel"] = 1
         default["partial_fc"] = 1
         default["sample_ratio"] = 0.1
+        default["validation_interval"] = 5000
+        default["iter_num_in_snapshot"] = 5000
     elif _dataset == "emore":
         default["lr_steps"] = [100000, 140000, 160000]
         default["scales"] = [0.1, 0.01, 0.001]
@@ -160,6 +163,8 @@ def generate_config(_network, _dataset, _loss):
         default["train_iter"] = 17
         default["model_parallel"] = 0
         default["partial_fc"] = 0
+        default["iter_num_in_snapshot"] = 1
+        default["validation_interval"] = 1
     for k, v in dataset[_dataset].items():
         config[k] = v
         if k in default:

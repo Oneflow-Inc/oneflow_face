@@ -19,7 +19,6 @@ os.mkdir(args.of_model_dir)
 
 of_dump_path = args.of_model_dir
 prefix = args.mxnet_load_prefix
-# prefix = 'pretrained_LResNet100E/model-r100-ii/model'
 epoch = args.mxnet_load_epoch  # 0
 _, arg_params, aux_params = mx.model.load_checkpoint(prefix, epoch)
 
