@@ -163,7 +163,8 @@ def get_train_args():
         default=default.iter_num_in_snapshot,
         help="The number of train unit iter in the snapshot",
     )
-    train_parser.add_argument("--save_last_snapshot", type=bool, default=default.save_last_snapshot, help="Whether to save last snapshot")
+    train_parser.add_argument("--save_last_snapshot", type=bool,
+                              default=default.save_last_snapshot, help="Whether to save last snapshot")
     train_parser.add_argument(
         "--sample_ratio",
         type=float,
@@ -249,20 +250,22 @@ def get_train_config(args):
         print("Using epoch as training unit now. Each unit of iteration is epoch, including train_iter, iter_num_in_snapshot and validation interval")
         args.total_iter_num = steps_per_epoch * args.train_iter
         args.iter_num_in_snapshot = steps_per_epoch * args.iter_num_in_snapshot
-
+        if args.validation_interval <= args.total_iter_num:
+            args.validation_interval = steps_per_epoch * args.validation_interval
+        else:
+            print(
+                "It doesn't do validation because validation_interval is greater than train_iter.")
     elif args.train_unit == "batch":
         print("Using batch as training unit now. Each unit of iteration is batch, including train_iter, iter_num_in_snapshot and validation interval")
         args.total_iter_num = args.train_iter
         args.iter_num_in_snapshot = args.iter_num_in_snapshot
-        args.validation_interval = args.validation_interval
-
+        if args.validation_interval <= args.total_iter_num:
+            args.validation_interval = args.validation_interval
+        else:
+            print(
+                "It doesn't do validation because validation_interval is greater than train_iter.")
     else:
         raise ValueError("Invalid train unit!")
-    if args.validation_interval <= args.total_iter_num:
-        args.validation_interval = steps_per_epoch * args.validation_interval
-    else:
-        print(
-                "It doesn't do validation because validation_interval is greater than train_iter.")
     return func_config
 
 
@@ -448,7 +451,8 @@ def main(args):
 
     if args.save_last_snapshot is True:
         flow.checkpoint.save(os.path.join(
-                prefix_dir, "snapshot_last"))
+            prefix_dir, "snapshot_last"))
+
 
 if __name__ == "__main__":
     args = get_train_args()

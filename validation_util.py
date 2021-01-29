@@ -73,28 +73,25 @@ def calculate_roc(
     fprs = np.zeros((nrof_folds, nrof_thresholds))
     accuracy = np.zeros((nrof_folds))
     indices = np.arange(nrof_pairs)
-    # print('pca', pca)
 
     if pca == 0:
         diff = np.subtract(embeddings1, embeddings2)
         dist = np.sum(np.square(diff), 1)
 
     for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
-        # print('train_set', train_set)
-        # print('test_set', test_set)
         if pca > 0:
             print("doing pca on", fold_idx)
             embed1_train = embeddings1[train_set]
             embed2_train = embeddings2[train_set]
             _embed_train = np.concatenate((embed1_train, embed2_train), axis=0)
-            # print(_embed_train.shape)
+
             pca_model = PCA(n_components=pca)
             pca_model.fit(_embed_train)
             embed1 = pca_model.transform(embeddings1)
             embed2 = pca_model.transform(embeddings2)
             embed1 = sklearn.preprocessing.normalize(embed1)
             embed2 = sklearn.preprocessing.normalize(embed2)
-            # print(embed1.shape, embed2.shape)
+
             diff = np.subtract(embed1, embed2)
             dist = np.sum(np.square(diff), 1)
 
@@ -105,7 +102,7 @@ def calculate_roc(
                 threshold, dist[train_set], actual_issame[train_set]
             )
         best_threshold_index = np.argmax(acc_train)
-        # print('threshold', thresholds[best_threshold_index])
+
         for threshold_idx, threshold in enumerate(thresholds):
             (
                 tprs[fold_idx, threshold_idx],
@@ -195,8 +192,7 @@ def calculate_val_far(threshold, dist, actual_issame):
     )
     n_same = np.sum(actual_issame)
     n_diff = np.sum(np.logical_not(actual_issame))
-    # print(true_accept, false_accept)
-    # print("n_same, n_diff:",n_same, n_diff)
+
     val = float(true_accept) / float(n_same)
     far = float(false_accept) / float(n_diff)
     return val, far
@@ -256,7 +252,7 @@ def cal_validation_metrics(
             for i in range(embed.shape[0]):
                 _em = embed[i]
                 _norm = np.linalg.norm(_em)
-                # print(_em.shape, _norm)
+
                 _xnorm += _norm
                 _xnorm_cnt += 1
         _xnorm /= _xnorm_cnt
@@ -271,4 +267,3 @@ def cal_validation_metrics(
 
         print("XNorm: %f" % (_xnorm))
         print("Accuracy-Flip: %1.5f+-%1.5f" % (acc2, std2))
-
