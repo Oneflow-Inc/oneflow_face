@@ -59,12 +59,14 @@ def validation_dataset_reader(val_dataset_dir, val_batch_size=1, val_data_part_n
         part_name_suffix_length=1,
         shuffle_after_epoch=False,
     )
-    image = flow.data.OFRecordImageDecoder(ofrecord, "encoded", color_space=color_space)
+    image = flow.data.OFRecordImageDecoder(
+        ofrecord, "encoded", color_space=color_space)
     issame = flow.data.OFRecordRawDecoder(
         ofrecord, "issame", shape=(), dtype=flow.int32
     )
 
-    rsz, scale, new_size = flow.image.Resize(image, target_size=(112,112), channels=3)
+    rsz, scale, new_size = flow.image.Resize(
+        image, target_size=(112, 112), channels=3)
     normal = flow.image.CropMirrorNormalize(
         rsz,
         color_space=color_space,
@@ -147,18 +149,3 @@ def load_agedb_30_dataset(args):
         val_data_part_num=data_part_num,
     )
     return issame, images
-
-
-# def load_validation_dataset(args):
-#    data_dir = config.val_dataset_dir
-#    batch_size = args.val_batch_size_per_device
-#    data_part_num = config.val_data_part_num
-#
-#    (issame, images) = validation_dataset_reader(
-#        val_dataset_dir=data_dir,
-#        val_batch_size=batch_size,
-#        val_data_part_num=data_part_num,
-#    )
-#    return issame, images
-
-
