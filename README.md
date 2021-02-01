@@ -252,7 +252,7 @@ python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces
 
 ### Training
 
-To reduce the usage cost of user, OneFlow draws close the scripts to MXNet style, users can directly modify parameters via sample_config.py. Meanwhile, it could Validate while training when adding `--do_validataion_while_train=True`.
+To reduce the usage cost of user, OneFlow draws close the scripts to MXNet style, you can directly modify parameters via sample_config.py. Meanwhile, it could Validate while training when adding `--do_validataion_while_train=True`.
 
 
 
@@ -272,7 +272,7 @@ run
 python insightface_train.py --dataset emore --network r100 --loss arcface
 ```
 
-In this way, users will do training and validation with the backbone of ResNet100 by face_emore dataset.
+In this way, you will do training and validation with the backbone of ResNet100 by face_emore dataset.
 
 To achieve ambitions for a larger quantity of data, run
 
@@ -280,7 +280,7 @@ To achieve ambitions for a larger quantity of data, run
 python insightface_train.py --dataset glint360k_8GPU --network r100_glint360k --loss cosface 
 ```
 
-In this way, users will do training and validation with the backbone of ResNet100 by glint360k dataset.
+In this way, you will do training and validation with the backbone of ResNet100 by glint360k dataset.
 
 
 
@@ -363,5 +363,12 @@ r denotes the sampling rate of negative class centers.
 | Backbone | Dataset              | African | Caucasian | Indian | Asian  | ALL    |
 | -------- | -------------------- | ------- | --------- | ------ | ------ | ------ |
 | R100     | **Glint360k**(r=0.1) | 90.4076 | 94.583    | 93.702 | 68.754 | 89.684 |
+
+### Max num_classses
+
+| node_num | gpu_num_per_node | batch_size_per_device | fp16 | Model Parallel | Partial FC | num_classes |
+| -------- | ---------------- | --------------------- | ---- | -------------- | ---------- | ----------- |
+| 1        | 1                | 64                    | True | True           | True       | 2000000     |
+| 1        | 8                | 64                    | True | True           | True       | 13500000    |
 
 More test details could refer to [OneFlow DLPerf]().

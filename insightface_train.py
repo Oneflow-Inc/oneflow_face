@@ -415,6 +415,7 @@ def main(args):
     train_func = make_train_func(args)
     validator = Validator(args)
     if os.path.exists(args.model_load_dir):
+        assert args.model_load_dir == os.path.join(args.models_root, args.network + "-" + args.loss + "-" + args.dataset) , "You should specify a new path to save new models."
         print("Loading model from {}".format(args.model_load_dir))
         variables = flow.checkpoint.get(args.model_load_dir)
         flow.load_variables(variables)

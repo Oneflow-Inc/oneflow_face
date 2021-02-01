@@ -23,6 +23,7 @@
       - [Glint360k 数据集 & FP32](#glint360k-数据集--fp32)
     - [Evaluation on Lfw, Cfp_fp, Agedb_30](#evaluation-on-lfw-cfp_fp-agedb_30)
     - [Evaluation on IFRT](#evaluation-on-ifrt)
+    - [Max num_classses](#max-num_classses)
 
 ## 背景介绍
 
@@ -300,5 +301,12 @@ r denotes the sampling rate of negative class centers.
 | Backbone | Dataset              | African | Caucasian | Indian | Asian  | ALL    |
 | -------- | -------------------- | ------- | --------- | ------ | ------ | ------ |
 | R100     | **Glint360k**(r=0.1) | 90.4076 | 94.583    | 93.702 | 68.754 | 89.684 |
+
+### Max num_classses
+
+| node_num | gpu_num_per_node | batch_size_per_device | fp16 | Model Parallel | Partial FC | num_classes |
+| -------- | ---------------- | --------------------- | ---- | -------------- | ---------- | ----------- |
+| 1        | 1                | 64                    | True | True           | True       | 2000000     |
+| 1        | 8                | 64                    | True | True           | True       | 13500000    |
 
 更多详情请移步 [OneFlow DLPerf]().
