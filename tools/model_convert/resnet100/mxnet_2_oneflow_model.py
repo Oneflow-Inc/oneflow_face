@@ -14,7 +14,7 @@ parser.add_argument("-of", "--of_model_dir", type=str, required=False)
 
 args = parser.parse_args()
 if not os.path.exists(args.of_model_dir):
-    os.mkdir(args.of_model_dir)
+    os.makedirs(args.of_model_dir)
 
 
 of_dump_path = args.of_model_dir
@@ -115,3 +115,4 @@ for param_name in aux_params.keys():
             print(param_name, "error error")
     else:
         print(param_name, "error error")
+print("convert mxnet model to oneflow model success!")
