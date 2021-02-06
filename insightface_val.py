@@ -86,7 +86,6 @@ class Validator(object):
         self.args = args
         function_config = get_val_config()
         
-        #if default.do_validation_while_train:
         @flow.global_function(type="predict", function_config=function_config)
         def get_validation_dataset_lfw_job():
             with flow.scope.placement("cpu", "0:0"):

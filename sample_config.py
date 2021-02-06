@@ -113,8 +113,8 @@ default.do_validation_while_train = True
 default.train_unit = "batch"
 default.train_iter = 170586
 default.lr = 0.1
-default.lr_steps = [100000, 140000, 160000]
-default.scales = [0.1, 0.01, 0.001]
+default.lr_steps = [100000, 160000]
+default.scales = [0.1, 0.01]
 default.wd = 0.0005
 default.mom = 0.9
 
