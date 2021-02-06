@@ -224,6 +224,7 @@ def get_train_config(args):
     func_config.enable_fuse_model_update_ops(
         config.enable_fuse_model_update_ops)
     func_config.enable_fuse_add_to_output(config.enable_fuse_add_to_output)
+    default.do_validation_while_train = args.do_validation_while_train
     if args.use_fp16:
         print("Training with FP16 now.")
         func_config.enable_auto_mixed_precision(True)
@@ -243,7 +244,7 @@ def get_train_config(args):
     num_local = (config.num_classes + size - 1) // size
     num_sample = int(num_local * args.sample_ratio)
     args.total_num_sample = num_sample * size
-
+    default.do_validation_while_train = args.do_validation_while_train
     assert args.train_iter > 0, "Train iter must be greater than 0!"
     steps_per_epoch = math.ceil(config.total_img_num / args.train_batch_size)
     if args.train_unit == "epoch":
@@ -414,8 +415,10 @@ def main(args):
     flow.env.log_dir(args.log_dir)
     train_func = make_train_func(args)
     validator = Validator(args)
+    
     if os.path.exists(args.model_load_dir):
-        assert args.model_load_dir == os.path.join(args.models_root, args.network + "-" + args.loss + "-" + args.dataset) , "You should specify a new path to save new models."
+        assert os.path.abspath(os.path.dirname(os.path.split(args.model_load_dir)[0])) != os.path.abspath(os.path.join(
+            args.models_root, args.network + "-" + args.loss + "-" + args.dataset)), "You should specify a new path to save new models."
         print("Loading model from {}".format(args.model_load_dir))
         variables = flow.checkpoint.get(args.model_load_dir)
         flow.load_variables(variables)
@@ -432,7 +435,7 @@ def main(args):
         train_func().async_get(train_metric.metric_cb(step))
 
         # validation
-        if args.do_validation_while_train and (step + 1) % args.validation_interval == 0:
+        if default.do_validation_while_train and (step + 1) % args.validation_interval == 0:
             for ds in config.val_targets:
                 issame_list, embeddings_list = validator.do_validation(
                     dataset=ds)

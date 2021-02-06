@@ -75,10 +75,10 @@ def flip_data(images):
 
 
 def get_val_config():
-    config = flow.function_config()
-    config.default_logical_view(flow.scope.consistent_view())
-    config.default_data_type(flow.float)
-    return config
+    val_config = flow.function_config()
+    val_config.default_logical_view(flow.scope.consistent_view())
+    val_config.default_data_type(flow.float)
+    return val_config
 
 
 class Validator(object):
@@ -88,12 +88,12 @@ class Validator(object):
             function_config = get_val_config()
 
             @flow.global_function(type="predict", function_config=function_config)
-            def get_validation_datset_lfw_job():
+            def get_validation_dataset_lfw_job():
                 with flow.scope.placement("cpu", "0:0"):
                     issame, images = ofrecord_util.load_lfw_dataset(self.args)
                     return issame, images
 
-            self.get_validation_datset_lfw_fn = get_validation_datset_lfw_job
+            self.get_validation_dataset_lfw_fn = get_validation_dataset_lfw_job
 
             @flow.global_function(type="predict", function_config=function_config)
             def get_validation_dataset_cfp_fp_job():
@@ -133,7 +133,7 @@ class Validator(object):
         batch_size = self.args.val_batch_size_per_device
         if dataset == "lfw":
             total_images_num = self.args.lfw_total_images_num
-            val_job = self.get_validation_datset_lfw_fn
+            val_job = self.get_validation_dataset_lfw_fn
         if dataset == "cfp_fp":
             total_images_num = self.args.cfp_fp_total_images_num
             val_job = self.get_validation_dataset_cfp_fp_fn
@@ -172,7 +172,7 @@ def main():
     args = get_val_args()
     flow.env.log_dir(args.log_dir)
     flow.config.gpu_device_num(args.device_num_per_node)
-
+    
     # validation
     validator = Validator(args)
     validator.load_checkpoint()
