@@ -10,7 +10,7 @@ from symbols import fresnet100, fmobilefacenet
 
 def get_val_args():
     val_parser = argparse.ArgumentParser(description="flags for validation")
-    val_parser.add_argument("-network", default=default.network)
+    val_parser.add_argument("--network", default=default.network)
     args, rest = val_parser.parse_known_args()
     generate_val_config(args.network)
     for ds in config.val_targets:
@@ -84,46 +84,46 @@ def get_val_config():
 class Validator(object):
     def __init__(self, args):
         self.args = args
-        if default.do_validation_while_train:
-            function_config = get_val_config()
+        function_config = get_val_config()
+        
+        #if default.do_validation_while_train:
+        @flow.global_function(type="predict", function_config=function_config)
+        def get_validation_dataset_lfw_job():
+            with flow.scope.placement("cpu", "0:0"):
+                issame, images = ofrecord_util.load_lfw_dataset(self.args)
+                return issame, images
 
-            @flow.global_function(type="predict", function_config=function_config)
-            def get_validation_dataset_lfw_job():
-                with flow.scope.placement("cpu", "0:0"):
-                    issame, images = ofrecord_util.load_lfw_dataset(self.args)
-                    return issame, images
+        self.get_validation_dataset_lfw_fn = get_validation_dataset_lfw_job
 
-            self.get_validation_dataset_lfw_fn = get_validation_dataset_lfw_job
+        @flow.global_function(type="predict", function_config=function_config)
+        def get_validation_dataset_cfp_fp_job():
+            with flow.scope.placement("cpu", "0:0"):
+                issame, images = ofrecord_util.load_cfp_fp_dataset(self.args)
+                return issame, images
 
-            @flow.global_function(type="predict", function_config=function_config)
-            def get_validation_dataset_cfp_fp_job():
-                with flow.scope.placement("cpu", "0:0"):
-                    issame, images = ofrecord_util.load_cfp_fp_dataset(self.args)
-                    return issame, images
+        self.get_validation_dataset_cfp_fp_fn = get_validation_dataset_cfp_fp_job
 
-            self.get_validation_dataset_cfp_fp_fn = get_validation_dataset_cfp_fp_job
+        @flow.global_function(type="predict", function_config=function_config)
+        def get_validation_dataset_agedb_30_job():
+            with flow.scope.placement("cpu", "0:0"):
+                issame, images = ofrecord_util.load_agedb_30_dataset(self.args)
+                return issame, images
 
-            @flow.global_function(type="predict", function_config=function_config)
-            def get_validation_dataset_agedb_30_job():
-                with flow.scope.placement("cpu", "0:0"):
-                    issame, images = ofrecord_util.load_agedb_30_dataset(self.args)
-                    return issame, images
+        self.get_validation_dataset_agedb_30_fn = (
+            get_validation_dataset_agedb_30_job
+        )
 
-            self.get_validation_dataset_agedb_30_fn = (
-                get_validation_dataset_agedb_30_job
+        @flow.global_function(type="predict", function_config=function_config)
+        def get_symbol_val_job(
+            images: flow.typing.Numpy.Placeholder(
+                (self.args.val_batch_size_per_device, 112, 112, 3)
             )
+        ):
+            print("val batch data: ", images.shape)
+            embedding = eval(config.net_name).get_symbol(images)
+            return embedding
 
-            @flow.global_function(type="predict", function_config=function_config)
-            def get_symbol_val_job(
-                images: flow.typing.Numpy.Placeholder(
-                    (self.args.val_batch_size_per_device, 112, 112, 3)
-                )
-            ):
-                print("val batch data: ", images.shape)
-                embedding = eval(config.net_name).get_symbol(images)
-                return embedding
-
-            self.get_symbol_val_fn = get_symbol_val_job
+        self.get_symbol_val_fn = get_symbol_val_job
 
     def do_validation(self, dataset="lfw"):
         print("Validation on [{}]:".format(dataset))
@@ -174,6 +174,7 @@ def main():
     flow.config.gpu_device_num(args.device_num_per_node)
     
     # validation
+    print("args: ", args)
     validator = Validator(args)
     validator.load_checkpoint()
     for ds in config.val_targets:

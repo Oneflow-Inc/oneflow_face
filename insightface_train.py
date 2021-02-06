@@ -244,7 +244,7 @@ def get_train_config(args):
     num_local = (config.num_classes + size - 1) // size
     num_sample = int(num_local * args.sample_ratio)
     args.total_num_sample = num_sample * size
-    default.do_validation_while_train = args.do_validation_while_train
+
     assert args.train_iter > 0, "Train iter must be greater than 0!"
     steps_per_epoch = math.ceil(config.total_img_num / args.train_batch_size)
     if args.train_unit == "epoch":
@@ -390,6 +390,10 @@ def main(args):
     print("gpu num: ", args.device_num_per_node)
     if not os.path.exists(args.models_root):
         os.makedirs(args.models_root)
+    elif os.path.isfile(args.models_root) and (os.path.isdir(args.models_root) and len(os.listdir(args.models_root)) != 0):
+        raise ValueError(
+            "Non-empty directory {} already exists!".format(arg.models_root))
+
     prefix = os.path.join(
         args.models_root, "%s-%s-%s" % (args.network,
                                         args.loss, args.dataset), "model"
@@ -414,8 +418,9 @@ def main(args):
         raise ValueError("Invalid data format")
     flow.env.log_dir(args.log_dir)
     train_func = make_train_func(args)
-    validator = Validator(args)
-    
+    if default.do_validation_while_train:
+        validator = Validator(args)
+
     if os.path.exists(args.model_load_dir):
         assert os.path.abspath(os.path.dirname(os.path.split(args.model_load_dir)[0])) != os.path.abspath(os.path.join(
             args.models_root, args.network + "-" + args.loss + "-" + args.dataset)), "You should specify a new path to save new models."
