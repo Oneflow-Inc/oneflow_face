@@ -390,10 +390,15 @@ def main(args):
     print("gpu num: ", args.device_num_per_node)
     if not os.path.exists(args.models_root):
         os.makedirs(args.models_root)
-    elif os.path.isfile(args.models_root) and (os.path.isdir(args.models_root) and len(os.listdir(args.models_root)) != 0):
-        raise ValueError(
-            "Non-empty directory {} already exists!".format(arg.models_root))
-
+    def IsFileOrNonEmptyDir(path):
+        if os.path.isfile(path):
+            return True
+        if os.path.isdir(path) and len(os.listdir(path)) != 0:
+            return True
+        return False
+    assert not IsFileOrNonEmptyDir(
+        args.models_root
+    ), "Non-empty directory {} already exists!".format(args.models_root)
     prefix = os.path.join(
         args.models_root, "%s-%s-%s" % (args.network,
                                         args.loss, args.dataset), "model"
