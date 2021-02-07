@@ -314,12 +314,12 @@ python insightface_val.py \
 
 | Backbone | GPU                      | model_parallel | partial_fc | BatchSize / it | Throughput img / sec |
 | -------- | ------------------------ | -------------- | ---------- | -------------- | -------------------- |
-| R100     | 8 * Tesla V100-SXM2-16GB | False          | False      | 64             | 1832.02              |
-| R100     | 8 * Tesla V100-SXM2-16GB | True           | False      | 64             | 1851.63              |
-| R100     | 8 * Tesla V100-SXM2-16GB | True           | True       | 64             | 1854.25              |
-| R100     | 8 * Tesla V100-SXM2-16GB | True           | True       | 96(Max)        | 1925.6               |
-| R100     | 8 * Tesla V100-SXM2-16GB | True           | False      | 115(Max)       | 1925.59              |
-| R100     | 8 * Tesla V100-SXM2-16GB | True           | True       | 128(Max)       | 1953.46              |
+| R100     | 8 * Tesla V100-SXM2-16GB | False          | False      | 64             | 1836.8              |
+| R100     | 8 * Tesla V100-SXM2-16GB | True           | False      | 64             | 1854.15              |
+| R100     | 8 * Tesla V100-SXM2-16GB | True           | True       | 64             | 1872.81              |
+| R100     | 8 * Tesla V100-SXM2-16GB | False           | False       | 96(Max)        | 1931.76               |
+| R100     | 8 * Tesla V100-SXM2-16GB | True           | False      | 115(Max)       | 1921.87              |
+| R100     | 8 * Tesla V100-SXM2-16GB | True           | True       | 120(Max)       | 1962.76              |
 | Y1       | 8 * Tesla V100-SXM2-16GB | False          | False      | 256            | 14298.02             |
 | Y1       | 8 * Tesla V100-SXM2-16GB | True           | False      | 256            | 14049.75             |
 | Y1       | 8 * Tesla V100-SXM2-16GB | False          | False      | 350(Max)       | 14756.03             |
@@ -329,8 +329,8 @@ python insightface_val.py \
 
 | Backbone | GPU                      | partial_fc sample_ratio | BatchSize / it | Throughput img / sec |
 | -------- | ------------------------ | ----------------------- | -------------- | -------------------- |
-| R100     | 8 * Tesla V100-SXM2-16GB | 1                       | 64             | 1808.27              |
-| R100     | 8 * Tesla V100-SXM2-16GB | 0.1                     | 64             | 1858.57              |
+| R100     | 8 * Tesla V100-SXM2-16GB | 0.1                       | 64             | 1858.57              |
+| R100     | 8 * Tesla V100-SXM2-16GB | 0.1                     | 115             | 1933.88             |
 
 
 

@@ -157,7 +157,7 @@ def generate_config(_network, _dataset, _loss):
         default["validation_interval"] = 5000
         default["iter_num_in_snapshot"] = 5000
     elif _dataset == "emore":
-        default["lr_steps"] = [100000, 140000, 160000]
+        default["lr_steps"] = [100000, 160000]
         default["scales"] = [0.1, 0.01, 0.001]
         default["train_unit"] = "epoch"
         default["train_iter"] = 17

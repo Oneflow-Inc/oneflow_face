@@ -1,4 +1,5 @@
-import math, os
+import math
+import os
 import argparse
 import numpy as np
 import oneflow as flow
@@ -7,6 +8,7 @@ from sample_config import config, default, generate_val_config
 import ofrecord_util
 import validation_util
 from symbols import fresnet100, fmobilefacenet
+
 
 def get_val_args():
     val_parser = argparse.ArgumentParser(description="flags for validation")
@@ -85,7 +87,7 @@ class Validator(object):
     def __init__(self, args):
         self.args = args
         function_config = get_val_config()
-        
+
         @flow.global_function(type="predict", function_config=function_config)
         def get_validation_dataset_lfw_job():
             with flow.scope.placement("cpu", "0:0"):
@@ -150,7 +152,8 @@ class Validator(object):
             _em_list.append(_em.numpy())
             _em_flipped_list.append(_em_flipped.numpy())
 
-        issame = np.array(_issame_list).flatten().reshape(-1, 1)[:total_images_num, :]
+        issame = np.array(_issame_list).flatten(
+        ).reshape(-1, 1)[:total_images_num, :]
         issame_list = [bool(x) for x in issame[0::2]]
         embedding_length = _em_list[0].shape[-1]
         embeddings = (np.array(_em_list).flatten().reshape(-1, embedding_length))[
@@ -171,7 +174,7 @@ def main():
     args = get_val_args()
     flow.env.log_dir(args.log_dir)
     flow.config.gpu_device_num(args.device_num_per_node)
-    
+
     # validation
     print("args: ", args)
     validator = Validator(args)

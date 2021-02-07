@@ -390,6 +390,7 @@ def main(args):
     print("gpu num: ", args.device_num_per_node)
     if not os.path.exists(args.models_root):
         os.makedirs(args.models_root)
+
     def IsFileOrNonEmptyDir(path):
         if os.path.isfile(path):
             return True
