@@ -48,7 +48,7 @@
 * 支持 ResNet100 和 MobileFaceNet 作为人脸识别模型的 Backbone 网络。
 * 实现了 Softmax Loss 以及 Margin Softmax Loss（包括 Nsoftmax、Arcface、Cosface 和 Combined Loss 等）。
 * 实现了模型并行和 Partial FC 优化。
-* 实现了 MXNet 和 Onnx 的模型转换。
+* 实现了 MXNet 的模型转换。
 
 
 未来将计划逐步完善：
