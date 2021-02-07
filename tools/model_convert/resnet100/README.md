@@ -36,13 +36,13 @@ python mxnet_2_oneflow_model.py \
 
 ## 预训练模型
 
-我们提供了基于*MS1M-Arcface*(emore)数据集、glint360k数据集训练的模型：
+我们提供了基于*MS1M-Arcface*(emore)数据集、glint360k数据集，混合精度训练的模型：
 
 - [emore_r100_arcface_model.zip](https://oneflow-public.oss-cn-beijing.aliyuncs.com/model_zoo/cv/human_face/emore_r100_arcface_model.zip)
 
 - [glint360k_r100_cosface.zip](https://oneflow-public.oss-cn-beijing.aliyuncs.com/model_zoo/cv/human_face/glint360k_r100_cosface.zip)
 
-并在emore验证集上验证了模型精度，同时我们用验证了insightface官方（基于MXNet）提供的[预训练模型](https://github.com/deepinsight/insightface/wiki/Model-Zoo)精度，结果如下：
+并在emore验证集上验证了模型精度，同时我们也验证了insightface官方（基于MXNet）提供的[预训练模型](https://github.com/deepinsight/insightface/wiki/Model-Zoo)精度，结果对比如下：
 
 | Model                                                        | Framwork | LFW(%) | CFP-FP(%) | AgeDB-30(%) |
 | ------------------------------------------------------------ | -------- | ------ | --------- | ----------- |
