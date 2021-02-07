@@ -1,1 +1,7 @@
-python of_model_2_mxnet_model.py --mxnet_load_prefix='mxnet_model/r100-arcface-emore/model' --mxnet_load_epoch=0 --mxnet_save_prefix='mxnet_save/model' --mxnet_save_epoch=1 --of_model_dir='/home/guoran/dev_python/oneflow_face/model_convert/resnet100/snapshot_0/'
+python of_model_2_mxnet_model.py \
+--mxnet_load_prefix='../../../models/mxnet/model-r100-ii/model' \
+--mxnet_load_epoch=0 \
+--mxnet_save_prefix='../../../models/oneflow2mxnet/emore_r100_arcface_model' \
+--mxnet_save_epoch=0 \
+--of_model_dir='../../../models/emore_r100_arcface_model/'
+

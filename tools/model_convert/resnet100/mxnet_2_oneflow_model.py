@@ -13,8 +13,8 @@ parser.add_argument(
 parser.add_argument("-of", "--of_model_dir", type=str, required=False)
 
 args = parser.parse_args()
-assert not os.path.exists(args.of_model_dir)
-os.mkdir(args.of_model_dir)
+if not os.path.exists(args.of_model_dir):
+    os.makedirs(args.of_model_dir)
 
 
 of_dump_path = args.of_model_dir
@@ -28,12 +28,12 @@ def _SaveWeightBlob2File(blob, folder):
     if not os.path.exists(folder):
         os.mkdir(folder)
     filename = os.path.join(folder, "out")
-    f = open(filename, "w")
+    f = open(filename, "wb")
     f.write(blob.tobytes())
     f.close()
     os.mkdir(folder + "-momentum")
     filename_momentum = os.path.join(folder + "-momentum", "out")
-    f2 = open(filename_momentum, "w")
+    f2 = open(filename_momentum, "wb")
     momentum = np.zeros(blob.shape, dtype=np.float32)
     f2.write(momentum.tobytes())
     f2.close()
@@ -115,3 +115,4 @@ for param_name in aux_params.keys():
             print(param_name, "error error")
     else:
         print(param_name, "error error")
+print("convert mxnet model to oneflow model success!")
