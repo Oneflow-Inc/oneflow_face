@@ -71,7 +71,7 @@ Based upon the currently existing work of Insightface, OneFlow ported basic mode
 
 - Model parallelism and [Partial FC](https://github.com/deepinsight/insightface/tree/760d6de043d7f654c5963391271f215dab461547/recognition/partial_fc#partial-fc) optimization.
 
-- Model transformation via MXNet and Onnx.
+- Model transformation via MXNet.
 
 
 
