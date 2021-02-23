@@ -40,17 +40,17 @@ dataset = edict()
 
 dataset.emore = edict()
 dataset.emore.dataset = 'emore'
-dataset.emore.dataset_dir = "/data/insightface/train_ofrecord/faces_emore"
+dataset.emore.dataset_dir = "/data/insightface/ofrecord/train"
 dataset.emore.num_classes = 85744
 dataset.emore.total_img_num = 5822653
 dataset.emore.part_name_prefix = "part-"
 dataset.emore.part_name_suffix_length = 5
-dataset.emore.train_data_part_num = 16
+dataset.emore.train_data_part_num = 32
 dataset.emore.shuffle = True
 
 dataset.glint360k_8GPU = edict()
 dataset.glint360k_8GPU.dataset = "glint360k"
-dataset.glint360k_8GPU.dataset_dir = "/data/glint/glint360k_ofrecord/glint360k"
+dataset.glint360k_8GPU.dataset_dir = "/datasets/glint360k_ofrecord/glint360k/"
 dataset.glint360k_8GPU.total_img_num = 17091657
 dataset.glint360k_8GPU.num_classes = 360232
 dataset.glint360k_8GPU.part_name_prefix = "part-"
@@ -98,7 +98,7 @@ default.dataset = 'emore'
 default.network = 'r100'
 default.loss = 'arcface'
 
-default.node_ips = ["192.168.1.13"]
+default.node_ips = ["10.11.0.2"]
 default.num_nodes = 1
 default.device_num_per_node = 8
 default.model_parallel = 0
@@ -119,7 +119,7 @@ default.wd = 0.0005
 default.mom = 0.9
 
 default.model_load_dir = ""
-default.models_root = './models'
+default.models_root = './new_models'
 default.log_dir = "output/log"
 default.loss_print_frequency = 1
 default.iter_num_in_snapshot = 5000
@@ -129,7 +129,9 @@ default.use_fp16 = False
 default.nccl_fusion_threshold_mb = 16
 default.nccl_fusion_max_ops = 64
 
-default.val_batch_size_per_device = 20
+default.val_batch_size_per_device = 10
+default.val_batch_size = default.val_batch_size_per_device * \
+    default.device_num_per_node * default.num_nodes
 default.validation_interval = 5000
 default.val_data_part_num = 1
 default.val_dataset_dir = "/data/insightface/eval_ofrecord"
@@ -158,7 +160,7 @@ def generate_config(_network, _dataset, _loss):
         default["iter_num_in_snapshot"] = 5000
     elif _dataset == "emore":
         default["lr_steps"] = [100000, 160000]
-        default["scales"] = [0.1, 0.01, 0.001]
+        default["scales"] = [0.1, 0.01]
         default["train_unit"] = "epoch"
         default["train_iter"] = 17
         default["model_parallel"] = 0

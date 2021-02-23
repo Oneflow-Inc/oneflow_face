@@ -174,9 +174,9 @@ def get_train_args():
 
     # validation config
     train_parser.add_argument(
-        "--val_batch_size_per_device",
+        "--val_batch_size",
         type=int,
-        default=default.val_batch_size_per_device,
+        default=default.val_batch_size,
         help="Validation batch size per device",
     )
     train_parser.add_argument(
@@ -240,11 +240,12 @@ def get_train_config(args):
     if args.nccl_fusion_max_ops:
         flow.config.collective_boxing.nccl_fusion_max_ops(
             args.nccl_fusion_max_ops)
-    size = args.device_num_per_node * args.num_nodes
+    size = args.device_num_per_node * args.num_nodes 
     num_local = (config.num_classes + size - 1) // size
+    config.num_classes = num_local * size  
     num_sample = int(num_local * args.sample_ratio)
     args.total_num_sample = num_sample * size
-
+    
     assert args.train_iter > 0, "Train iter must be greater than 0!"
     steps_per_epoch = math.ceil(config.total_img_num / args.train_batch_size)
     if args.train_unit == "epoch":
@@ -385,7 +386,6 @@ def make_train_func(args):
 
 
 def main(args):
-
     flow.config.gpu_device_num(args.device_num_per_node)
     print("gpu num: ", args.device_num_per_node)
     if not os.path.exists(args.models_root):
@@ -408,7 +408,9 @@ def main(args):
     print("prefix: ", prefix)
     if not os.path.exists(prefix_dir):
         os.makedirs(prefix_dir)
-
+    
+    default.num_nodes = args.num_nodes
+    default.node_ips = args.node_ips
     if args.num_nodes > 1:
         assert args.num_nodes <= len(
             args.node_ips), "The number of nodes should not be greater than length of node_ips list."
@@ -424,9 +426,10 @@ def main(args):
         raise ValueError("Invalid data format")
     flow.env.log_dir(args.log_dir)
     train_func = make_train_func(args)
-    if default.do_validation_while_train:
+    if args.do_validation_while_train:
         validator = Validator(args)
-
+    
+    
     if os.path.exists(args.model_load_dir):
         assert os.path.abspath(os.path.dirname(os.path.split(args.model_load_dir)[0])) != os.path.abspath(os.path.join(
             args.models_root, args.network + "-" + args.loss + "-" + args.dataset)), "You should specify a new path to save new models."

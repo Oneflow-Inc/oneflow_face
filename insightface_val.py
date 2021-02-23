@@ -53,10 +53,10 @@ def get_val_args():
     )
 
     val_parser.add_argument(
-        "--val_batch_size_per_device",
-        default=default.val_batch_size_per_device,
+        "--val_batch_size",
+        default=default.val_batch_size,
         type=int,
-        help="validation batch size per device",
+        help="validation batch size totally",
     )
     val_parser.add_argument(
         "--nrof_folds", default=default.nrof_folds, type=int, help="nrof folds"
@@ -80,6 +80,9 @@ def get_val_config():
     val_config = flow.function_config()
     val_config.default_logical_view(flow.scope.consistent_view())
     val_config.default_data_type(flow.float)
+    args = get_val_args()
+    default.val_batch_size = args.val_batch_size
+
     return val_config
 
 
@@ -87,7 +90,7 @@ class Validator(object):
     def __init__(self, args):
         self.args = args
         function_config = get_val_config()
-
+        
         @flow.global_function(type="predict", function_config=function_config)
         def get_validation_dataset_lfw_job():
             with flow.scope.placement("cpu", "0:0"):
@@ -116,13 +119,13 @@ class Validator(object):
 
         @flow.global_function(type="predict", function_config=function_config)
         def get_symbol_val_job(
-            images: flow.typing.Numpy.Placeholder(
-                (self.args.val_batch_size_per_device, 112, 112, 3)
-            )
-        ):
-            print("val batch data: ", images.shape)
-            embedding = eval(config.net_name).get_symbol(images)
-            return embedding
+                images: flow.typing.Numpy.Placeholder(
+                    (self.args.val_batch_size, 112, 112, 3)
+                )
+            ):
+                print("val batch data: ", images.shape)
+                embedding = eval(config.net_name).get_symbol(images)
+                return embedding
 
         self.get_symbol_val_fn = get_symbol_val_job
 
@@ -131,7 +134,7 @@ class Validator(object):
         _issame_list = []
         _em_list = []
         _em_flipped_list = []
-        batch_size = self.args.val_batch_size_per_device
+        batch_size = self.args.val_batch_size
         if dataset == "lfw":
             total_images_num = self.args.lfw_total_images_num
             val_job = self.get_validation_dataset_lfw_fn
@@ -141,7 +144,8 @@ class Validator(object):
         if dataset == "agedb_30":
             total_images_num = self.args.agedb_30_total_images_num
             val_job = self.get_validation_dataset_agedb_30_fn
-
+        
+        assert total_images_num % self.args.val_batch_size == 0, print("Total number of images should be be divisible by the total validation batch size!") 
         val_iter_num = math.ceil(total_images_num / batch_size)
         for i in range(val_iter_num):
             _issame, images = val_job().get()
