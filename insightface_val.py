@@ -145,7 +145,7 @@ class Validator(object):
             total_images_num = self.args.agedb_30_total_images_num
             val_job = self.get_validation_dataset_agedb_30_fn
         
-        assert total_images_num % self.args.val_batch_size == 0, print("Total batch size of validation should be be divisible by the number of total images with no remainder!") 
+        assert total_images_num % self.args.val_batch_size == 0, print("Total number of images should be be divisible by the total validation batch size!") 
         val_iter_num = math.ceil(total_images_num / batch_size)
         for i in range(val_iter_num):
             _issame, images = val_job().get()
