@@ -204,16 +204,16 @@ python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces
 
 ## 预训练模型
 
-我们提供了基于oneflow训练的人脸识别模型，在 The 1:1 verification accuracy on InsightFace Recognition Test (IFRT) 验证集上，Oneflow及MXNet训练模型的精度对比如下：
+基于 oneflow 的人脸识别模型在 The 1:1 verification accuracy on InsightFace Recognition Test (IFRT) 验证集上与 MXNet 的预训练模型精度对比如下：
 
 | **Framework** | **African** | **Caucasian** | **Indian** | **Asian** | **All** |
 | ------------- | ----------- | ------------- | ---------- | --------- | ------- |
 | OneFlow       | 90.4076     | 94.583        | 93.702     | 68.754    | 89.684  |
 | MXNet         | 90.45       | 94.60         | 93.96      | 63.91     | 88.23   |
 
-您可直接下载oneflow的人脸模型：[of_005_model.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_glint360k_partial_fc/of_005_model.tar.gz)
+oneflow 的人脸预训练模型下载链接：[of_005_model.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_glint360k_partial_fc/of_005_model.tar.gz)
 
-如果您需要在mxnet下使用，我们也提供了转换成mxnet后的模型：[of_to_mxnet_model_005.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_2_mxnet_glint360k_partial_fc/of_to_mxnet_model_005.tar.gz)
+我们也提供了转换成 MXNet 的模型：[of_to_mxnet_model_005.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_2_mxnet_glint360k_partial_fc/of_to_mxnet_model_005.tar.gz)
 
 
 
