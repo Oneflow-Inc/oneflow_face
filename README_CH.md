@@ -14,6 +14,8 @@
       - [1. 下载数据集](#1-下载数据集)
       - [2. 将训练数据集 MS1M 从 recordio 格式转换为 OFRecord 格式](#2-将训练数据集-ms1m-从-recordio-格式转换为-ofrecord-格式)
       - [3. 将验证数据集转换为 OFRecord 格式](#3-将验证数据集转换为-ofrecord-格式)
+
+  - [预训练模型](#预训练模型)
   - [训练和验证](#训练和验证)
     - [训练](#训练)
     - [验证](#验证)
@@ -150,6 +152,7 @@ python tools/dataset_convert/mx_recordio_2_ofrecord.py --data_dir datasets/faces
 成功安装和部署 Spark 后， 您需要：
 1. 下载工具 jar 包
    
+
 您可以通过 [Github](https://github.com/Oneflow-Inc/spark-oneflow-connector) 或者 [OSS](https://oneflow-public.oss-cn-beijing.aliyuncs.com/spark-oneflow-connector/spark-oneflow-connector-assembly-0.1.1.jar) 下载 Spark-oneflow-connector-assembly-0.1.0.jar 文件。
 1. 运行 Spark 命令
 
@@ -196,6 +199,21 @@ python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces
 python bin_2_ofrecord.py --data_dir=faces_emore --output_filepath=faces_emore/ofrecord/cfp_fp/ --dataset_name="cfp_fp"
 python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces_emore/ofrecord/agedb_30/ --dataset_name="agedb_30"
 ```
+
+
+
+## 预训练模型
+
+我们提供了基于oneflow训练的人脸识别模型，在 The 1:1 verification accuracy on InsightFace Recognition Test (IFRT) 验证集上，Oneflow及MXNet训练模型的精度对比如下：
+
+| **Framework** | **African** | **Caucasian** | **Indian** | **Asian** | **All** |
+| ------------- | ----------- | ------------- | ---------- | --------- | ------- |
+| OneFlow       | 90.4076     | 94.583        | 93.702     | 68.754    | 89.684  |
+| MXNet         | 90.45       | 94.60         | 93.96      | 63.91     | 88.23   |
+
+您可直接下载oneflow的人脸模型：[of_005_model.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_glint360k_partial_fc/of_005_model.tar.gz)
+
+如果您需要在mxnet下使用，我们也提供了转换成mxnet后的模型：[of_to_mxnet_model_005.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_2_mxnet_glint360k_partial_fc/of_to_mxnet_model_005.tar.gz)
 
 
 
