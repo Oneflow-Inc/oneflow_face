@@ -327,4 +327,4 @@ r denotes the sampling rate of negative class centers.
 | 1        | 1                | 64                    | True | True           | True       | 2000000     |
 | 1        | 8                | 64                    | True | True           | True       | 13500000    |
 
-更多详情请移步 [OneFlow DLPerf]().
+更多详情请移步 [OneFlow DLPerf](https://github.com/Oneflow-Inc/DLPerf#insightface).
