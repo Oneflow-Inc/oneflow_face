@@ -27,8 +27,9 @@ It introduces how to train InsightFace in OneFlow, and do verification over the 
    \- [2. Transformation from MS1M recordio to OFRecord](#2-transformation-from-ms1m-recordio-to-ofrecord)
 
    \- [3. Transformation from validation datasets to OFRecord](#3-transformation-from-validation-datasets-to-ofrecord)
- 
+
  \- [Pretrained model](#Pretrained-model)
+
  \- [Training and verification](#training-and-verification)
 
   \- [Training](#training)
