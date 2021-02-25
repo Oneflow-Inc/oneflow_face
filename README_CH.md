@@ -255,7 +255,7 @@ python insightface_train.py --dataset glint360k_8GPU --network r100_glint360k --
 
 ```
 python insightface_val.py \
---gpu_num_per_node=1 \
+--device_num_per_node=1 \
 --network="r100" \
 --model_load_dir=path/to/model_load_dir
 ```
