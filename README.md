@@ -250,16 +250,16 @@ python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces
 
 ## Pretrained model
 
-We provide a face recognition model based on OneFlow. On the verification set of the 1:1 verification accuracy on insightface recognition test (IFRT), the accuracy comparison of OneFlow and MXNet trained models are as follows:
+The accuracy comparison of OneFlow and MXNet pretrained models on the verification set of the 1:1 verification accuracy on insightface recognition test (IFRT) are as follows:
 
 | **Framework** | **African** | **Caucasian** | **Indian** | **Asian** | **All** |
 | ------------- | ----------- | ------------- | ---------- | --------- | ------- |
 | OneFlow       | 90.4076     | 94.583        | 93.702     | 68.754    | 89.684  |
 | MXNet         | 90.45       | 94.60         | 93.96      | 63.91     | 88.23   |
 
-You can download the face model of OneFlow directly:[of_005_model.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_glint360k_partial_fc/of_005_model.tar.gz)
+The download link of the OneFlow pretrain model:[of_005_model.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_glint360k_partial_fc/of_005_model.tar.gz)
 
-If you need to use it under mxnet, we also provide the model converted to mxnet:[of_to_mxnet_model_005.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_2_mxnet_glint360k_partial_fc/of_to_mxnet_model_005.tar.gz)
+We also provide the MXNet model which converted from OneFlow:[of_to_mxnet_model_005.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_2_mxnet_glint360k_partial_fc/of_to_mxnet_model_005.tar.gz)
 
 
 
