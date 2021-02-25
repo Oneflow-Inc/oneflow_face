@@ -14,6 +14,8 @@
       - [1. 下载数据集](#1-下载数据集)
       - [2. 将训练数据集 MS1M 从 recordio 格式转换为 OFRecord 格式](#2-将训练数据集-ms1m-从-recordio-格式转换为-ofrecord-格式)
       - [3. 将验证数据集转换为 OFRecord 格式](#3-将验证数据集转换为-ofrecord-格式)
+
+  - [预训练模型](#预训练模型)
   - [训练和验证](#训练和验证)
     - [训练](#训练)
     - [验证](#验证)
@@ -150,6 +152,7 @@ python tools/dataset_convert/mx_recordio_2_ofrecord.py --data_dir datasets/faces
 成功安装和部署 Spark 后， 您需要：
 1. 下载工具 jar 包
    
+
 您可以通过 [Github](https://github.com/Oneflow-Inc/spark-oneflow-connector) 或者 [OSS](https://oneflow-public.oss-cn-beijing.aliyuncs.com/spark-oneflow-connector/spark-oneflow-connector-assembly-0.1.1.jar) 下载 Spark-oneflow-connector-assembly-0.1.0.jar 文件。
 1. 运行 Spark 命令
 
@@ -199,6 +202,21 @@ python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces
 
 
 
+## 预训练模型
+
+基于 oneflow 的人脸识别模型在 The 1:1 verification accuracy on InsightFace Recognition Test (IFRT) 验证集上与 MXNet 的预训练模型精度对比如下：
+
+| **Framework** | **African** | **Caucasian** | **Indian** | **Asian** | **All** |
+| ------------- | ----------- | ------------- | ---------- | --------- | ------- |
+| OneFlow       | 90.4076     | 94.583        | 93.702     | 68.754    | 89.684  |
+| MXNet         | 90.45       | 94.60         | 93.96      | 63.91     | 88.23   |
+
+oneflow 的人脸预训练模型下载链接：[of_005_model.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_glint360k_partial_fc/of_005_model.tar.gz)
+
+我们也提供了转换成 MXNet 的模型：[of_to_mxnet_model_005.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_2_mxnet_glint360k_partial_fc/of_to_mxnet_model_005.tar.gz)
+
+
+
 ## 训练和验证
 
 ### 训练
@@ -237,7 +255,7 @@ python insightface_train.py --dataset glint360k_8GPU --network r100_glint360k --
 
 ```
 python insightface_val.py \
---gpu_num_per_node=1 \
+--device_num_per_node=1 \
 --network="r100" \
 --model_load_dir=path/to/model_load_dir
 ```
@@ -309,4 +327,4 @@ r denotes the sampling rate of negative class centers.
 | 1        | 1                | 64                    | True | True           | True       | 2000000     |
 | 1        | 8                | 64                    | True | True           | True       | 13500000    |
 
-更多详情请移步 [OneFlow DLPerf]().
+更多详情请移步 [OneFlow DLPerf](https://github.com/Oneflow-Inc/DLPerf#insightface).

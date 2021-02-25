@@ -28,6 +28,8 @@ It introduces how to train InsightFace in OneFlow, and do verification over the 
 
    \- [3. Transformation from validation datasets to OFRecord](#3-transformation-from-validation-datasets-to-ofrecord)
 
+ \- [Pretrained model](#Pretrained-model)
+
  \- [Training and verification](#training-and-verification)
 
   \- [Training](#training)
@@ -246,6 +248,23 @@ python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces
 
 
 
+## Pretrained model
+
+The accuracy comparison of OneFlow and MXNet pretrained models on the verification set of the 1:1 verification accuracy on insightface recognition test (IFRT) are as follows:
+
+| **Framework** | **African** | **Caucasian** | **Indian** | **Asian** | **All** |
+| ------------- | ----------- | ------------- | ---------- | --------- | ------- |
+| OneFlow       | 90.4076     | 94.583        | 93.702     | 68.754    | 89.684  |
+| MXNet         | 90.45       | 94.60         | 93.96      | 63.91     | 88.23   |
+
+The download link of the OneFlow pretrain model:[of_005_model.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_glint360k_partial_fc/of_005_model.tar.gz)
+
+We also provide the MXNet model which converted from OneFlow:[of_to_mxnet_model_005.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_2_mxnet_glint360k_partial_fc/of_to_mxnet_model_005.tar.gz)
+
+
+
+
+
 ## Training and verification
 
 
@@ -296,11 +315,8 @@ run
 
 ```
 python insightface_val.py \
-
---gpu_num_per_node=1 \
-
+--device_num_per_node=1 \
 --network="r100" \
-
 --model_load_dir=path/to/model_load_dir
 ```
 
@@ -371,4 +387,4 @@ r denotes the sampling rate of negative class centers.
 | 1        | 1                | 64                    | True | True           | True       | 2000000     |
 | 1        | 8                | 64                    | True | True           | True       | 13500000    |
 
-More test details could refer to [OneFlow DLPerf]().
+More test details could refer to [OneFlow DLPerf](https://github.com/Oneflow-Inc/DLPerf#insightface).
