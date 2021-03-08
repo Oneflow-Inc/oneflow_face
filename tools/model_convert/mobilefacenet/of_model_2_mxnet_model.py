@@ -18,19 +18,21 @@ parser.add_argument(
     "-mx_save_epoch", "--mxnet_save_epoch", type=int, required=False
 )
 args = parser.parse_args()
-assert not os.path.exists(args.mx_save_prefix)
-os.mkdir(args.mx_save_prefix)
-
 load_prefix = args.mxnet_load_prefix
 save_prefix = args.mxnet_save_prefix
+
+mxnet_save_dir = save_prefix[0: save_prefix.rfind("/")]
+if not os.path.exists(mxnet_save_dir):
+    os.makedirs(mxnet_save_dir)
+
 load_epoch = args.mxnet_load_epoch
 save_epoch = args.mxnet_save_epoch
-of_dir = args.of_model_dir
+of_dir = args.of_model_dir + os.sep
 
 sym, arg_params, aux_params = mx.model.load_checkpoint(load_prefix, load_epoch)
 
 for param_name in arg_params.keys():
-    of_model_path = of_dir + "_".join(param_name.split("_")[0:-1])
+    of_model_path = of_dir+ "_".join(param_name.split("_")[0:-1])
     mx_weight = arg_params[param_name].asnumpy()
 
     if param_name.split("_")[-2] == "conv2d":
@@ -108,8 +110,7 @@ for param_name in arg_params.keys():
             )
             arg_params[param_name] = mx.nd.array(of_weight)
         elif param_name.split("_")[-1] == "gamma":
-            print("\n")
-            print(param_name, "gamma error")
+            pass
         else:
             print(param_name, "error error")
     else:
@@ -144,3 +145,4 @@ for param_name in aux_params.keys():
         print(param_name, "error error")
 
 mx.model.save_checkpoint(save_prefix, save_epoch, sym, arg_params, aux_params)
+print("convert oneflow model to mxnet model success!")
