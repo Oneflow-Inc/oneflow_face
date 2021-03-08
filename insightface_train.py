@@ -240,6 +240,9 @@ def get_train_config(args):
     if args.nccl_fusion_max_ops:
         flow.config.collective_boxing.nccl_fusion_max_ops(
             args.nccl_fusion_max_ops)
+    
+    default.device_num_per_node = args.device_num_per_node
+    args.train_batch_size = default.train_batch_size_per_device * args.num_nodes * args.device_num_per_node
     size = args.device_num_per_node * args.num_nodes 
     num_local = (config.num_classes + size - 1) // size
     config.num_classes = num_local * size  
@@ -449,7 +452,7 @@ def main(args):
         train_func().async_get(train_metric.metric_cb(step))
 
         # validation
-        if default.do_validation_while_train and (step + 1) % args.validation_interval == 0:
+        if args.do_validation_while_train and (step + 1) % args.validation_interval == 0:
             for ds in config.val_targets:
                 issame_list, embeddings_list = validator.do_validation(
                     dataset=ds)

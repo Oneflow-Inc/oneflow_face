@@ -71,6 +71,8 @@ def get_val_args():
     return val_parser.parse_args()
 
 
+
+
 def flip_data(images):
     images_flipped = np.flip(images, axis=2).astype(np.float32)
     return images_flipped
@@ -80,8 +82,6 @@ def get_val_config():
     val_config = flow.function_config()
     val_config.default_logical_view(flow.scope.consistent_view())
     val_config.default_data_type(flow.float)
-    args = get_val_args()
-    default.val_batch_size = args.val_batch_size
 
     return val_config
 
@@ -91,6 +91,7 @@ class Validator(object):
         self.args = args
         function_config = get_val_config()
         
+        default.val_batch_size = args.val_batch_size
         @flow.global_function(type="predict", function_config=function_config)
         def get_validation_dataset_lfw_job():
             with flow.scope.placement("cpu", "0:0"):
