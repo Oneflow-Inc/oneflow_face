@@ -15,9 +15,15 @@ python of_model_2_mxnet_model.py \
     --of_model_dir='/your_path_to_oneflow_model'
 ```
 
-其中，需要根据--mxnet_load_prefix参数加载mxnet基准模型，用于读取mxnet模型的参数名、结构信息；然后通过将--of_model_dir指定的oneflow模型读取相应的参数、权重信息，最后写入到--mxnet_save_prefix所指定的路径（最终需要保存的mxnet模型）。
+- --mxnet_load_prefix  转换需要用到的mxnet模型路径
 
-注：转换时最好使用由[insightface-ArcFace](https://github.com/deepinsight/insightface/tree/master/recognition/ArcFace)仓库训练而得到的模型作为--mxnet_load_prefix基准模型，以保证转化后的mxnet模型精度。
+  该mxnet模型的作用类似模板（可提供mxnet模型的参数名、结构等信息），可以是由随机初始化、或训练任意step后得到的mxnet模型
+
+- --of_model_dir            转换后的oneflow模型路径
+
+- --mxnet_save_prefix  转换后保存mxnet模型的文件夹路径
+
+注：转换时最好使用由[insightface-ArcFace](https://github.com/deepinsight/insightface/tree/master/recognition/ArcFace)仓库随机初始化/训练而得到的模型作为--mxnet_load_prefix模板模型，以保证转化后的mxnet模型精度。
 
 
 
