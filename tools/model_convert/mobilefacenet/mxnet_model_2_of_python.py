@@ -13,29 +13,26 @@ parser.add_argument(
 parser.add_argument("-of", "--of_model_dir", type=str, required=False)
 
 args = parser.parse_args()
-assert not os.path.exists(args.of_model_dir)
-os.mkdir(args.of_model_dir)
-
 prefix = args.mxnet_load_prefix
 epoch = args.mxnet_load_epoch
-of_model_path = args.of_model_dir
-assert not os.path.exists(of_model_path)
-os.mkdir(of_model_path)
+of_model_path = args.of_model_dir + os.sep
+if not os.path.exists(of_model_path):
+    os.makedirs(of_model_path)
+
 
 
 def _SaveWeightBlob2File(blob, folder, var):
     filename = os.path.join(folder, var)
-    f = open(filename, "w")
+    f = open(filename, "wb")
     f.write(blob.tobytes())
     f.close()
 
     os.mkdir(folder + "-momentum")
     filename_momentum = os.path.join(folder + "-momentum", var)
-    f2 = open(filename_momentum, "w")
+    f2 = open(filename_momentum, "wb")
     momentum = np.zeros(blob.shape, dtype=np.float32)
     f2.write(momentum.tobytes())
     f2.close()
-
 
 _, arg_params, aux_params = mx.model.load_checkpoint(prefix, epoch)
 for param_name in arg_params.keys():
@@ -118,7 +115,8 @@ global_step = os.path.join(
     of_model_path, "System-Train-TrainStep-insightface_train_job"
 )
 os.mkdir(global_step)
-f = open(os.path.join(global_step, "out"), "w")
+f = open(os.path.join(global_step, "out"), "wb")
 step = np.zeros(2, dtype=np.float32)
 f.write(step.tobytes())
 f.close()
+print("convert mxnet model to oneflow model success!")
