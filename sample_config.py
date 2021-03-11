@@ -18,6 +18,11 @@ config.enable_fuse_add_to_output = False
 # network settings
 network = edict()
 
+network.r50 = edict()
+network.r50.net_name = 'fresnet50'
+network.r50.emb_size = 512
+network.r50.fc_type = "E"
+
 network.r100 = edict()
 network.r100.net_name = 'fresnet100'
 network.r100.emb_size = 512
@@ -40,7 +45,7 @@ dataset = edict()
 
 dataset.emore = edict()
 dataset.emore.dataset = 'emore'
-dataset.emore.dataset_dir = "/data/insightface/ofrecord/train"
+dataset.emore.dataset_dir = "/datasets/insightface/ofrecord/train"
 dataset.emore.num_classes = 85744
 dataset.emore.total_img_num = 5822653
 dataset.emore.part_name_prefix = "part-"
@@ -136,7 +141,7 @@ default.validation_interval = 5000
 default.val_data_part_num = 1
 default.val_dataset_dir = "/data/insightface/eval_ofrecord"
 default.nrof_folds = 10
-default.sample_ratio = 0.1
+default.sample_ratio = 1.0
 
 
 def generate_config(_network, _dataset, _loss):
@@ -161,8 +166,8 @@ def generate_config(_network, _dataset, _loss):
     elif _dataset == "emore":
         default["lr_steps"] = [100000, 160000]
         default["scales"] = [0.1, 0.01]
-        default["train_unit"] = "epoch"
-        default["train_iter"] = 17
+        default["train_unit"] = "batch"
+        default["train_iter"] = 200
         default["model_parallel"] = 0
         default["partial_fc"] = 0
         default["iter_num_in_snapshot"] = 1

@@ -10,7 +10,7 @@ import validation_util
 from callback_util import TrainMetric
 from insightface_val import Validator, get_val_args
 
-from symbols import fresnet100, fmobilefacenet
+from symbols import fresnet100, fresnet50, fmobilefacenet
 
 
 def str2list(x):
@@ -397,9 +397,9 @@ def main(args):
         if os.path.isdir(path) and len(os.listdir(path)) != 0:
             return True
         return False
-    assert not IsFileOrNonEmptyDir(
-        args.models_root
-    ), "Non-empty directory {} already exists!".format(args.models_root)
+    # assert not IsFileOrNonEmptyDir(
+    #     args.models_root
+    # ), "Non-empty directory {} already exists!".format(args.models_root)
     prefix = os.path.join(
         args.models_root, "%s-%s-%s" % (args.network,
                                         args.loss, args.dataset), "model"
