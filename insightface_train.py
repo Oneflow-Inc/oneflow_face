@@ -1,20 +1,19 @@
 import os
 import math
 import argparse
-import numpy as np
 import oneflow as flow
 
 from sample_config import config, default, generate_config
 import ofrecord_util
 import validation_util
 from callback_util import TrainMetric
-from insightface_val import Validator, get_val_args
+from insightface_val import Validator
 
 from symbols import fresnet100, fmobilefacenet
 
 
 def str2list(x):
-    x = [float(y) if type(eval(y)) == float else int(y) for y in x.split(',')]
+    x = [float(y) if type(eval(y)) == float else int(y) for y in x.split(",")]
     return x
 
 
@@ -36,7 +35,8 @@ def get_train_args():
         "--network", default=default.network, required=True, help="Network config"
     )
     train_parser.add_argument(
-        "--loss", default=default.loss, required=True, help="Loss config")
+        "--loss", default=default.loss, required=True, help="Loss config"
+    )
     args, rest = train_parser.parse_known_args()
     generate_config(args.network, args.dataset, args.loss)
 
@@ -96,12 +96,24 @@ def get_train_args():
         help="Whether do validation while training",
     )
     train_parser.add_argument(
-        "--use_fp16", type=str2bool, nargs="?", default=default.use_fp16, help="Whether to use fp16"
+        "--use_fp16",
+        type=str2bool,
+        nargs="?",
+        default=default.use_fp16,
+        help="Whether to use fp16",
     )
-    train_parser.add_argument("--nccl_fusion_threshold_mb", type=int, default=default.nccl_fusion_threshold_mb,
-                              help="NCCL fusion threshold megabytes, set to 0 to compatible with previous version of OneFlow.")
-    train_parser.add_argument("--nccl_fusion_max_ops", type=int, default=default.nccl_fusion_max_ops,
-                              help="Maximum number of ops of NCCL fusion, set to 0 to compatible with previous version of OneFlow.")
+    train_parser.add_argument(
+        "--nccl_fusion_threshold_mb",
+        type=int,
+        default=default.nccl_fusion_threshold_mb,
+        help="NCCL fusion threshold megabytes, set to 0 to compatible with previous version of OneFlow.",
+    )
+    train_parser.add_argument(
+        "--nccl_fusion_max_ops",
+        type=int,
+        default=default.nccl_fusion_max_ops,
+        help="Maximum number of ops of NCCL fusion, set to 0 to compatible with previous version of OneFlow.",
+    )
 
     # hyperparameters
     train_parser.add_argument(
@@ -131,8 +143,12 @@ def get_train_args():
     train_parser.add_argument(
         "-mom", "--momentum", type=float, default=default.mom, help="Momentum"
     )
-    train_parser.add_argument("--scales", type=str2list,
-                              default=default.scales, help="Learning rate step sacles")
+    train_parser.add_argument(
+        "--scales",
+        type=str2list,
+        default=default.scales,
+        help="Learning rate step sacles",
+    )
 
     # model and log
     train_parser.add_argument(
@@ -163,8 +179,12 @@ def get_train_args():
         default=default.iter_num_in_snapshot,
         help="The number of train unit iter in the snapshot",
     )
-    train_parser.add_argument("--save_last_snapshot", type=bool,
-                              default=default.save_last_snapshot, help="Whether to save last snapshot")
+    train_parser.add_argument(
+        "--save_last_snapshot",
+        type=bool,
+        default=default.save_last_snapshot,
+        help="Whether to save last snapshot",
+    )
     train_parser.add_argument(
         "--sample_ratio",
         type=float,
@@ -201,7 +221,9 @@ def get_train_args():
         "--agedb_30_total_images_num", type=int, default=12000,
     )
     for ds in config.val_targets:
-        assert ds == 'lfw' or 'cfp_fp' or 'agedb_30', "Lfw, cfp_fp, agedb_30 datasets are supported now!"
+        assert (
+            ds == "lfw" or "cfp_fp" or "agedb_30"
+        ), "Lfw, cfp_fp, agedb_30 datasets are supported now!"
         train_parser.add_argument(
             "--%s_dataset_dir" % ds,
             type=str,
@@ -221,8 +243,7 @@ def get_train_config(args):
     func_config.cudnn_conv_heuristic_search_algo(
         config.cudnn_conv_heuristic_search_algo
     )
-    func_config.enable_fuse_model_update_ops(
-        config.enable_fuse_model_update_ops)
+    func_config.enable_fuse_model_update_ops(config.enable_fuse_model_update_ops)
     func_config.enable_fuse_add_to_output(config.enable_fuse_add_to_output)
     default.do_validation_while_train = args.do_validation_while_train
     if args.use_fp16:
@@ -231,44 +252,53 @@ def get_train_config(args):
     if args.partial_fc:
         func_config.enable_fuse_model_update_ops(False)
         func_config.indexed_slices_optimizer_conf(
-            dict(include_op_names=dict(op_name=['fc7-weight'])))
+            dict(include_op_names=dict(op_name=["fc7-weight"]))
+        )
     if args.use_fp16 and (args.num_nodes * args.device_num_per_node) > 1:
         flow.config.collective_boxing.nccl_fusion_all_reduce_use_buffer(False)
     if args.nccl_fusion_threshold_mb:
         flow.config.collective_boxing.nccl_fusion_threshold_mb(
-            args.nccl_fusion_threshold_mb)
+            args.nccl_fusion_threshold_mb
+        )
     if args.nccl_fusion_max_ops:
-        flow.config.collective_boxing.nccl_fusion_max_ops(
-            args.nccl_fusion_max_ops)
-    
+        flow.config.collective_boxing.nccl_fusion_max_ops(args.nccl_fusion_max_ops)
+
     default.device_num_per_node = args.device_num_per_node
-    args.train_batch_size = default.train_batch_size_per_device * args.num_nodes * args.device_num_per_node
-    size = args.device_num_per_node * args.num_nodes 
+    args.train_batch_size = (
+        default.train_batch_size_per_device * args.num_nodes * args.device_num_per_node
+    )
+    size = args.device_num_per_node * args.num_nodes
     num_local = (config.num_classes + size - 1) // size
-    config.num_classes = num_local * size  
+    config.num_classes = num_local * size
     num_sample = int(num_local * args.sample_ratio)
     args.total_num_sample = num_sample * size
-    
+
     assert args.train_iter > 0, "Train iter must be greater than 0!"
     steps_per_epoch = math.ceil(config.total_img_num / args.train_batch_size)
     if args.train_unit == "epoch":
-        print("Using epoch as training unit now. Each unit of iteration is epoch, including train_iter, iter_num_in_snapshot and validation interval")
+        print(
+            "Using epoch as training unit now. Each unit of iteration is epoch, including train_iter, iter_num_in_snapshot and validation interval"
+        )
         args.total_iter_num = steps_per_epoch * args.train_iter
         args.iter_num_in_snapshot = steps_per_epoch * args.iter_num_in_snapshot
         if args.validation_interval <= args.total_iter_num:
             args.validation_interval = steps_per_epoch * args.validation_interval
         else:
             print(
-                "It doesn't do validation because validation_interval is greater than train_iter.")
+                "It doesn't do validation because validation_interval is greater than train_iter."
+            )
     elif args.train_unit == "batch":
-        print("Using batch as training unit now. Each unit of iteration is batch, including train_iter, iter_num_in_snapshot and validation interval")
+        print(
+            "Using batch as training unit now. Each unit of iteration is batch, including train_iter, iter_num_in_snapshot and validation interval"
+        )
         args.total_iter_num = args.train_iter
         args.iter_num_in_snapshot = args.iter_num_in_snapshot
         if args.validation_interval <= args.total_iter_num:
             args.validation_interval = args.validation_interval
         else:
             print(
-                "It doesn't do validation because validation_interval is greater than train_iter.")
+                "It doesn't do validation because validation_interval is greater than train_iter."
+            )
     else:
         raise ValueError("Invalid train unit!")
     return func_config
@@ -282,9 +312,10 @@ def make_train_func(args):
         else:
             labels, images = ofrecord_util.load_train_dataset(args)
         image_size = images.shape[1:-1]
-        assert len(
-            image_size) == 2, "The length of image size must be equal to 2."
-        assert image_size[0] == image_size[1], "image_size[0] should be equal to image_size[1]."
+        assert len(image_size) == 2, "The length of image size must be equal to 2."
+        assert (
+            image_size[0] == image_size[1]
+        ), "image_size[0] should be equal to image_size[1]."
         print("train image_size: ", image_size)
         embedding = eval(config.net_name).get_symbol(images)
 
@@ -350,10 +381,8 @@ def make_train_func(args):
                 )
                 labels = mapped_label
                 fc7_weight = sampled_weight
-            fc7_weight = flow.math.l2_normalize(
-                input=fc7_weight, axis=1, epsilon=1e-10)
-            fc1 = flow.math.l2_normalize(
-                input=embedding, axis=1, epsilon=1e-10)
+            fc7_weight = flow.math.l2_normalize(input=fc7_weight, axis=1, epsilon=1e-10)
+            fc1 = flow.math.l2_normalize(input=embedding, axis=1, epsilon=1e-10)
             fc7 = flow.matmul(
                 a=fc1.with_distribute(fc1_distribute), b=fc7_weight, transpose_b=True
             )
@@ -373,15 +402,13 @@ def make_train_func(args):
         )
 
         lr_scheduler = flow.optimizer.PiecewiseScalingScheduler(
-            base_lr=args.lr,
-            boundaries=args.lr_steps,
-            scale=args.scales,
-            warmup=None
+            base_lr=args.lr, boundaries=args.lr_steps, scale=args.scales, warmup=None
         )
-        flow.optimizer.SGDW(lr_scheduler,
-                            momentum=args.momentum if args.momentum > 0 else None,
-                            weight_decay=args.weight_decay
-                            ).minimize(loss)
+        flow.optimizer.SGDW(
+            lr_scheduler,
+            momentum=args.momentum if args.momentum > 0 else None,
+            weight_decay=args.weight_decay,
+        ).minimize(loss)
 
         return loss
 
@@ -400,23 +427,24 @@ def main(args):
         if os.path.isdir(path) and len(os.listdir(path)) != 0:
             return True
         return False
+
     assert not IsFileOrNonEmptyDir(
         args.models_root
     ), "Non-empty directory {} already exists!".format(args.models_root)
     prefix = os.path.join(
-        args.models_root, "%s-%s-%s" % (args.network,
-                                        args.loss, args.dataset), "model"
+        args.models_root, "%s-%s-%s" % (args.network, args.loss, args.dataset), "model"
     )
     prefix_dir = os.path.dirname(prefix)
     print("prefix: ", prefix)
     if not os.path.exists(prefix_dir):
         os.makedirs(prefix_dir)
-    
+
     default.num_nodes = args.num_nodes
     default.node_ips = args.node_ips
     if args.num_nodes > 1:
         assert args.num_nodes <= len(
-            args.node_ips), "The number of nodes should not be greater than length of node_ips list."
+            args.node_ips
+        ), "The number of nodes should not be greater than length of node_ips list."
         flow.env.ctrl_port(12138)
         nodes = []
         for ip in args.node_ips:
@@ -431,11 +459,15 @@ def main(args):
     train_func = make_train_func(args)
     if args.do_validation_while_train:
         validator = Validator(args)
-    
-    
+
     if os.path.exists(args.model_load_dir):
-        assert os.path.abspath(os.path.dirname(os.path.split(args.model_load_dir)[0])) != os.path.abspath(os.path.join(
-            args.models_root, args.network + "-" + args.loss + "-" + args.dataset)), "You should specify a new path to save new models."
+        assert os.path.abspath(
+            os.path.dirname(os.path.split(args.model_load_dir)[0])
+        ) != os.path.abspath(
+            os.path.join(
+                args.models_root, args.network + "-" + args.loss + "-" + args.dataset
+            )
+        ), "You should specify a new path to save new models."
         print("Loading model from {}".format(args.model_load_dir))
         variables = flow.checkpoint.get(args.model_load_dir)
         flow.load_variables(variables)
@@ -443,7 +475,9 @@ def main(args):
     print("num_classes ", config.num_classes)
     print("Called with argument: ", args, config)
     train_metric = TrainMetric(
-        desc="train", calculate_batches=args.loss_print_frequency, batch_size=args.train_batch_size
+        desc="train",
+        calculate_batches=args.loss_print_frequency,
+        batch_size=args.train_batch_size,
     )
     lr = args.lr
 
@@ -452,10 +486,12 @@ def main(args):
         train_func().async_get(train_metric.metric_cb(step))
 
         # validation
-        if args.do_validation_while_train and (step + 1) % args.validation_interval == 0:
+        if (
+            args.do_validation_while_train
+            and (step + 1) % args.validation_interval == 0
+        ):
             for ds in config.val_targets:
-                issame_list, embeddings_list = validator.do_validation(
-                    dataset=ds)
+                issame_list, embeddings_list = validator.do_validation(dataset=ds)
                 validation_util.cal_validation_metrics(
                     embeddings_list, issame_list, nrof_folds=args.nrof_folds,
                 )
@@ -467,12 +503,12 @@ def main(args):
         # snapshot
         if (step + 1) % args.iter_num_in_snapshot == 0:
             path = os.path.join(
-                prefix_dir, "snapshot_" + str(step // args.iter_num_in_snapshot))
+                prefix_dir, "snapshot_" + str(step // args.iter_num_in_snapshot)
+            )
             flow.checkpoint.save(path)
 
     if args.save_last_snapshot is True:
-        flow.checkpoint.save(os.path.join(
-            prefix_dir, "snapshot_last"))
+        flow.checkpoint.save(os.path.join(prefix_dir, "snapshot_last"))
 
 
 if __name__ == "__main__":
