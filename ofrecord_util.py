@@ -10,37 +10,33 @@ def train_dataset_reader(
         print("Loading train data from {}".format(data_dir))
     else:
         raise Exception("Invalid train dataset dir", data_dir)
-    image_blob_conf = flow.data.BlobConf(
-        "encoded",
-        shape=(112, 112, 3),
-        dtype=flow.float,
-        codec=flow.data.ImageCodec(
-            image_preprocessors=[
-                flow.data.ImagePreprocessor("bgr2rgb"),
-                flow.data.ImagePreprocessor("mirror"),
-            ]
-        ),
-        preprocessors=[
-            flow.data.NormByChannelPreprocessor(
-                mean_values=(127.5, 127.5, 127.5), std_values=(128, 128, 128)
-            ),
-        ],
-    )
 
-    label_blob_conf = flow.data.BlobConf(
-        "label", shape=(), dtype=flow.int32, codec=flow.data.RawCodec()
-    )
 
-    return flow.data.decode_ofrecord(
-        data_dir,
-        (label_blob_conf, image_blob_conf),
-        batch_size=batch_size,
-        data_part_num=data_part_num,
+    rgb_mean = [127.5, 127.5, 127.5]
+    std_values = [128.0, 128.0, 128.0]
+
+    ofrecord = flow.data.ofrecord_reader(
+        ofrecord_dir=data_dir, batch_size=batch_size, data_part_num=data_part_num,
         part_name_prefix=config.part_name_prefix,
         part_name_suffix_length=config.part_name_suffix_length,
-        shuffle=config.shuffle,
-        buffer_size=16384,
+        random_shuffle=config.shuffle,
+        shuffle_buffer_size=16384,
     )
+ 
+    images = flow.data.ofrecord_image_decoder(ofrecord, "encoded", color_space="RGB")
+    labels = flow.data.ofrecord_raw_decoder(
+        ofrecord, "label", shape=(1,), dtype=flow.int32
+    )
+    res_image, scale, new_size = flow.image.resize(images, target_size=(112, 112))
+    normal = flow.image.crop_mirror_normalize(
+        res_image,
+        color_space="RGB",
+        output_layout="NHWC",
+        mean=rgb_mean,
+        std=std_values,
+        output_dtype=flow.float32,
+    )
+    return labels, normal
 
 
 def validation_dataset_reader(val_dataset_dir, val_batch_size=1, val_data_part_num=1):
