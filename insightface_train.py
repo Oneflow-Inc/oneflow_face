@@ -430,7 +430,7 @@ def main(args):
 
     assert not IsFileOrNonEmptyDir(
         args.models_root
-    ), "Non-empty directory {} already exists!".format(args.models_root)
+    ), "Non-empty directory {} already exists! Please delete this directory or give new directory to the path of models ".format(args.models_root)
     prefix = os.path.join(
         args.models_root, "%s-%s-%s" % (args.network, args.loss, args.dataset), "model"
     )
