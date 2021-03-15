@@ -262,11 +262,13 @@ def get_train_config(args):
         )
     if args.nccl_fusion_max_ops:
         flow.config.collective_boxing.nccl_fusion_max_ops(args.nccl_fusion_max_ops)
-
+    
     default.device_num_per_node = args.device_num_per_node
     args.train_batch_size = (
         default.train_batch_size_per_device * args.num_nodes * args.device_num_per_node
     )
+    
+    default.train_batch_size = args.train_batch_size
     size = args.device_num_per_node * args.num_nodes
     num_local = (config.num_classes + size - 1) // size
     config.num_classes = num_local * size
