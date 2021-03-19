@@ -42,7 +42,7 @@ def _batch_norm(
 ):
     return flow.layers.batch_normalization(
         inputs=inputs,
-        axis=3 if data_format == "NHWC" and inputs.shape == 4 else 1,
+        axis=3 if data_format == "NHWC" and len(inputs.shape) == 4 else 1,
         momentum=0.9,
         epsilon=epsilon,
         center=center,

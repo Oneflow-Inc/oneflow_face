@@ -73,7 +73,7 @@ def residual_unit_v3(
             dilation_rate=1,
             activation=None,
         )
-        input_blob = _prelu(input_blob, name="%s%s_se_relu1" % (name, suffix))
+        input_blob = _prelu(input_blob, data_format=data_format, name="%s%s_se_relu1" % (name, suffix))
         input_blob = _conv2d_layer(
             name="%s%s_se_conv2" % (name, suffix),
             input=input_blob,
