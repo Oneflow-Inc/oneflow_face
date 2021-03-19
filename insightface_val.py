@@ -7,7 +7,7 @@ import oneflow as flow
 from sample_config import config, default, generate_val_config
 import ofrecord_util
 import validation_util
-from symbols import fresnet100, fmobilefacenet
+from symbols import fresnet50, fresnet100, fmobilefacenet
 
 
 def get_val_args():

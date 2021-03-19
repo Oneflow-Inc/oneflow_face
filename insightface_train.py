@@ -9,7 +9,7 @@ import validation_util
 from callback_util import TrainMetric
 from insightface_val import Validator
 
-from symbols import fresnet100, fmobilefacenet
+from symbols import fresnet50, fresnet100, fmobilefacenet
 
 
 def str2list(x):
