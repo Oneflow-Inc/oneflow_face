@@ -106,7 +106,7 @@ default.loss = 'arcface'
 default.node_ips = ["10.11.0.2", "10.11.0.3", "10.11.0.4", "10.11.0.5"]
 default.num_nodes = 1
 default.device_num_per_node = 8
-default.model_parallel = 0
+default.model_parallel = 1
 default.partial_fc = 0
 
 default.train_batch_size_per_device = 128
