@@ -37,6 +37,10 @@ def get_train_args():
     train_parser.add_argument(
         "--loss", default=default.loss, required=True, help="Loss config"
     )
+    train_parser.add_argument(
+        "--enable_legacy_model_io", default=True, required=False, help="Enable legacy model io to save checkpoint"
+    )
+
     args, rest = train_parser.parse_known_args()
     generate_config(args.network, args.dataset, args.loss)
 
@@ -246,6 +250,12 @@ def get_train_config(args):
     func_config.enable_fuse_model_update_ops(config.enable_fuse_model_update_ops)
     func_config.enable_fuse_add_to_output(config.enable_fuse_add_to_output)
     default.do_validation_while_train = args.do_validation_while_train
+
+    if args.enable_legacy_model_io:
+        flow.config.enable_legacy_model_io(True)
+        flow.config.enable_model_io_v2(True)
+
+
     if args.use_fp16:
         print("Training with FP16 now.")
         func_config.enable_auto_mixed_precision(True)
@@ -481,6 +491,9 @@ def main(args):
     )
     lr = args.lr
 
+    check_point = flow.train.CheckPoint()
+    check_point.init()
+
     for step in range(args.total_iter_num):
         # train
         train_func().async_get(train_metric.metric_cb(step))
@@ -505,11 +518,16 @@ def main(args):
             path = os.path.join(
                 prefix_dir, "snapshot_" + str(step // args.iter_num_in_snapshot)
             )
-            flow.checkpoint.save(path)
+            if args.enable_legacy_model_io:
+                check_point.save(path)
+            else:
+                flow.checkpoint.save(path)
 
     if args.save_last_snapshot is True:
-        flow.checkpoint.save(os.path.join(prefix_dir, "snapshot_last"))
-
+        if args.enable_legacy_model_io:
+            check_point.save(os.path.join(prefix_dir, "snapshot_last"))
+        else:
+            flow.checkpoint.save(os.path.join(prefix_dir, "snapshot_last"))
 
 if __name__ == "__main__":
     args = get_train_args()
