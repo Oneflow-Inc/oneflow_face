@@ -491,8 +491,9 @@ def main(args):
     )
     lr = args.lr
 
-    check_point = flow.train.CheckPoint()
-    check_point.init()
+    if args.enable_legacy_model_io:
+        check_point = flow.train.CheckPoint()
+        check_point.init()
 
     for step in range(args.total_iter_num):
         # train

@@ -50,7 +50,7 @@ dataset.emore.shuffle = True
 
 dataset.glint360k_8GPU = edict()
 dataset.glint360k_8GPU.dataset = "glint360k"
-dataset.glint360k_8GPU.dataset_dir = "/datasets/glint360k_ofrecord/glint360k/"
+dataset.glint360k_8GPU.dataset_dir = "/data/glint/glint360k_ofrecord/glint360k/"
 dataset.glint360k_8GPU.total_img_num = 17091657
 dataset.glint360k_8GPU.num_classes = 360232
 dataset.glint360k_8GPU.part_name_prefix = "part-"
