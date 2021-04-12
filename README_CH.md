@@ -240,10 +240,12 @@ python insightface_train.py --dataset emore  --network r100 --loss arcface
 若想尝试更大数据集，运行脚本
 
 ```
-python insightface_train.py --dataset glint360k_8GPU --network r100_glint360k --loss cosface 
+python insightface_train.py --dataset glint360k_8GPU --network r100_glint360k --loss cosface
 ```
 
 即可进行基于 Glint360k 数据集使用 ResNet100 作为 Backbone 的训练和验证。
+
+为了使数据集、loss的设置和官方保持对齐，**在使用emore数据集训练时应该采用arcface作为loss；使用glint360k数据集时，采用cosface作为loss。**
 
 
 

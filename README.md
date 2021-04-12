@@ -301,7 +301,7 @@ python insightface_train.py --dataset glint360k_8GPU --network r100_glint360k --
 
 In this way, you will do training and validation with the backbone of ResNet100 by glint360k dataset.
 
-
+In order to keep the settings of data set and loss the same as the official, **arcface loss should be used when training with emore dataset; cosface loss should be used when training with glint360k dataset. **
 
 
 
