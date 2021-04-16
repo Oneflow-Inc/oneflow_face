@@ -110,6 +110,7 @@ faces_emore/
 
 
 #### 2. 将训练数据集 MS1M 从 recordio 格式转换为 OFRecord 格式
+训练数据集转换有两种方式: (2.1部分)直接使用python脚本生成n个shuffle过的数据part，或(2.2部分)python脚本生成一个part，再根据需要用spark做shuffle和partition。
 2.1 直接使用 Python 脚本
 
 运行： 
