@@ -154,39 +154,7 @@ The first three files are MXNet recordio format files of MS1M training dataset, 
 
 
 #### 2. Transformation from MS1M recordio to OFRecord
-2.1 Use Python scripts directly
-
-Run 
-```
-python tools/mx_recordio_2_ofrecord_shuffled_npart.py  --data_dir datasets/faces_emore --output_filepath faces_emore/ofrecord/train --part_num 16
-```
-And you will get the number of `part_num` parts of OFRecord, it's 16 parts in this example, it showed like this
-```
-tree ofrecord/test/
-ofrecord/test/
-|-- _SUCCESS
-|-- part-00000
-|-- part-00001
-|-- part-00002
-|-- part-00003
-|-- part-00004
-|-- part-00005
-|-- part-00006
-|-- part-00007
-|-- part-00008
-|-- part-00009
-|-- part-00010
-|-- part-00011
-|-- part-00012
-|-- part-00013
-|-- part-00014
-`-- part-00015
-
-0 directories, 17 files
-```
-
-
-2.2 Use Python scripts + Spark Shuffle + Spark partition
+Use Python scripts + Spark Shuffle + Spark partition
 
 Run
 

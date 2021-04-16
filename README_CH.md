@@ -110,38 +110,7 @@ faces_emore/
 
 
 #### 2. 将训练数据集 MS1M 从 recordio 格式转换为 OFRecord 格式
-2.1 直接使用 Python 脚本
-
-运行： 
-```
-python tools/mx_recordio_2_ofrecord_shuffled_npart.py  --data_dir datasets/faces_emore --output_filepath faces_emore/ofrecord/train --num_part 16
-```
-成功后将得到 `num_part` 数量个 OFRecord，本示例中为 16 个，显示如下：
-
-```
-tree ofrecord/test/
-ofrecord/test/
-|-- _SUCCESS
-|-- part-00000
-|-- part-00001
-|-- part-00002
-|-- part-00003
-|-- part-00004
-|-- part-00005
-|-- part-00006
-|-- part-00007
-|-- part-00008
-|-- part-00009
-|-- part-00010
-|-- part-00011
-|-- part-00012
-|-- part-00013
-|-- part-00014
-`-- part-00015
-
-0 directories, 17 files
-```
-2.2 Python 脚本 + Spark Shuffle + Spark Partition
+Python 脚本 + Spark Shuffle + Spark Partition
 
 运行：
 
