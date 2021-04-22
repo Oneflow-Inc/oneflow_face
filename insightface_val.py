@@ -68,6 +68,9 @@ def get_val_args():
     val_parser.add_argument(
         "--model_load_dir", default=default.model_load_dir, help="path to load model."
     )
+    val_parser.add_argument(
+        "--enable_legacy_model_io", default=True, required=False, help="Enable legacy model io to load/save checkpoint"
+    )
     return val_parser.parse_args()
 
 
@@ -82,7 +85,6 @@ def get_val_config():
     val_config = flow.function_config()
     val_config.default_logical_view(flow.scope.consistent_view())
     val_config.default_data_type(flow.float)
-
     return val_config
 
 
@@ -90,6 +92,12 @@ class Validator(object):
     def __init__(self, args):
         self.args = args
         function_config = get_val_config()
+
+        if args.enable_legacy_model_io:
+            flow.config.enable_legacy_model_io(True)
+            flow.config.enable_model_io_v2(True)
+            self.check_point = flow.train.CheckPoint()
+            self.check_point.init()
         
         default.val_batch_size = args.val_batch_size
         @flow.global_function(type="predict", function_config=function_config)
@@ -172,7 +180,10 @@ class Validator(object):
         return issame_list, embeddings_list
 
     def load_checkpoint(self):
-        flow.load_variables(flow.checkpoint.get(self.args.model_load_dir))
+        if self.args.enable_legacy_model_io:
+            self.check_point.load(self.args.model_load_dir)
+        else:
+            flow.load_variables(flow.checkpoint.get(self.args.model_load_dir))
 
 
 def main():

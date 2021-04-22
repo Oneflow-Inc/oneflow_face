@@ -38,7 +38,7 @@ def get_train_args():
         "--loss", default=default.loss, required=True, help="Loss config"
     )
     train_parser.add_argument(
-        "--enable_legacy_model_io", default=True, required=False, help="Enable legacy model io to save checkpoint"
+        "--enable_legacy_model_io", default=True, required=False, help="Enable legacy model io to load/save checkpoint"
     )
 
     args, rest = train_parser.parse_known_args()
@@ -475,6 +475,10 @@ def main(args):
     train_func = make_train_func(args)
     if args.do_validation_while_train:
         validator = Validator(args)
+    
+    if args.enable_legacy_model_io:
+        check_point = flow.train.CheckPoint()
+        check_point.init()
 
     if os.path.exists(args.model_load_dir):
         assert os.path.abspath(
@@ -485,8 +489,12 @@ def main(args):
             )
         ), "You should specify a new path to save new models."
         print("Loading model from {}".format(args.model_load_dir))
-        variables = flow.checkpoint.get(args.model_load_dir)
-        flow.load_variables(variables)
+
+        if args.enable_legacy_model_io:
+            check_point.load(args.model_load_dir)
+        else:
+            variables = flow.checkpoint.get(args.model_load_dir)
+            flow.load_variables(variables)
 
     print("num_classes ", config.num_classes)
     print("Called with argument: ", args, config)
@@ -496,10 +504,6 @@ def main(args):
         batch_size=args.train_batch_size,
     )
     lr = args.lr
-
-    if args.enable_legacy_model_io:
-        check_point = flow.train.CheckPoint()
-        check_point.init()
 
     for step in range(args.total_iter_num):
         # train
