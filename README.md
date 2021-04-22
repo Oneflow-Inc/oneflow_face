@@ -154,6 +154,7 @@ The first three files are MXNet recordio format files of MS1M training dataset, 
 
 
 #### 2. Transformation from MS1M recordio to OFRecord
+Only need to execute 2.1 or 2.2
 2.1 Use Python scripts directly
 
 Run 
@@ -191,7 +192,7 @@ ofrecord/test/
 Run
 
 ```
-python tools/dataset_convert/mx_recordio_2_ofrecord_shuffled_npart.py --data_dir datasets/faces_emore --output_filepath faces_emore/ofrecord/train
+python tools/dataset_convert/mx_recordio_2_ofrecord.py --data_dir datasets/faces_emore --output_filepath faces_emore/ofrecord/train
 ```
 
 And you will get one part of OFRecord(`part-0`) with all data in this way. Then you should use Spark to shuffle and partition.
@@ -301,7 +302,7 @@ python insightface_train.py --dataset glint360k_8GPU --network r100_glint360k --
 
 In this way, you will do training and validation with the backbone of ResNet100 by glint360k dataset.
 
-
+In order to keep the settings of dataset and loss the same as the official, **arcface loss should be used when training with emore dataset; cosface loss should be used when training with glint360k dataset. **
 
 
 
