@@ -12,8 +12,6 @@ sys.path.append("..")
 from backbones import get_model
 import math
 
-
-
 from utils.utils_callbacks import CallBackVerification, CallBackLogging, CallBackModelCheckpoint
 from utils.utils_config import get_config
 from utils.utils_logging import AverageMeter, init_logging
@@ -51,10 +49,6 @@ class Validator(object):
        
 
     
-
-
-
-
 
 def get_train_config(cfg):
 
@@ -112,7 +106,7 @@ def make_train_func(cfg):
 
         trainable = True
 
-        if cfg.model_parallel:
+        if cfg.model_parallel and cfg.device_num_per_node >1:
             logging.info("Training is using model parallelism now.")
             labels = labels.with_distribute(flow.distribute.broadcast())
             fc1_distribute = flow.distribute.broadcast()
@@ -161,9 +155,9 @@ def make_train_func(cfg):
         fc7 = fc7.with_distribute(fc7_data_distribute)
 
         if cfg.loss =="cosface":
-            fc7 = (flow.combined_margin_loss(fc7, labels, m1=1, m2=0.4, m3=0.0)* 64)
+            fc7 = (flow.combined_margin_loss(fc7, labels, m1=1, m2=0.0, m3=0.4)* 64)
         elif cfg.loss =="arcface":
-            fc7 = (flow.combined_margin_loss(fc7, labels, m1=1, m2=0.0, m3=0.5)* 64)
+            fc7 = (flow.combined_margin_loss(fc7, labels, m1=1, m2=0.5, m3=0.0)* 64)
         else:
             raise ValueError()
 

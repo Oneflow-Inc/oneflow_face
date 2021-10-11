@@ -81,7 +81,7 @@ class CallBackLogging(object):
         self.losses=AverageMeter()
 
 
-        self.losses=AverageMeter()
+
 
 
     def  metric_cb(self,
@@ -91,8 +91,8 @@ class CallBackLogging(object):
         def callback(loss):
             loss=loss.mean()
             self.losses.update(loss, 1)
+            if  global_step % self.frequent == 0:
 
-            if  global_step > 0 and global_step % self.frequent == 0:
                 if self.init:
                     try:
                         speed: float = self.frequent * self.batch_size / (time.time() - self.tic)

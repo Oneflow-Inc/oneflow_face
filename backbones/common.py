@@ -37,11 +37,12 @@ def _prelu(inputs, data_format="NCHW", name=None):
     )
 
 
-def _prelu(inputs, data_format="NCHW", name=None):
-    return flow.nn.relu(
-        inputs,
-        name=name,
-    )
+# def _prelu(inputs, data_format="NCHW", name=None):
+    # print("relu")
+    # return flow.nn.relu(
+        # inputs,
+        # name=name,
+    # )
 
 def _avg_pool(inputs, pool_size, strides, padding, data_format="NCHW", name=None):
     return flow.nn.avg_pool2d(
@@ -59,6 +60,7 @@ def _batch_norm(
     data_format="NCHW",
     name=None,
 ):
+
     return flow.layers.batch_normalization(
         inputs=inputs,
         axis=3 if data_format == "NHWC" and inputs.shape == 4 else 1,
@@ -123,6 +125,7 @@ def Linear(
         dilation_rate=1,
         activation=None,
     )
+
     bn = _batch_norm(
         conv,
         epsilon=0.001,
@@ -143,7 +146,7 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             center=True,
             is_training=True,
             data_format="NCHW",
-            name="bn1"
+            name="bn2"
         )
         body = _dropout(body, 0.4)
         fc1 = body
@@ -185,7 +188,7 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             epsilon=2e-5,
             is_training=True,
             data_format="NCHW",
-            name="bn1"
+            name="bn2"
         )
         #body = flow.reshape(body, (body.shape[0], -1))
         body = flow.flatten(body,1)
@@ -199,7 +202,7 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             kernel_regularizer=_get_regularizer("weight"),
             bias_regularizer=_get_regularizer("bias"),
             trainable=True,
-            name="pre_fc1"
+            name="fc"
         )
         fc1 = _batch_norm(
             fc1,
@@ -208,7 +211,7 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             center=True,
             is_training=True,
             data_format="NCHW",
-            name="fc1"
+            name="features"
         )
     elif fc_type == "GDC":
         conv_6_dw = Linear(
