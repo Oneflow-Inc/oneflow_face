@@ -6,17 +6,11 @@ import os
 import oneflow as flow
 import oneflow.nn as nn
 
-
 import sys
-sys.path.append("..")
 from backbones import get_model
 import math
-
-from utils.utils_callbacks import CallBackVerification, CallBackLogging, CallBackModelCheckpoint
 from utils.utils_config import get_config
-from utils.utils_logging import AverageMeter, init_logging
 import numpy as np
-
 import   pickle
 import time
 from utils.ofrecord_data_utils import load_train_dataset,load_synthetic
@@ -46,7 +40,10 @@ class Validator(object):
             return embedding
         
         self.get_symbol_val_fn = get_symbol_val_job
-       
+   
+   #load_checkpoint
+    def load_checkpoint(self,model_path):
+        flow.load_variables(flow.checkpoint.get(model_path))       
 
     
 
@@ -160,7 +157,6 @@ def make_train_func(cfg):
             fc7 = (flow.combined_margin_loss(fc7, labels, m1=1, m2=0.5, m3=0.0)* 64)
         else:
             raise ValueError()
-
 
         fc7 = fc7.with_distribute(fc7_data_distribute)
 
