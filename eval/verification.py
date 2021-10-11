@@ -28,8 +28,6 @@ import datetime
 import os
 import pickle
 
-import mxnet as mx
-import numpy as np
 import sklearn
 import oneflow as flow
 
@@ -40,7 +38,7 @@ import cv2 as cv
 import numpy as np
 import sklearn
 
-from mxnet import ndarray as nd
+
 
 
 class LFold:
@@ -202,130 +200,127 @@ def evaluate(embeddings, actual_issame, nrof_folds=10, pca=0):
     return tpr, fpr, accuracy, val, val_std, far
 
 
+def make_data_func(data_dir, val_targets,image_size,image_nums):
 
+    def get_val_config():
+        config = flow.function_config()
+        config.default_logical_view(flow.scope.consistent_view())
+        config.default_data_type(flow.float)
+        return config
 
-def get_val_config():
-    config = flow.function_config()
-    config.default_logical_view(flow.scope.consistent_view())
-    config.default_data_type(flow.float)
-    return config
+    function_config = get_val_config()
+    @flow.global_function(type="predict")
+    def ofrecord_reader_job():
 
-def load_ofrecord(path,image_num):
-    color_space = "RGB"
-    val_dataset_dir=path
- 
-    val_batch_size=image_num
-    val_data_part_num=1
-
-
-    ofrecord = flow.data.ofrecord_reader(
-        val_dataset_dir,
-        batch_size=val_batch_size,
-        data_part_num=val_data_part_num,
-        part_name_suffix_length=1,
-
-        shuffle_after_epoch=False,
-    )
-
-
-
-    record_image_decoder = flow.data.OFRecordImageDecoder(ofrecord,"encoded", color_space=color_space)
-  
-    issame_reader =flow.data.OFRecordRawDecoder( ofrecord, "issame", shape=(), dtype=flow.int32)
-    
-       
-    return  issame_reader ,record_image_decoder
-
-
-
-function_config = get_val_config()
-
-def val_dataload(path,image_num):
-
-    @flow.global_function(type="predict", function_config=function_config)
-    def get_validation_dataset_agedb_30_job():
+        val_dict={}
         with flow.scope.placement("cpu", "0:0"):
-           
-            issame, images = load_ofrecord(path,image_num)
-            print(issame,images)
-            return issame, images
+            for name in val_targets:
+                path = os.path.join(data_dir, name)
+                path = os.path.join(data_dir, name )
+                image_num=image_nums[name]
+                if os.path.exists(path):                
 
-    return get_validation_dataset_agedb_30_job
+                    ofrecord = flow.data.ofrecord_reader(
+                            path,
+                            batch_size=image_num,
+                            data_part_num=1,
+                            part_name_suffix_length=-1,
+                            part_name_prefix='part-',
+                            random_shuffle=False,
+                            shuffle_after_epoch=False,
+                        )
+                    color_space = "RGB"
+                    image = flow.data.OFRecordImageDecoder(
+                                ofrecord, "encoded", color_space=color_space
+                            )
+                    image, scale, new_size = flow.image.Resize(
+                    image, target_size=(112, 112)
+                    )
+                    label = flow.data.OFRecordRawDecoder(
+                            ofrecord, "issame", shape=(1, ), dtype=flow.int32
+                        )
+        
+
+                    val_dict[name]=(image,label)
+        return val_dict        
+    return ofrecord_reader_job
 
 
 
 
+def load_bin(data_dir, val_targets,image_size,image_nums):
 
+    val_job=make_data_func(data_dir,val_targets,image_size,image_nums)
+ 
+    val_dict=val_job().get()
+    image_list=[]
+    label_list=[]
+    ver_name_list=[]
+    ver_list=[]
+    for val_name in val_dict:
 
+        ver_name_list.append(val_name)
+        image,label=val_dict[val_name]
 
-
-
-##@flow.no_grad()
-def load_bin(path, image_size,image_num,world_size=1):
-    val_job=val_dataload(path,image_num)
+        image=image.numpy()
+        label=label.numpy()
+ 
+        #image=image.transpose((0, 3, 1, 2))
+        issame_list=label
+        image_num=image_nums[val_name]
+        issame = np.array(issame_list).flatten().reshape(-1, 1)[:image_num, :]
+        issame_list = [bool(x) for x in issame[0::2]]
     
-    print("##########",val_job)
-    issame_list,image=val_job()
-    print(issame_list,image)
-    image=image.numpy() 
-    issame_list=issame_list.numpy() 
-    issame = np.array(issame_list).flatten().reshape(-1, 1)[:image_num, :]
-    issame_list = [bool(x) for x in issame[0::2]]
+        data_list = []
+        for flip in [0, 1]:
+            data =np.zeros(shape=(len(issame_list) * 2, 3, image_size[0], image_size[1]))
+            data_list.append(data)
+    
+        for idx in range(len(issame_list)*2):
+            img=image[idx]       
+            for flip in [0, 1]:
+                if flip == 1:
+                    img = np.fliplr(img)
 
+                data_list[flip][idx] = img.transpose(( 2,0,1))
+            if idx % 1000 == 0:
+                print('loading bin', idx)
+        print(data_list[0].shape)
 
+        ver_list.append((data_list,issame_list))
+    return ver_list,ver_name_list
 
-
-
+def load_bin_cv(path, image_size):
+    bins, issame_list = pickle.load(open(path, 'rb'), encoding='bytes')
     data_list = []
     for flip in [0, 1]:
-        data = flow.ones(shape=[len(issame_list)*2 , 3, image_size[0], image_size[1]], dtype=flow.float32)
+        data = np.empty((len(issame_list) * 2, 3, image_size[0], image_size[1]))
         data_list.append(data)
-    for idx in range(len(issame_list)*2):
-        img=image[idx]       
+    for i in range(len(issame_list) * 2):
+        _bin = bins[i]
+        img_ori = cv.imdecode(_bin,cv.IMREAD_COLOR)[:,:,::-1]
+        
         for flip in [0, 1]:
+            img = img_ori.copy()
             if flip == 1:
-                img = np.fliplr(img)
-            data_list[flip][idx] = flow.Tensor(img.transpose((2, 0, 1)))
-        if idx % 1000 == 0:
-            print('loading bin', idx)
+                img = cv.flip(img,1)
+            img = np.array(img).transpose((2, 0, 1))
+            img = (img - 127.5) * 0.00784313725
+            data_list[flip][i][:] = img
+        if i % 1000 == 0:
+            print('loading bin', i)
     print(data_list[0].shape)
     return data_list, issame_list
 
 
-def load_bin(path, image_size,image_num):
-    try:
-        with open(path, 'rb') as f:
-            bins, issame_list = pickle.load(f)  # py2
-    except UnicodeDecodeError as e:
-        with open(path, 'rb') as f:
-            bins, issame_list = pickle.load(f, encoding='bytes')  # py3
-    data_list = []
-    for flip in [0, 1]:
-        data = np.zeros(shape=(len(issame_list) * 2, 3, image_size[0], image_size[1]))
-        data_list.append(data)
-    for idx in range(len(issame_list) * 2):
-        _bin = bins[idx]
-        img = mx.image.imdecode(_bin)
-        if img.shape[1] != image_size[0]:
-            img = mx.image.resize_short(img, image_size[0])
-        img = nd.transpose(img, axes=(2, 0, 1))
-        for flip in [0, 1]:
-            if flip == 1:
-                img = mx.ndarray.flip(data=img, axis=2)
-            data_list[flip][idx][:] = img.asnumpy()
-        if idx % 1000 == 0:
-            print('loading bin', idx)
-    print(data_list[0].shape)
-    return data_list, issame_list
-
-#@flow.no_grad()
 def test(data_set, backbone, batch_size, nfolds=10):
     print('testing verification..')
+    
     data_list = data_set[0]
+
     issame_list = data_set[1]
     embeddings_list = []
     time_consumed = 0.0
-
 
     for i in range(len(data_list)):
         data = data_list[i]
@@ -336,9 +331,9 @@ def test(data_set, backbone, batch_size, nfolds=10):
             count = bb - ba
             _data = data[bb - batch_size: bb]
             time0 = datetime.datetime.now()
-            img = ((_data / 255) - 0.5) / 0.5
+            #img = ((_data / 255) - 0.5) / 0.5
  
-            net_out = backbone(img)
+            net_out = backbone(_data)
             _embeddings = net_out.get().numpy()
             time_now = datetime.datetime.now()
             diff = time_now - time0
