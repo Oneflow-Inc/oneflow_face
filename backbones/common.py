@@ -1,10 +1,6 @@
 import oneflow as flow
 
 
-# def _get_initializer():
-#     return flow.variance_scaling_initializer(2.0, "fan_out", "random_normal", "NCHW")
-
-
 # same as torch
 def _get_initializer():
     return flow.random_normal_initializer(mean=0.0, stddev=0.1)

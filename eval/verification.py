@@ -39,8 +39,6 @@ import numpy as np
 import sklearn
 
 
-
-
 class LFold:
     def __init__(self, n_splits=2, shuffle=False):
         self.n_splits = n_splits
@@ -200,22 +198,21 @@ def evaluate(embeddings, actual_issame, nrof_folds=10, pca=0):
     return tpr, fpr, accuracy, val, val_std, far
 
 
-
-
 def load_bin_cv(path, image_size):
     bins, issame_list = pickle.load(open(path, 'rb'), encoding='bytes')
     data_list = []
     for flip in [0, 1]:
-        data = np.empty((len(issame_list) * 2, 3, image_size[0], image_size[1]))
+        data = np.empty(
+            (len(issame_list) * 2, 3, image_size[0], image_size[1]))
         data_list.append(data)
     for i in range(len(issame_list) * 2):
         _bin = bins[i]
-        img_ori = cv.imdecode(_bin,cv.IMREAD_COLOR)[:,:,::-1]
-        
+        img_ori = cv.imdecode(_bin, cv.IMREAD_COLOR)[:, :, ::-1]
+
         for flip in [0, 1]:
             img = img_ori.copy()
             if flip == 1:
-                img = cv.flip(img,1)
+                img = cv.flip(img, 1)
             img = np.array(img).transpose((2, 0, 1))
             img = (img - 127.5) * 0.00784313725
             data_list[flip][i][:] = img
@@ -227,7 +224,7 @@ def load_bin_cv(path, image_size):
 
 def test(data_set, backbone, batch_size, nfolds=10):
     print('testing verification..')
-    
+
     data_list = data_set[0]
 
     issame_list = data_set[1]
@@ -244,7 +241,7 @@ def test(data_set, backbone, batch_size, nfolds=10):
             _data = data[bb - batch_size: bb]
             time0 = datetime.datetime.now()
             #img = ((_data / 255) - 0.5) / 0.5
- 
+
             net_out = backbone(_data)
             _embeddings = net_out.get().numpy()
             time_now = datetime.datetime.now()
@@ -274,6 +271,7 @@ def test(data_set, backbone, batch_size, nfolds=10):
     embeddings = sklearn.preprocessing.normalize(embeddings)
     print(embeddings.shape)
     print('infer time', time_consumed)
-    _, _, accuracy, val, val_std, far = evaluate(embeddings, issame_list, nrof_folds=nfolds)
+    _, _, accuracy, val, val_std, far = evaluate(
+        embeddings, issame_list, nrof_folds=nfolds)
     acc2, std2 = np.mean(accuracy), np.std(accuracy)
     return acc1, std1, acc2, std2, _xnorm, embeddings_list
