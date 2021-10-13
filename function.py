@@ -11,13 +11,11 @@ from backbones import get_model
 import math
 from utils.utils_config import get_config
 import numpy as np
-import   pickle
+import pickle
 import time
-from utils.ofrecord_data_utils import load_train_dataset,load_synthetic
- 
+from utils.ofrecord_data_utils import load_train_dataset, load_synthetic
 
 
- 
 class Validator(object):
     def __init__(self, cfg):
         self.cfg = cfg
@@ -28,24 +26,22 @@ class Validator(object):
             config.default_data_type(flow.float)
             return config
         function_config = get_val_config()
-            
+
         @flow.global_function(type="predict", function_config=function_config)
         def get_symbol_val_job(
             images: flow.typing.Numpy.Placeholder(
-                (self.cfg.val_batch_size, 3,112, 112)
+                (self.cfg.val_batch_size, 3, 112, 112)
             )
         ):
             print("val batch data: ", images.shape)
             embedding = get_model(cfg.network, images, cfg)
             return embedding
-        
-        self.get_symbol_val_fn = get_symbol_val_job
-   
-   #load_checkpoint
-    def load_checkpoint(self,model_path):
-        flow.load_variables(flow.checkpoint.get(model_path))       
 
-    
+        self.get_symbol_val_fn = get_symbol_val_job
+
+    def load_checkpoint(self, model_path):
+        flow.load_variables(flow.checkpoint.get(model_path))
+
 
 def get_train_config(cfg):
 
@@ -78,8 +74,6 @@ def get_train_config(cfg):
         flow.config.collective_boxing.nccl_fusion_max_ops(
             cfg.nccl_fusion_max_ops)
 
-
-
     return func_config
 
 
@@ -89,13 +83,12 @@ def make_train_func(cfg):
         if cfg.use_synthetic_data:
             (labels, images) = load_synthetic(cfg)
         else:
-            labels, images =load_train_dataset(cfg)
+            labels, images = load_train_dataset(cfg)
         image_size = images.shape[2:]
         assert len(
             image_size) == 2, "The length of image size must be equal to 2."
         assert image_size[0] == image_size[1], "image_size[0] should be equal to image_size[1]."
-        # print("train image_size:",image_size)
-        # print(labels.shape,images.shape,type(images))
+
         embedding = get_model(cfg.network, images, cfg)
 
         def _get_initializer():
@@ -103,7 +96,7 @@ def make_train_func(cfg):
 
         trainable = True
 
-        if cfg.model_parallel and cfg.device_num_per_node >1:
+        if cfg.model_parallel and cfg.device_num_per_node > 1:
             logging.info("Training is using model parallelism now.")
             labels = labels.with_distribute(flow.distribute.broadcast())
             fc1_distribute = flow.distribute.broadcast()
@@ -113,7 +106,7 @@ def make_train_func(cfg):
             fc1_distribute = flow.distribute.split(0)
             fc7_data_distribute = flow.distribute.split(0)
             fc7_model_distribute = flow.distribute.broadcast()
-        weight_regularizer = flow.regularizers.l2(0.0005)	
+        weight_regularizer = flow.regularizers.l2(0.0005)
         fc7_weight = flow.get_variable(
             name="fc7-weight",
             shape=(cfg.num_classes, embedding.shape[1]),
@@ -151,10 +144,12 @@ def make_train_func(cfg):
         )
         fc7 = fc7.with_distribute(fc7_data_distribute)
 
-        if cfg.loss =="cosface":
-            fc7 = (flow.combined_margin_loss(fc7, labels, m1=1, m2=0.0, m3=0.4)* 64)
-        elif cfg.loss =="arcface":
-            fc7 = (flow.combined_margin_loss(fc7, labels, m1=1, m2=0.5, m3=0.0)* 64)
+        if cfg.loss == "cosface":
+            fc7 = (flow.combined_margin_loss(
+                fc7, labels, m1=1, m2=0.0, m3=0.4) * 64)
+        elif cfg.loss == "arcface":
+            fc7 = (flow.combined_margin_loss(
+                fc7, labels, m1=1, m2=0.5, m3=0.0) * 64)
         else:
             raise ValueError()
 
@@ -171,11 +166,9 @@ def make_train_func(cfg):
             warmup=None
         )
         flow.optimizer.SGD(lr_scheduler,
-                            momentum=cfg.momentum if cfg.momentum > 0 else None,
-                            ).minimize(loss)
+                           momentum=cfg.momentum if cfg.momentum > 0 else None,
+                           ).minimize(loss)
 
         return loss
 
     return get_symbol_train_job
-
-
