@@ -1,18 +1,13 @@
 import oneflow as flow
 
 
-
-
-
 # def _get_initializer():
-#     return flow.variance_scaling_initializer(2.0, "fan_out", "random_normal", "NCHW") 
+#     return flow.variance_scaling_initializer(2.0, "fan_out", "random_normal", "NCHW")
 
 
-
-#same as torch 
+# same as torch
 def _get_initializer():
     return flow.random_normal_initializer(mean=0.0, stddev=0.1)
-
 
 
 def _get_initializer_FC():
@@ -42,6 +37,7 @@ def _relu(inputs, data_format="NCHW", name=None):
         inputs,
         name=name,
     )
+
 
 def _avg_pool(inputs, pool_size, strides, padding, data_format="NCHW", name=None):
     return flow.nn.avg_pool2d(
@@ -159,7 +155,7 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
         )
         body = _dropout(body, dropout_prob=0.4)
         #body = flow.reshape(body, (body.shape[0], -1))
-        body = flow.flatten(body,1)
+        body = flow.flatten(body, 1)
         fc1 = flow.layers.dense(
             inputs=body,
             units=num_classes,
@@ -190,7 +186,7 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             name="bn2"
         )
         #body = flow.reshape(body, (body.shape[0], -1))
-        body = flow.flatten(body,1)
+        body = flow.flatten(body, 1)
         fc1 = flow.layers.dense(
             inputs=body,
             units=num_classes,

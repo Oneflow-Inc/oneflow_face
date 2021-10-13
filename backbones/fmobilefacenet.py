@@ -1,6 +1,6 @@
 import oneflow as flow
 import oneflow.core.operator.op_conf_pb2 as op_conf_util
-from .common import  _get_initializer, _conv2d_layer, _batch_norm, _prelu, Linear, get_fc1
+from .common import _get_initializer, _conv2d_layer, _batch_norm, _prelu, Linear, get_fc1
 
 
 """
@@ -37,8 +37,8 @@ def Conv(
 
     bn = _batch_norm(
         conv,
-        epsilon=0.001,        
-        is_training = bn_is_training, 
+        epsilon=0.001,
+        is_training=bn_is_training,
         data_format=data_format,
         name="%s%s_batchnorm" % (name, suffix),
     )
@@ -87,7 +87,7 @@ def DResidual_v1(
         pad="valid",
         data_format=data_format,
         stride=[1, 1],
-        bn_is_training = bn_is_training,
+        bn_is_training=bn_is_training,
         name="%s%s_conv_proj" % (name, suffix),
     )
     return proj
@@ -125,12 +125,11 @@ def Residual(
     return identity
 
 
-def get_symbol(input_blob,net_blocks,config):
+def get_symbol(input_blob, net_blocks, config):
     num_classes = config.embedding_size
     fc_type = 'GDC'
     data_format = "NCHW"
     bn_is_training = True
-
 
     conv_1 = Conv(
         input_blob,
@@ -162,7 +161,7 @@ def get_symbol(input_blob,net_blocks,config):
             num_out=64,
             kernel=3,
             stride=[1, 1],
-            pad="same", 
+            pad="same",
             data_format=data_format,
             num_group=64,
             bn_is_training=bn_is_training,
@@ -253,7 +252,6 @@ def get_symbol(input_blob,net_blocks,config):
     fc1 = get_fc1(conv_6_sep, num_classes, fc_type, input_channel=512)
     return fc1
 
-def mobilefacenet(input_blob,cfg):
+
+def mobilefacenet(input_blob, cfg):
     return get_symbol(input_blob,  [1, 4, 6, 2], cfg)
-
-

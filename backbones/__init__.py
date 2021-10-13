@@ -1,7 +1,8 @@
 from .ir_resnet import iresnet18, iresnet34, iresnet50, iresnet100, iresnet200
 from .fmobilefacenet import mobilefacenet
 
-def get_model(name, input_blob,cfg):
+
+def get_model(name, input_blob, cfg):
     if name == "r18":
         return iresnet18(input_blob, cfg)
     elif name == "r34":
@@ -13,6 +14,6 @@ def get_model(name, input_blob,cfg):
     elif name == "r200":
         return iresnet200(input_blob, cfg)
     elif name == "mbf":
-        return mobilefacenet(input_blob, cfg)        
+        return mobilefacenet(input_blob, cfg)
     else:
         raise ValueError()

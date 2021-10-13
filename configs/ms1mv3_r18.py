@@ -15,15 +15,14 @@ config.momentum = 0.9
 config.weight_decay = 5e-4
 config.batch_size = 128
 config.lr = 0.1  # batch size is 512
-config.model_parallel =True
+config.model_parallel = True
 config.partial_fc = 1
 config.sample_rate = 1.0
 config.device_num_per_node = 8
 
 
-
-config.ofrecord_path="/dev/shm/ms1m-retinaface-t1/ofrecord/train"
-config.eval_ofrecord_path="/dev/shm/ms1m-retinaface-t1/ofrecord/val"
+config.ofrecord_path = "/dev/shm/ms1m-retinaface-t1/ofrecord/train"
+config.eval_ofrecord_path = "/dev/shm/ms1m-retinaface-t1/ofrecord/val"
 config.num_classes = 93432
 config.num_image = 5179510
 config.train_data_part_num = 8

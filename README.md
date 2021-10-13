@@ -1,8 +1,9 @@
+
 # InsightFace in OneFlow
 
+[English](README.md) **|** [简体中文](README_CH.md)
+
 It introduces how to train InsightFace in OneFlow, and do verification over the validation datasets via the well-toned networks.
-
-
 
 ## Contents
 

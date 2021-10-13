@@ -2,7 +2,6 @@ import oneflow as flow
 from .common import _batch_norm, _conv2d_layer, _avg_pool, _prelu, get_fc1
 
 
-
 def residual_unit_v3(
     in_data, num_filter, stride, dim_match, bn_is_training, data_format, name
 ):
@@ -118,10 +117,10 @@ def residual_unit_v3(
     return identity
 
 
-def get_symbol(input_blob,units,cfg):
+def get_symbol(input_blob, units, cfg):
     filter_list = [64, 64, 128, 256, 512]
     num_stages = 4
-    units =units
+    units = units
 
     num_classes = cfg.embedding_size
 
@@ -170,27 +169,21 @@ def get_symbol(input_blob,units,cfg):
     return fc1
 
 
+def iresnet18(input_blob, cfg):
+    return get_symbol([2, 2, 2, 2], cfg)
 
 
+def iresnet34(input_blob, cfg):
+    return get_symbol(input_blob, [3, 4, 6, 3], cfg)
 
 
-def iresnet18(input_blob,cfg):
-    return get_symbol( [2, 2, 2, 2], cfg)
-
-
-def iresnet34(input_blob,cfg):
-    return get_symbol( input_blob, [3, 4, 6, 3], cfg)
-
-
-def iresnet50(input_blob,cfg):
+def iresnet50(input_blob, cfg):
     return get_symbol(input_blob,  [3, 4, 14, 3], cfg)
 
 
-def iresnet100(input_blob,cfg):
+def iresnet100(input_blob, cfg):
     return get_symbol(input_blob,  [3, 13, 30, 3], cfg)
 
 
-def iresnet200(input_blob,cfg):
+def iresnet200(input_blob, cfg):
     return get_symbol(input_blob,  [6, 26, 60, 6], cfg)
-
-

@@ -21,4 +21,4 @@ config.num_epoch = 30
 config.warmup_epoch = -1
 config.decay_epoch = [10, 16, 22]
 config.val_targets = []
-config.use_synthetic_data=True
+config.use_synthetic_data = True

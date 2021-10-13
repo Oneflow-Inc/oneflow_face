@@ -1,5 +1,8 @@
 # InsightFace 在 OneFlow 中的实现
 
+
+[English](README.md) **|** [简体中文](README_CH.md)
+
 本文介绍如何在 OneFlow 中训练 InsightFace，并在验证数据集上对训练好的网络进行验证。
 
 ## 目录
