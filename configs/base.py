@@ -19,7 +19,6 @@ config.momentum = 0.9
 config.weight_decay = 5e-4
 config.batch_size = 128
 config.lr = 0.1  # batch size is 512
-config.val_image_num={"lfw":12000,"cfp_fp":14000,"agedb_30":12000}
 config.model_load_dir=''
 
 config.val_batch_size=10

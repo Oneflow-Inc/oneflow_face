@@ -6,9 +6,9 @@ from easydict import EasyDict as edict
 
 config = edict()
 config.loss = "cosface"
-config.network = "r50"
+config.network = "r100"
 config.resume = False
-config.output = "lazy_r50"
+config.output = "lazy_r100"
 config.embedding_size = 512
 config.fp16 = True
 config.momentum = 0.9
@@ -21,17 +21,17 @@ config.sample_rate = 1.0
 config.device_num_per_node = 8
 
 
-
-config.ofrecord_path="/train_tmp/glint360k/train"
-config.eval_ofrecord_path="/train_tmp/glint360k/val"
+config.ofrecord_path="/dev/shm/ms1m-retinaface-t1/ofrecord/train"
+config.eval_ofrecord_path="/dev/shm/ms1m-retinaface-t1/ofrecord/val"
 config.num_classes = 93432
 config.num_image = 5179510
-config.train_data_part_num = 200
+config.train_data_part_num = 8
 
-config.ofrecord_path = "/train_tmp/glint360k"
-config.num_classes = 360232
-config.num_image = 17091657
-config.num_epoch = 20
+config.num_epoch = 25
 config.warmup_epoch = -1
-config.decay_epoch = [8, 12, 15, 18]
+config.decay_epoch = [10, 16, 22]
 config.val_targets = ["lfw", "cfp_fp", "agedb_30"]
+#config.val_targets = []
+
+config.node_ips = ["192.168.1.13"]
+config.num_nodes = 1

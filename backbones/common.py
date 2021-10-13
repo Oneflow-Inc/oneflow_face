@@ -37,12 +37,11 @@ def _prelu(inputs, data_format="NCHW", name=None):
     )
 
 
-# def _prelu(inputs, data_format="NCHW", name=None):
-    # print("relu")
-    # return flow.nn.relu(
-        # inputs,
-        # name=name,
-    # )
+def _relu(inputs, data_format="NCHW", name=None):
+    return flow.nn.relu(
+        inputs,
+        name=name,
+    )
 
 def _avg_pool(inputs, pool_size, strides, padding, data_format="NCHW", name=None):
     return flow.nn.avg_pool2d(
