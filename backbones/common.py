@@ -147,10 +147,10 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             epsilon=2e-5,
             is_training=True,
             data_format="NCHW",
-            name="bn1"
+            name="bn2"
         )
         body = _dropout(body, dropout_prob=0.4)
-        #body = flow.reshape(body, (body.shape[0], -1))
+
         body = flow.flatten(body, 1)
         fc1 = flow.layers.dense(
             inputs=body,
@@ -181,7 +181,8 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             data_format="NCHW",
             name="bn2"
         )
-        #body = flow.reshape(body, (body.shape[0], -1))
+   
+
         body = flow.flatten(body, 1)
         fc1 = flow.layers.dense(
             inputs=body,
