@@ -10,7 +10,6 @@ from eval import verification
 import oneflow as flow
 
 import sys
-sys.path.append("..")
 
 
 def main(args):
