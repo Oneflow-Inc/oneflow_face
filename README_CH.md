@@ -13,8 +13,7 @@
     - [准备数据集](#准备数据集)
       - [1. 下载数据集](#1-下载数据集)
       - [2. 将训练数据集 MS1M 从 recordio 格式转换为 OFRecord 格式](#2-将训练数据集-ms1m-从-recordio-格式转换为-ofrecord-格式)
-      - [3. 将验证数据集转换为 OFRecord 格式](#3-将验证数据集转换为-ofrecord-格式)
-
+    
   - [预训练模型](#预训练模型)
   - [训练和验证](#训练和验证)
     - [训练](#训练)
@@ -115,7 +114,7 @@ faces_emore/
 
 运行： 
 ```
-python tools/mx_recordio_2_ofrecord_shuffled_npart.py  --data_dir datasets/faces_emore --output_filepath faces_emore/ofrecord/train --num_part 16
+python tools/dataset_convert/mx_recordio_2_ofrecord_shuffled_npart.py  --data_dir datasets/faces_emore --output_filepath faces_emore/ofrecord/train --num_part 16
 ```
 成功后将得到 `num_part` 数量个 OFRecord，本示例中为 16 个，显示如下：
 
@@ -191,16 +190,6 @@ ofrecord/test/
 
 0 directories, 17 files
 ```
-#### 3. 将验证数据集转换为 OFRecord 格式
-
-运行：
-
-```
-python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces_emore/ofrecord/lfw/ --dataset_name="lfw"
-python bin_2_ofrecord.py --data_dir=faces_emore --output_filepath=faces_emore/ofrecord/cfp_fp/ --dataset_name="cfp_fp"
-python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces_emore/ofrecord/agedb_30/ --dataset_name="agedb_30"
-```
-
 
 
 ## 预训练模型
@@ -216,54 +205,36 @@ oneflow 的人脸预训练模型下载链接：[of_005_model.tar.gz](http://onef
 
 我们也提供了转换成 MXNet 的模型：[of_to_mxnet_model_005.tar.gz](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/pretrained_model/of_2_mxnet_glint360k_partial_fc/of_to_mxnet_model_005.tar.gz)
 
-
+ ## 模型转换
+```
+pip install oneflow-onnx==0.3.4
+./convert.sh
+```
 
 ## 训练和验证
 
 ### 训练
 
-为了减小用户使用的迁移成本，OneFlow 的脚本已经调整为 MXNet 实现的风格，用户可以使用 sample_config.py 直接修改参数。同时，还可以通过添加命令行参数 `--do_validataion_while_train`，实现一边训练一边验证。
+为了减小用户使用的迁移成本，OneFlow 的脚本已经调整为 Torch 实现的风格，用户可以使用 configs/*.py 直接修改参数。
 
-对于想要修改的参数可以直接在 sample_config.py 中修改，修改后根据 InsightFace 的使用方法
-
-```
-cp sample_config config
-```
 
 运行脚本：
 
 ```
-python insightface_train.py --dataset emore  --network r100 --loss arcface
+./run.sh
 ```
-
-即可进行基于 Face_emore 数据集使用 ResNet100 作为 Backbone 的训练和验证。
-
-若想尝试更大数据集，运行脚本
-
-```
-python insightface_train.py --dataset glint360k_8GPU --network r100_glint360k --loss cosface
-```
-
-即可进行基于 Glint360k 数据集使用 ResNet100 作为 Backbone 的训练和验证。
-
-为了使数据集、loss的设置和官方保持对齐，**在使用emore数据集训练时应该采用arcface作为loss；使用glint360k数据集时，采用cosface作为loss。**
-
 
 
 ### 验证
 
-另外，为了方便查看保存下来的预训练模型精度，我们提供了一个仅在验证数据集上单独执行验证过程的脚本，insightface_val.py。
+另外，为了方便查看保存下来的预训练模型精度，我们提供了一个仅在验证数据集上单独执行验证过程的脚本。
 
 运行
 
 ```
-python insightface_val.py \
---device_num_per_node=1 \
---network="r100" \
---model_load_dir=path/to/model_load_dir
+./val.sh
 ```
 
-其中，用 `--model_load_dir` 指定想要加载的预训练模型的路径。
 
 ## 基准测试
 
