@@ -271,7 +271,7 @@ To reduce the usage cost of user, OneFlow draws close the scripts to Torch style
 
 ### Varification
 
-Moreover, OneFlow offers a validation script to do verification separately, insightface_val.py, which facilitates you to check the precision of the pre-training model saved.
+Moreover, OneFlow offers a validation script to do verification separately, val.py, which facilitates you to check the precision of the pre-training model saved.
 
 ```
 ./val.sh
