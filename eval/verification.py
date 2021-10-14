@@ -170,8 +170,7 @@ def calculate_val_far(threshold, dist, actual_issame):
         np.logical_and(predict_issame, np.logical_not(actual_issame)))
     n_same = np.sum(actual_issame)
     n_diff = np.sum(np.logical_not(actual_issame))
-    # print(true_accept, false_accept)
-    # print(n_same, n_diff)
+
     val = float(true_accept) / float(n_same)
     far = float(false_accept) / float(n_diff)
     return val, far
@@ -240,7 +239,6 @@ def test(data_set, backbone, batch_size, nfolds=10):
             count = bb - ba
             _data = data[bb - batch_size: bb]
             time0 = datetime.datetime.now()
-            #img = ((_data / 255) - 0.5) / 0.5
 
             net_out = backbone(_data)
             _embeddings = net_out.get().numpy()

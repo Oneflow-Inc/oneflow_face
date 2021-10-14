@@ -23,11 +23,7 @@ config.device_num_per_node = 8
 
 config.ofrecord_path = "/train_tmp/glint360k/train"
 config.eval_ofrecord_path = "/train_tmp/glint360k/val"
-config.num_classes = 93432
-config.num_image = 5179510
 config.train_data_part_num = 200
-
-config.ofrecord_path = "/train_tmp/glint360k"
 config.num_classes = 360232
 config.num_image = 17091657
 config.num_epoch = 20

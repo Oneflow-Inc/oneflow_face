@@ -25,7 +25,7 @@ config.ofrecord_path = "/dev/shm/ms1m-retinaface-t1/ofrecord/train"
 config.eval_ofrecord_path = "/dev/shm/ms1m-retinaface-t1/ofrecord/val"
 config.num_classes = 93432
 config.num_image = 5179510
-config.train_data_part_num = 8
+config.train_data_part_num = 32
 
 config.num_epoch = 25
 config.warmup_epoch = -1

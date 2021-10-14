@@ -61,7 +61,7 @@ class ArcFaceORT:
             print('new-input-shape:', input_shape)
 
         self.image_size = tuple(input_shape[2:4][::-1])
-        # print('image_size:', self.image_size)
+
         input_name = input_cfg.name
         outputs = session.get_outputs()
         output_names = []
@@ -73,7 +73,7 @@ class ArcFaceORT:
         self.session = session
         self.input_name = input_name
         self.output_names = output_names
-        # print(self.output_names)
+
         model = onnx.load(self.model_file)
         graph = model.graph
         if len(graph.node) < 8:
@@ -93,7 +93,8 @@ class ArcFaceORT:
         if input_size != self.image_size:
             return "input-size is inconsistant with onnx model input, %s vs %s" % (input_size, self.image_size)
 
-        self.model_size_mb = os.path.getsize(self.model_file) / float(1024 * 1024)
+        self.model_size_mb = os.path.getsize(
+            self.model_file) / float(1024 * 1024)
         if self.model_size_mb > max_model_size_mb:
             return "max model size exceed, given %.3f-MB" % self.model_size_mb
 
@@ -135,7 +136,8 @@ class ArcFaceORT:
             if dt.itemsize < 4:
                 return 'invalid weight type - (%s:%s)' % (initn.name, dt.name)
         if test_img is None:
-            test_img = np.random.randint(0, 255, size=(self.image_size[1], self.image_size[0], 3), dtype=np.uint8)
+            test_img = np.random.randint(0, 255, size=(
+                self.image_size[1], self.image_size[0], 3), dtype=np.uint8)
         else:
             test_img = cv2.resize(test_img, self.image_size)
         feat, cost = self.benchmark(test_img)
@@ -161,14 +163,16 @@ class ArcFaceORT:
         if self.crop is not None:
             nimgs = []
             for img in imgs:
-                nimg = img[self.crop[1]:self.crop[3], self.crop[0]:self.crop[2], :]
+                nimg = img[self.crop[1]:self.crop[3],
+                           self.crop[0]:self.crop[2], :]
                 if nimg.shape[0] != input_size[1] or nimg.shape[1] != input_size[0]:
                     nimg = cv2.resize(nimg, input_size)
                 nimgs.append(nimg)
             imgs = nimgs
         blob = cv2.dnn.blobFromImages(imgs, 1.0 / self.input_std, input_size,
                                       (self.input_mean, self.input_mean, self.input_mean), swapRB=True)
-        net_out = self.session.run(self.output_names, {self.input_name: blob})[0]
+        net_out = self.session.run(
+            self.output_names, {self.input_name: blob})[0]
         return net_out
 
     def benchmark(self, img):
@@ -183,7 +187,8 @@ class ArcFaceORT:
         costs = []
         for _ in range(50):
             ta = datetime.datetime.now()
-            net_out = self.session.run(self.output_names, {self.input_name: blob})[0]
+            net_out = self.session.run(
+                self.output_names, {self.input_name: blob})[0]
             tb = datetime.datetime.now()
             cost = (tb - ta).total_seconds()
             costs.append(cost)
@@ -194,6 +199,7 @@ class ArcFaceORT:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_root", help="onnx model root, default is './'", default="./")
+    parser.add_argument(
+        "--model_root", help="onnx model root, default is './'", default="./")
     args = parser.parse_args()
     ArcFaceORT(args.model_root).check()
