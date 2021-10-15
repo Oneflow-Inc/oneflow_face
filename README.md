@@ -1,8 +1,9 @@
+
 # InsightFace in OneFlow
 
+[English](README.md) **|** [简体中文](README_CH.md)
+
 It introduces how to train InsightFace in OneFlow, and do verification over the validation datasets via the well-toned networks.
-
-
 
 ## Contents
 
@@ -25,8 +26,6 @@ It introduces how to train InsightFace in OneFlow, and do verification over the 
    \- [1. Download datasets](#1-download-datasets)
 
    \- [2. Transformation from MS1M recordio to OFRecord](#2-transformation-from-ms1m-recordio-to-ofrecord)
-
-   \- [3. Transformation from validation datasets to OFRecord](#3-transformation-from-validation-datasets-to-ofrecord)
 
  \- [Pretrained model](#Pretrained-model)
 
@@ -121,9 +120,11 @@ According to [Load and Prepare OFRecord Datasets](https://docs.oneflow.org/en/ex
 
 
 
-It has provided a set of datasets related to face recognition tasks, which have been pre-processed via face alignment or other processions already in [InsightFace](https://github.com/deepinsight/insightface). The corresponding datasets could be downloaded from [here](https://github.com/deepinsight/insightface/wiki/Dataset-Zoo) and should be converted into OFRecord, which performs better in OneFlow. Considering the cumbersome steps, it is suggested to download converted OFrecord datasets, [training parts](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/train_ofrecord.tar.gz) and [validation parts](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/eval_ofrecord.tar.gz).
+It has provided a set of datasets related to face recognition tasks, which have been pre-processed via face alignment or other processions already in [InsightFace](https://github.com/deepinsight/insightface). The corresponding datasets could be downloaded from [here](https://github.com/deepinsight/insightface/wiki/Dataset-Zoo) and should be converted into OFRecord, which performs better in OneFlow. Considering the cumbersome steps, it is suggested to download converted OFrecord datasets:
 
+[MS1M-ArcFace(face_emore)](http://oneflow-public.oss-cn-beijing.aliyuncs.com/face_dataset/train_ofrecord.tar.gz)
 
+[MS1MV3](https://oneflow-public.oss-cn-beijing.aliyuncs.com/facedata/MS1V3/oneflow/ms1m-retinaface-t1.zip)
 
 It illustrates how to convert downloaded datasets into OFRecords, and take MS1M-ArcFace as an example in the following.
 
@@ -235,18 +236,6 @@ ofrecord/test/
 0 directories, 17 files
 ```
 
-#### 3. Transformation from validation datasets to OFRecord
-
-Run
-
-```
-python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces_emore/ofrecord/lfw/ --dataset_name="lfw"
-
-python bin_2_ofrecord.py --data_dir=faces_emore --output_filepath=faces_emore/ofrecord/cfp_fp/ --dataset_name="cfp_fp"
-
-python bin_2_ofrecord.py --data_dir=datasets/faces_emore --output_filepath=faces_emore/ofrecord/agedb_30/ --dataset_name="agedb_30"
-```
-
 
 
 ## Pretrained model
@@ -264,7 +253,12 @@ We also provide the MXNet model which converted from OneFlow:[of_to_mxnet_model_
 
 
 
+## OneFLow2ONNX
 
+```
+pip install oneflow-onnx==0.3.4
+./convert.sh
+```
 
 ## Training and verification
 
@@ -272,56 +266,20 @@ We also provide the MXNet model which converted from OneFlow:[of_to_mxnet_model_
 
 ### Training
 
-To reduce the usage cost of user, OneFlow draws close the scripts to MXNet style, you can directly modify parameters via sample_config.py. Meanwhile, it could Validate while training when adding `--do_validataion_while_train=True`.
-
-
-
-Just change the parameters in the sample_config.py straightforward. Modify and copy config.py
+To reduce the usage cost of user, OneFlow draws close the scripts to Torch style, you can directly modify parameters via configs/*.py
 
 ```
-cp sample_config.py config.py
-
-vim config.py # edit dataset path etc.
+./run.sh
 ```
-
-
-
-run
-
-```
-python insightface_train.py --dataset emore --network r100 --loss arcface
-```
-
-In this way, you will do training and validation with the backbone of ResNet100 by face_emore dataset.
-
-To achieve ambitions for a larger quantity of data, run
-
-```
-python insightface_train.py --dataset glint360k_8GPU --network r100_glint360k --loss cosface 
-```
-
-In this way, you will do training and validation with the backbone of ResNet100 by glint360k dataset.
-
-In order to keep the settings of dataset and loss the same as the official, **arcface loss should be used when training with emore dataset; cosface loss should be used when training with glint360k dataset. **
-
-
 
 ### Varification
 
-Moreover, OneFlow offers a validation script to do verification separately, insightface_val.py, which facilitates you to check the precision of the pre-training model saved.
-
-
-
-run
+Moreover, OneFlow offers a validation script to do verification separately, val.py, which facilitates you to check the precision of the pre-training model saved.
 
 ```
-python insightface_val.py \
---device_num_per_node=1 \
---network="r100" \
---model_load_dir=path/to/model_load_dir
+./val.sh
+
 ```
-
-
 
 ## Benchmark
 

@@ -1,7 +1,7 @@
 import oneflow as flow
 import oneflow.core.operator.op_conf_pb2 as op_conf_util
-from symbols.symbol_utils import _get_initializer, _conv2d_layer, _batch_norm, _prelu, Linear, get_fc1
-from sample_config import config
+from .common import _get_initializer, _conv2d_layer, _batch_norm, _prelu, Linear, get_fc1
+
 
 """
 References:
@@ -34,6 +34,7 @@ def Conv(
         activation=None,
         use_bias=False,
     )
+
     bn = _batch_norm(
         conv,
         epsilon=0.001,
@@ -44,6 +45,7 @@ def Conv(
     prelu = _prelu(bn, data_format, name="%s%s_relu" % (name, suffix))
 
     return prelu
+
 
 def DResidual_v1(
     input_blob,
@@ -115,7 +117,7 @@ def Residual(
             pad=pad,
             data_format=data_format,
             num_group=num_group,
-            bn_is_training=bn_is_training,
+
             name="%s%s_block" % (name, suffix),
             suffix="%d" % i,
         )
@@ -123,15 +125,11 @@ def Residual(
     return identity
 
 
-def get_symbol(input_blob):
-    net_blocks = config.net_blocks
-    num_classes = config.emb_size
-    fc_type = config.fc_type
-    data_format = config.data_format
-    bn_is_training = config.bn_is_training
-    input_blob = flow.transpose(
-        input_blob, name="transpose", perm=[0, 3, 1, 2]
-    )
+def get_symbol(input_blob, net_blocks, config):
+    num_classes = config.embedding_size
+    fc_type = 'GDC'
+    data_format = "NCHW"
+    bn_is_training = True
 
     conv_1 = Conv(
         input_blob,
@@ -251,5 +249,9 @@ def get_symbol(input_blob):
         bn_is_training=bn_is_training,
         name="conv_6sep",
     )
-    fc1 = get_fc1(conv_6_sep, num_classes,fc_type, input_channel=512)
+    fc1 = get_fc1(conv_6_sep, num_classes, fc_type, input_channel=512)
     return fc1
+
+
+def mobilefacenet(input_blob, cfg):
+    return get_symbol(input_blob,  [1, 4, 6, 2], cfg)

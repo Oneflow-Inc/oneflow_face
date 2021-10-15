@@ -1,13 +1,17 @@
 import oneflow as flow
-from sample_config import config
 
 
+# same as torch
 def _get_initializer():
     return flow.random_normal_initializer(mean=0.0, stddev=0.1)
 
 
+def _get_initializer_FC():
+    return flow.random_normal_initializer(mean=0.0, stddev=0.01)
+
+
 def _get_regularizer(name):
-    return None
+    return flow.regularizers.l2(0.0005)
 
 
 def _dropout(input_blob, dropout_prob):
@@ -20,6 +24,13 @@ def _prelu(inputs, data_format="NCHW", name=None):
         alpha_initializer=flow.constant_initializer(0.25),
         alpha_regularizer=_get_regularizer("alpha"),
         shared_axes=[2, 3] if data_format == "NCHW" else [1, 2],
+        name=name,
+    )
+
+
+def _relu(inputs, data_format="NCHW", name=None):
+    return flow.nn.relu(
+        inputs,
         name=name,
     )
 
@@ -40,6 +51,7 @@ def _batch_norm(
     data_format="NCHW",
     name=None,
 ):
+
     return flow.layers.batch_normalization(
         inputs=inputs,
         axis=3 if data_format == "NHWC" and inputs.shape == 4 else 1,
@@ -104,6 +116,7 @@ def Linear(
         dilation_rate=1,
         activation=None,
     )
+
     bn = _batch_norm(
         conv,
         epsilon=0.001,
@@ -122,9 +135,9 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             epsilon=2e-5,
             scale=False,
             center=True,
-            is_training=config.bn_is_training,
-            data_format=config.data_format,
-            name="bn1"
+            is_training=True,
+            data_format="NCHW",
+            name="bn2"
         )
         body = _dropout(body, 0.4)
         fc1 = body
@@ -132,12 +145,13 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
         body = _batch_norm(
             body,
             epsilon=2e-5,
-            is_training=config.bn_is_training,
-            data_format=config.data_format,
-            name="bn1"
+            is_training=True,
+            data_format="NCHW",
+            name="bn2"
         )
         body = _dropout(body, dropout_prob=0.4)
-        body = flow.reshape(body, (body.shape[0], -1))
+
+        body = flow.flatten(body, 1)
         fc1 = flow.layers.dense(
             inputs=body,
             units=num_classes,
@@ -155,19 +169,21 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             epsilon=2e-5,
             scale=False,
             center=True,
-            is_training=config.bn_is_training,
-            data_format=config.data_format,
+            is_training=True,
+            data_format="NCHW",
             name="fc1",
         )
     elif fc_type == "FC":
         body = _batch_norm(
             body,
             epsilon=2e-5,
-            is_training=config.bn_is_training,
-            data_format=config.data_format,
-            name="bn1"
+            is_training=True,
+            data_format="NCHW",
+            name="bn2"
         )
-        body = flow.reshape(body, (body.shape[0], -1))
+   
+
+        body = flow.flatten(body, 1)
         fc1 = flow.layers.dense(
             inputs=body,
             units=num_classes,
@@ -178,16 +194,16 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             kernel_regularizer=_get_regularizer("weight"),
             bias_regularizer=_get_regularizer("bias"),
             trainable=True,
-            name="pre_fc1"
+            name="fc"
         )
         fc1 = _batch_norm(
             fc1,
             epsilon=2e-5,
             scale=False,
             center=True,
-            is_training=config.bn_is_training,
-            data_format=config.data_format,
-            name="fc1"
+            is_training=True,
+            data_format="NCHW",
+            name="features"
         )
     elif fc_type == "GDC":
         conv_6_dw = Linear(
@@ -197,8 +213,8 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             kernel=7,
             pad="valid",
             stride=[1, 1],
-            bn_is_training=config.bn_is_training,
-            data_format=config.data_format,
+            bn_is_training=True,
+            data_format="NCHW",
             name="conv_6dw7_7",
         )
         conv_6_dw = flow.reshape(conv_6_dw, (body.shape[0], -1))
@@ -219,8 +235,8 @@ def get_fc1(last_conv, num_classes, fc_type, input_channel=512):
             epsilon=2e-5,
             scale=False,
             center=True,
-            is_training=config.bn_is_training,  # fix_gamma=True
-            data_format=config.data_format,
+            is_training=True,
+            data_format="NCHW",
             name="fc1",
         )
     return fc1

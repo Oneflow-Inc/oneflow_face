@@ -1,6 +1,5 @@
 import oneflow as flow
-from symbols.symbol_utils import _batch_norm, _conv2d_layer, _avg_pool, _prelu, get_fc1
-from sample_config import config
+from .common import _batch_norm, _conv2d_layer, _avg_pool, _prelu, get_fc1
 
 
 def residual_unit_v3(
@@ -14,10 +13,10 @@ def residual_unit_v3(
         epsilon=2e-5,
         is_training=bn_is_training,
         data_format=data_format,
-        name="%s%s_bn1" % (name, suffix),
+        name="%s%s.bn1" % (name, suffix),
     )
     conv1 = _conv2d_layer(
-        name="%s%s_conv1" % (name, suffix),
+        name="%s%s.conv1" % (name, suffix),
         input=bn1,
         filters=num_filter,
         kernel_size=3,
@@ -33,11 +32,12 @@ def residual_unit_v3(
         epsilon=2e-5,
         is_training=bn_is_training,
         data_format=data_format,
-        name="%s%s_bn2" % (name, suffix),
+        name="%s%s.bn2" % (name, suffix),
     )
-    prelu = _prelu(bn2, data_format=data_format, name="%s%s_relu1" % (name, suffix))
+    prelu = _prelu(bn2, data_format=data_format,
+                   name="%s%s_relu1" % (name, suffix))
     conv2 = _conv2d_layer(
-        name="%s%s_conv2" % (name, suffix),
+        name="%s%s.conv2" % (name, suffix),
         input=prelu,
         filters=num_filter,
         kernel_size=3,
@@ -53,7 +53,7 @@ def residual_unit_v3(
         epsilon=2e-5,
         is_training=bn_is_training,
         data_format=data_format,
-        name="%s%s_bn3" % (name, suffix),
+        name="%s%s.bn3" % (name, suffix),
     )
 
     if use_se:
@@ -94,7 +94,7 @@ def residual_unit_v3(
         input_blob = in_data
     else:
         input_blob = _conv2d_layer(
-            name="%s%s_conv1sc" % (name, suffix),
+            name="%s%s.downsample.0" % (name, suffix),
             input=in_data,
             filters=num_filter,
             kernel_size=1,
@@ -110,27 +110,26 @@ def residual_unit_v3(
             epsilon=2e-5,
             is_training=bn_is_training,
             data_format=data_format,
-            name="%s%s_sc" % (name, suffix),
+            name="%s%s.downsample.1" % (name, suffix),
         )
 
     identity = flow.math.add(x=bn3, y=input_blob)
     return identity
 
 
-def get_symbol(input_blob):
+def get_symbol(input_blob, units, cfg):
     filter_list = [64, 64, 128, 256, 512]
     num_stages = 4
-    units = [3, 13, 30, 3]
-    num_classes = config.emb_size
-    fc_type = config.fc_type
-    bn_is_training = config.bn_is_training
-    data_format = config.data_format
-    if data_format.upper() == "NCHW":
-        input_blob = flow.transpose(
-        input_blob, name="transpose", perm=[0, 3, 1, 2]
-    )
+    units = units
+
+    num_classes = cfg.embedding_size
+
+    fc_type = cfg.fc_type
+    bn_is_training = True
+    data_format = "NCHW"
+
     input_blob = _conv2d_layer(
-        name="conv0",
+        name="conv1",
         input=input_blob,
         filters=filter_list[0],
         kernel_size=3,
@@ -142,7 +141,7 @@ def get_symbol(input_blob):
         activation=None,
     )
     input_blob = _batch_norm(
-        input_blob, epsilon=2e-5, is_training=bn_is_training, data_format=data_format, name="bn0"
+        input_blob, epsilon=2e-5, is_training=bn_is_training, data_format=data_format, name="bn1"
     )
     input_blob = _prelu(input_blob, data_format=data_format, name="relu0")
 
@@ -154,7 +153,7 @@ def get_symbol(input_blob):
             False,
             bn_is_training=bn_is_training,
             data_format=data_format,
-            name="stage%d_unit%d" % (i + 1, 1),
+            name="layer%d.%d" % (i + 1, 0),
         )
         for j in range(units[i] - 1):
             input_blob = residual_unit_v3(
@@ -164,7 +163,27 @@ def get_symbol(input_blob):
                 True,
                 bn_is_training=bn_is_training,
                 data_format=data_format,
-                name="stage%d_unit%d" % (i + 1, j + 2),
+                name="layer%d.%d" % (i + 1, j + 1),
             )
     fc1 = get_fc1(input_blob, num_classes, fc_type)
     return fc1
+
+
+def iresnet18(input_blob, cfg):
+    return get_symbol([2, 2, 2, 2], cfg)
+
+
+def iresnet34(input_blob, cfg):
+    return get_symbol(input_blob, [3, 4, 6, 3], cfg)
+
+
+def iresnet50(input_blob, cfg):
+    return get_symbol(input_blob,  [3, 4, 14, 3], cfg)
+
+
+def iresnet100(input_blob, cfg):
+    return get_symbol(input_blob,  [3, 13, 30, 3], cfg)
+
+
+def iresnet200(input_blob, cfg):
+    return get_symbol(input_blob,  [6, 26, 60, 6], cfg)
