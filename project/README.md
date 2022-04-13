@@ -16,8 +16,8 @@ According to steps in [Install OneFlow](https://github.com/Oneflow-Inc/oneflow#i
 
 ```
 python3 -m pip install --pre oneflow -f https://staging.oneflow.info/branch/master/cu102
-```
 python3 -m pip install flowface
+```
 
 
 ### Data preparations
