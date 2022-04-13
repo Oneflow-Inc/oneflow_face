@@ -111,37 +111,6 @@ class Train_Module(flow.nn.Module):
         super(Train_Module, self).__init__()
         self.placement = placement
 
-        # if cfg.graph:
-        #     if cfg.model_parallel:
-        #         input_size = cfg.embedding_size
-        #         output_size = int(cfg.num_classes / world_size)
-        #         self.fc = FC7(
-        #             input_size, output_size, cfg, partial_fc=cfg.partial_fc
-        #         ).to_global(placement=placement, sbp=flow.sbp.split(0))
-        #     else:
-        #         self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg).to_global(
-        #             placement=placement, sbp=flow.sbp.broadcast
-        #         )
-        #     self.backbone = backbone.to_global(
-        #         placement=placement, sbp=flow.sbp.broadcast
-        #     )
-        # else:
-        #     if cfg.model_parallel:
-        #         input_size = cfg.embedding_size
-        #         output_size = int(cfg.num_classes / world_size)
-        #         self.fc = FC7(
-        #             input_size, output_size, cfg, partial_fc=cfg.partial_fc
-        #         ).to_global(placement=placement, sbp=flow.sbp.split(0))
-        #         # self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg).to_global(
-        #         #     placement=placement, sbp=flow.sbp.broadcast
-        #         # )
-        #         self.backbone = backbone.to_global(
-        #             placement=placement, sbp=flow.sbp.broadcast
-        #         )
-        #     else:
-        #         self.backbone = backbone
-        #         self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg)
-
         if cfg.model_parallel:
             input_size = cfg.embedding_size
             output_size = int(cfg.num_classes / world_size)
