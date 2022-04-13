@@ -29,6 +29,14 @@ def main(args):
     world_size = flow.env.get_world_size()
     placement = flow.env.all_device_placement("cuda")
 
+    # loss
+    if cfg.loss == "cosface":
+        margin_softmax = flow.nn.CombinedMarginLoss(
+            1, 0.0, 0.4).to("cuda")
+    else:
+        margin_softmax = flow.nn.CombinedMarginLoss(
+            1, 0.5, 0.0).to("cuda")
+
     os.makedirs(cfg.output, exist_ok=True)
     log_root = logging.getLogger()
     init_logging(log_root, rank, cfg.output)
@@ -40,7 +48,7 @@ def main(args):
         num_space = 25 - len(key)
         logging.info(": " + key + " " * num_space + str(value))
 
-    trainer = Trainer(cfg, placement, load_path, world_size, rank)
+    trainer = Trainer(cfg, margin_softmax,placement, load_path, world_size, rank)
     trainer()
 
 

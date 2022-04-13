@@ -16,7 +16,7 @@ config.sample_rate = 1
 config.fp16 = True
 config.momentum = 0.9
 config.weight_decay = 5e-4
-config.batch_size = 128
+config.batch_size = 1
 config.lr = 0.1  # batch size is 512
 
 

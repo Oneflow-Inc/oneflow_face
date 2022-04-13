@@ -25,6 +25,7 @@ requirements = [
     'scikit-learn',
     'scikit-image',
     'easydict',
+    'flowvision'
 ]
 
 version = "0.0.0"
