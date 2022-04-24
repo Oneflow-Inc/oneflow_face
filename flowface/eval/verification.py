@@ -171,8 +171,6 @@ def calculate_val_far(threshold, dist, actual_issame):
         predict_issame, np.logical_not(actual_issame)))
     n_same = np.sum(actual_issame)
     n_diff = np.sum(np.logical_not(actual_issame))
-    # print(true_accept, false_accept)
-    # print(n_same, n_diff)
     val = float(true_accept) / float(n_same)
     far = float(false_accept) / float(n_diff)
     return val, far
@@ -251,7 +249,7 @@ def test(data_set, backbone, batch_size, nfolds=10,  is_global=False):
             time0 = datetime.datetime.now()
             with flow.no_grad():
                 if  is_global:
-                    img = img.to_consistent(placement=placement, sbp=sbp)
+                    img = img.to_global(placement=placement, sbp=sbp)
                 net_out = backbone(img.to("cuda"))
 
             if  is_global:
