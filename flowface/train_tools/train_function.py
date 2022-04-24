@@ -304,4 +304,4 @@ class Trainer(object):
                 if self.global_step >= self.cfg.train_num:
                     exit(0)
             self.callback_checkpoint(
-                self.global_step, epoch, self.train_module)
+                self.global_step, epoch, self.train_module, is_global=self.cfg.is_global)
