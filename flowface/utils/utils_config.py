@@ -1,8 +1,14 @@
 import importlib
 import os.path as osp
+from pathlib import Path
 
-
-def get_config(config_file):
+def get_config(config_file=None):
+    if config_file is None:
+        from flowface.configs.base import config
+        return config
+        # config = importlib.import_module("configs.base")
+        # cfg = config.config
+        # return cfg
     assert config_file.startswith(
         "configs/"
     ), "config file setting must start with configs/"

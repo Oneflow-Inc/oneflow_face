@@ -9,6 +9,9 @@ from flowface.eval import verification
 from flowface.utils.utils_logging import AverageMeter
 
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 class CallBackVerification(object):
     def __init__(
         self,
@@ -29,7 +32,7 @@ class CallBackVerification(object):
         self.world_size = world_size
         self.  is_global = is_global
 
-        if self.  is_global:
+        if self.is_global:
             self.init_dataset(
                 val_targets=val_targets, data_dir=rec_prefix, image_size=image_size
             )
@@ -46,17 +49,17 @@ class CallBackVerification(object):
             acc1, std1, acc2, std2, xnorm, embeddings_list = verification.test(
                 self.ver_list[i], backbone, 10, 10, self.  is_global
             )
-            logging.info(
+            logger.info(
                 "[%s][%d]XNorm: %f" % (
                     self.ver_name_list[i], global_step, xnorm)
             )
-            logging.info(
+            logger.info(
                 "[%s][%d]Accuracy-Flip: %1.5f+-%1.5f"
                 % (self.ver_name_list[i], global_step, acc2, std2)
             )
             if acc2 > self.highest_acc_list[i]:
                 self.highest_acc_list[i] = acc2
-            logging.info(
+            logger.info(
                 "[%s][%d]Accuracy-Highest: %1.5f"
                 % (self.ver_name_list[i], global_step, self.highest_acc_list[i])
             )
@@ -71,19 +74,20 @@ class CallBackVerification(object):
                 self.ver_list.append(data_set)
                 self.ver_name_list.append(name)
         if len(self.ver_list) == 0:
-            logging.info("Val targets is None !")
+            logger.info("Val targets is None !")
 
     def __call__(self, num_update, backbone: flow.nn.Module, backbone_graph=None):
 
-        if self.  is_global:
+        if self.is_global:
             if num_update > 0 and num_update % self.frequent == 0:
                 backbone.eval()
-                self.ver_test(backbone_graph, num_update)
+                # self.ver_test(backbone_graph, num_update)
+                self.ver_test(backbone, num_update)
                 backbone.train()
         else:
             if self.rank is 0 and num_update > 0 and num_update % self.frequent == 0:
                 backbone.eval()
-                self.ver_test(backbone_graph, num_update)
+                self.ver_test(backbone, num_update)
                 backbone.train()
 
 
@@ -154,7 +158,7 @@ class CallBackLogging(object):
                             time_for_end,
                         )
                     )
-                logging.info(msg)
+                logger.info(msg)
                 loss.reset()
                 self.tic = time.time()
             else:
@@ -173,9 +177,9 @@ class CallBackModelCheckpoint(object):
             path_module = os.path.join(self.output, "epoch_%d" % (epoch))
 
             if is_global:
-                flow.save(backbone.state_dict(),
-                          path_module, global_dst_rank=0)
+                    flow.save(backbone.state_dict(),
+                            path_module, global_dst_rank=0)
             else:
                 if self.rank == 0:
-                    flow.save(backbone.state_dict(), path_module)
-            logging.info("oneflow Model Saved in '{}'".format(path_module))
+                    flow.save(backbone.state_dict(), path_module, global_dst_rank=0)
+            logger.info("oneflow Model Saved in '{}'".format(path_module))
