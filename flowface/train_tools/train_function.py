@@ -1,20 +1,22 @@
 import logging
+
 import oneflow as flow
 from oneflow.nn.parallel import DistributedDataParallel as ddp
 
+from flowface.backbones import get_model
+from flowface.utils.losses import CrossEntropyLoss_sbp
 from flowface.utils.ofrecord_data_utils import OFRecordDataLoader, SyntheticDataLoader
-from flowface.utils.utils_logging import AverageMeter
 from flowface.utils.utils_callbacks import (
-    CallBackVerification,
     CallBackLogging,
     CallBackModelCheckpoint,
+    CallBackVerification,
 )
-from flowface.backbones import get_model
-from .graph_def import TrainGraph, EvalGraph
-from flowface.utils.losses import CrossEntropyLoss_sbp
+from flowface.utils.utils_logging import AverageMeter
+
+from .graph_def import EvalGraph, TrainGraph
 
 
-def make_data_loader(args, mode,  is_global=False, synthetic=False):
+def make_data_loader(args, mode, is_global=False, synthetic=False):
     assert mode in ("train", "validation")
 
     if mode == "train":
@@ -55,7 +57,7 @@ def make_data_loader(args, mode,  is_global=False, synthetic=False):
         placement=placement,
         sbp=sbp,
         channel_last=args.channel_last,
-        use_gpu_decode=args.use_gpu_decode
+        use_gpu_decode=args.use_gpu_decode,
     )
     return ofrecord_data_loader
 
@@ -75,8 +77,7 @@ def make_optimizer(args, model):
 class FC7(flow.nn.Module):
     def __init__(self, embedding_size, num_classes, cfg, partial_fc=False, bias=False):
         super(FC7, self).__init__()
-        self.weight = flow.nn.Parameter(
-            flow.empty(num_classes, embedding_size))
+        self.weight = flow.nn.Parameter(flow.empty(num_classes, embedding_size))
         flow.nn.init.normal_(self.weight, mean=0, std=0.01)
 
         self.partial_fc = partial_fc
@@ -89,12 +90,10 @@ class FC7(flow.nn.Module):
     def forward(self, x, label):
         x = flow.nn.functional.normalize(x, dim=1)
         if self.partial_fc:
-            (
-                mapped_label,
-                sampled_label,
-                sampled_weight,
-            ) = flow.distributed_partial_fc_sample(
-                weight=self.weight, label=label, num_sample=self.total_num_sample,
+            (mapped_label, sampled_label, sampled_weight,) = flow.distributed_partial_fc_sample(
+                weight=self.weight,
+                label=label,
+                num_sample=self.total_num_sample,
             )
             label = mapped_label
             weight = sampled_weight
@@ -114,22 +113,18 @@ class Train_Module(flow.nn.Module):
         if cfg.model_parallel:
             input_size = cfg.embedding_size
             output_size = int(cfg.num_classes / world_size)
-            self.fc = FC7(
-                input_size, output_size, cfg, partial_fc=cfg.partial_fc
-            ).to_global(placement=placement, sbp=flow.sbp.split(0))
-            self.backbone = backbone.to_global(
-                placement=placement, sbp=flow.sbp.broadcast
+            self.fc = FC7(input_size, output_size, cfg, partial_fc=cfg.partial_fc).to_global(
+                placement=placement, sbp=flow.sbp.split(0)
             )
+            self.backbone = backbone.to_global(placement=placement, sbp=flow.sbp.broadcast)
         else:
             if cfg.graph:
                 self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg).to_global(
                     placement=placement, sbp=flow.sbp.broadcast
                 )
-                self.backbone = backbone.to_global(
-                    placement=placement, sbp=flow.sbp.broadcast
-                )
+                self.backbone = backbone.to_global(placement=placement, sbp=flow.sbp.broadcast)
             else:
-                #eager ddp 
+                # eager ddp
                 self.backbone = backbone
                 self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg)
 
@@ -146,7 +141,7 @@ class Trainer(object):
         """
         Args:
             cfg (easydict.EasyDict): train configs.
-            margin_softmax : chose cosface 、arcface or self define  
+            margin_softmax : chose cosface 、arcface or self define
             placement (_oneflow_internal.placement):train devices
             load_path (str) : pretrained model path
             world_size (int): total number of all devices
@@ -163,9 +158,7 @@ class Trainer(object):
         self.backbone = get_model(
             cfg.network, dropout=0.0, num_features=cfg.embedding_size, channel_last=cfg.channel_last
         ).to("cuda")
-        self.train_module = Train_Module(
-            cfg, self.backbone, self.placement, world_size
-        ).to("cuda")
+        self.train_module = Train_Module(cfg, self.backbone, self.placement, world_size).to("cuda")
         if cfg.resume:
             if load_path is not None:
                 self.load_state_dict()
@@ -197,7 +190,11 @@ class Trainer(object):
         )
         # val
         self.callback_verification = CallBackVerification(
-            cfg.val_frequence, rank, cfg.val_targets, cfg.ofrecord_path,  is_global=self.cfg.is_global
+            cfg.val_frequence,
+            rank,
+            cfg.val_targets,
+            cfg.ofrecord_path,
+            is_global=self.cfg.is_global,
         )
         # save checkpoint
         self.callback_checkpoint = CallBackModelCheckpoint(rank, cfg.output)
@@ -252,8 +249,7 @@ class Trainer(object):
             for steps in range(one_epoch_steps):
                 self.global_step += 1
                 loss = train_graph()
-                loss = loss.to_global(
-                    sbp=flow.sbp.broadcast).to_local().numpy()
+                loss = loss.to_global(sbp=flow.sbp.broadcast).to_local().numpy()
                 self.losses.update(loss, 1)
                 self.callback_logging(
                     self.global_step,
@@ -262,14 +258,10 @@ class Trainer(object):
                     False,
                     self.scheduler.get_last_lr()[0],
                 )
-                self.callback_verification(
-                    self.global_step, self.train_module, val_graph
-                )
+                self.callback_verification(self.global_step, self.train_module, val_graph)
                 if self.global_step >= self.cfg.train_num:
                     exit(0)
-            self.callback_checkpoint(
-                self.global_step, epoch, self.backbone,  is_global=True
-            )
+            self.callback_checkpoint(self.global_step, epoch, self.backbone, is_global=True)
 
     def train_eager(self):
         if not self.cfg.is_global:
@@ -304,4 +296,5 @@ class Trainer(object):
                 if self.global_step >= self.cfg.train_num:
                     exit(0)
             self.callback_checkpoint(
-                self.global_step, epoch, self.train_module, is_global=self.cfg.is_global)
+                self.global_step, epoch, self.train_module, is_global=self.cfg.is_global
+            )

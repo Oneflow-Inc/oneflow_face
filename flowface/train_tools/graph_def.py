@@ -8,7 +8,10 @@ def make_static_grad_scaler():
 
 def make_grad_scaler():
     return flow.amp.GradScaler(
-        init_scale=2 ** 30, growth_factor=2.0, backoff_factor=0.5, growth_interval=2000,
+        init_scale=2 ** 30,
+        growth_factor=2.0,
+        backoff_factor=0.5,
+        growth_interval=2000,
     )
 
 

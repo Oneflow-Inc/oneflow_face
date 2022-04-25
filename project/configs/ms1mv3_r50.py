@@ -20,7 +20,7 @@ config.batch_size = 1
 config.lr = 0.1  # batch size is 512
 
 
-config.ofrecord_path =  "/data/disk1/zhuwang/face_data/ms1m-retinaface-t1/ofrecord"
+config.ofrecord_path = "/data/disk1/zhuwang/face_data/ms1m-retinaface-t1/ofrecord"
 config.ofrecord_part_num = 8
 config.num_classes = 93432
 config.num_image = 5179510

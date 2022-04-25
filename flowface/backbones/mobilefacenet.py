@@ -1,5 +1,3 @@
-import math
-
 import oneflow
 import oneflow.nn.functional as F
 from oneflow import nn
@@ -30,17 +28,25 @@ class ConvBNReLU(nn.Sequential):
     def __init__(self, in_planes, out_planes, kernel_size=3, stride=1, groups=1):
         padding = (kernel_size - 1) // 2
         super(ConvBNReLU, self).__init__(
-            nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, groups=groups, bias=False),
+            nn.Conv2d(
+                in_planes, out_planes, kernel_size, stride, padding, groups=groups, bias=False
+            ),
             nn.BatchNorm2d(out_planes),
-            nn.ReLU6(inplace=True)
+            nn.ReLU6(inplace=True),
         )
 
 
 class DepthwiseSeparableConv(nn.Module):
     def __init__(self, in_planes, out_planes, kernel_size, padding, bias=False):
         super(DepthwiseSeparableConv, self).__init__()
-        self.depthwise = nn.Conv2d(in_planes, in_planes, kernel_size=kernel_size, padding=padding, groups=in_planes,
-                                   bias=bias)
+        self.depthwise = nn.Conv2d(
+            in_planes,
+            in_planes,
+            kernel_size=kernel_size,
+            padding=padding,
+            groups=in_planes,
+            bias=bias,
+        )
         self.pointwise = nn.Conv2d(in_planes, out_planes, kernel_size=1, bias=bias)
         self.bn1 = nn.BatchNorm2d(in_planes)
         self.bn2 = nn.BatchNorm2d(out_planes)
@@ -60,8 +66,14 @@ class DepthwiseSeparableConv(nn.Module):
 class GDConv(nn.Module):
     def __init__(self, in_planes, out_planes, kernel_size, padding, bias=False):
         super(GDConv, self).__init__()
-        self.depthwise = nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, padding=padding, groups=in_planes,
-                                   bias=bias)
+        self.depthwise = nn.Conv2d(
+            in_planes,
+            out_planes,
+            kernel_size=kernel_size,
+            padding=padding,
+            groups=in_planes,
+            bias=bias,
+        )
         self.bn = nn.BatchNorm2d(in_planes)
 
     def forward(self, x):
@@ -83,13 +95,15 @@ class InvertedResidual(nn.Module):
         if expand_ratio != 1:
             # pw
             layers.append(ConvBNReLU(inp, hidden_dim, kernel_size=1))
-        layers.extend([
-            # dw
-            ConvBNReLU(hidden_dim, hidden_dim, stride=stride, groups=hidden_dim),
-            # pw-linear
-            nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
-            nn.BatchNorm2d(oup),
-        ])
+        layers.extend(
+            [
+                # dw
+                ConvBNReLU(hidden_dim, hidden_dim, stride=stride, groups=hidden_dim),
+                # pw-linear
+                nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
+                nn.BatchNorm2d(oup),
+            ]
+        )
         self.conv = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -127,8 +141,10 @@ class MobileFaceNet(nn.Module):
 
         # only check the first element, assuming user knows t,c,n,s are required
         if len(inverted_residual_setting) == 0 or len(inverted_residual_setting[0]) != 4:
-            raise ValueError("inverted_residual_setting should be non-empty "
-                             "or a 4-element list, got {}".format(inverted_residual_setting))
+            raise ValueError(
+                "inverted_residual_setting should be non-empty "
+                "or a 4-element list, got {}".format(inverted_residual_setting)
+            )
 
         # building first layer
         # input_channel = _make_divisible(input_channel * width_mult, round_nearest)
@@ -154,7 +170,7 @@ class MobileFaceNet(nn.Module):
         # weight initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out")
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
             elif isinstance(m, nn.BatchNorm2d):
@@ -174,4 +190,3 @@ class MobileFaceNet(nn.Module):
         x = self.bn(x)
         x = x.view(x.size(0), -1)
         return x
-

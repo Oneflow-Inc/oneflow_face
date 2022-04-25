@@ -1,12 +1,12 @@
-from ast import arg
 import argparse
 import logging
 import os
+
 import oneflow as flow
 
 from flowface.train_tools import Trainer
-from flowface.utils.utils_logging import init_logging
 from flowface.utils.utils_config import get_config
+from flowface.utils.utils_logging import init_logging
 
 
 def str2bool(v):
@@ -31,11 +31,9 @@ def main(args):
 
     # loss
     if cfg.loss == "cosface":
-        margin_softmax = flow.nn.CombinedMarginLoss(
-            1, 0.0, 0.4).to("cuda")
+        margin_softmax = flow.nn.CombinedMarginLoss(1, 0.0, 0.4).to("cuda")
     else:
-        margin_softmax = flow.nn.CombinedMarginLoss(
-            1, 0.5, 0.0).to("cuda")
+        margin_softmax = flow.nn.CombinedMarginLoss(1, 0.5, 0.0).to("cuda")
 
     os.makedirs(cfg.output, exist_ok=True)
     log_root = logging.getLogger()
@@ -48,7 +46,7 @@ def main(args):
         num_space = 25 - len(key)
         logging.info(": " + key + " " * num_space + str(value))
 
-    trainer = Trainer(cfg, margin_softmax,placement, load_path, world_size, rank)
+    trainer = Trainer(cfg, margin_softmax, placement, load_path, world_size, rank)
     trainer()
 
 
@@ -57,13 +55,22 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OneFlow ArcFace Training")
     parser.add_argument("config", type=str, help="py config file")
     parser.add_argument(
-        "--batch_size", type=int, default=128, help="Train batch size per device",
+        "--batch_size",
+        type=int,
+        default=128,
+        help="Train batch size per device",
     )
     parser.add_argument(
-        "--log_frequent", type=int, default=50, help="log print frequence",
+        "--log_frequent",
+        type=int,
+        default=50,
+        help="log print frequence",
     )
     parser.add_argument(
-        "--fp16", type=str2bool, default="True", help="Whether to use fp16",
+        "--fp16",
+        type=str2bool,
+        default="True",
+        help="Whether to use fp16",
     )
     parser.add_argument(
         "--graph",
@@ -71,17 +78,30 @@ if __name__ == "__main__":
         help="Run model in graph mode,else run model in ddp mode.",
     )
     parser.add_argument(
-        "--model_parallel", type=str2bool, default="True", help="Train use model_parallel",
+        "--model_parallel",
+        type=str2bool,
+        default="True",
+        help="Train use model_parallel",
     )
     parser.add_argument(
-        "--train_num", type=int, default=1000000, help="Train total num",
+        "--train_num",
+        type=int,
+        default=1000000,
+        help="Train total num",
     )
     parser.add_argument(
-        "--channel_last", type=str2bool, default="False", help="use NHWC",
+        "--channel_last",
+        type=str2bool,
+        default="False",
+        help="use NHWC",
     )
-    parser.add_argument("--use_gpu_decode",
-                        action="store_true", help="Use gpu decode,only support graph . CUDA_VERSION >= 10020 ",)
+    parser.add_argument(
+        "--use_gpu_decode",
+        action="store_true",
+        help="Use gpu decode,only support graph . CUDA_VERSION >= 10020 ",
+    )
     parser.add_argument("--local_rank", type=int, default=0, help="local_rank")
-    parser.add_argument("--load_path", type=str, default=None,
-                        help="root dir of loading checkpoint")
+    parser.add_argument(
+        "--load_path", type=str, default=None, help="root dir of loading checkpoint"
+    )
     main(parser.parse_args())

@@ -1,4 +1,3 @@
-from pickle import TRUE
 from easydict import EasyDict as edict
 
 # make training faster

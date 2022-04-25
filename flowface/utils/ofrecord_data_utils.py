@@ -1,7 +1,8 @@
-import oneflow as flow
-import oneflow.nn as nn
 import os
 from typing import List, Union
+
+import oneflow as flow
+import oneflow.nn as nn
 
 
 class OFRecordDataLoader(nn.Module):
@@ -34,9 +35,7 @@ class OFRecordDataLoader(nn.Module):
             placement=placement,
             sbp=sbp,
         )
-        self.record_label_decoder = flow.nn.OfrecordRawDecoder(
-            "label", shape=(), dtype=flow.int32
-        )
+        self.record_label_decoder = flow.nn.OfrecordRawDecoder("label", shape=(), dtype=flow.int32)
 
         color_space = "RGB"
         height = 112
@@ -53,19 +52,15 @@ class OFRecordDataLoader(nn.Module):
                     target_height=112,
                     random_area=[1, 1],
                     random_aspect_ratio=[1, 1],
-                    num_workers=3
+                    num_workers=3,
                 )
             else:
                 self.image_decoder = flow.nn.OFRecordImageDecoder(
                     "encoded", color_space=color_space
                 )
 
-            self.resize = flow.nn.image.Resize(
-                target_size=[height, width]
-            )
-            self.flip = flow.nn.CoinFlip(
-                batch_size=self.batch_size, placement=placement, sbp=sbp
-            )
+            self.resize = flow.nn.image.Resize(target_size=[height, width])
+            self.flip = flow.nn.CoinFlip(batch_size=self.batch_size, placement=placement, sbp=sbp)
             self.crop_mirror_norm = flow.nn.CropMirrorNormalize(
                 color_space=color_space,
                 mean=rgb_mean,
@@ -73,9 +68,7 @@ class OFRecordDataLoader(nn.Module):
                 output_dtype=flow.float,
             )
         else:
-            self.image_decoder = flow.nn.OFRecordImageDecoder(
-                "encoded", color_space=color_space
-            )
+            self.image_decoder = flow.nn.OFRecordImageDecoder("encoded", color_space=color_space)
             self.resize = flow.nn.image.Resize(
                 resize_side="shorter", keep_aspect_ratio=True, target_size=112
             )
@@ -90,8 +83,6 @@ class OFRecordDataLoader(nn.Module):
                 std=rgb_std,
                 output_dtype=flow.float,
             )
-
-
 
     def __len__(self):
         return self.dataset_size // self.total_batch_size
@@ -123,12 +114,21 @@ class OFRecordDataLoader(nn.Module):
 
 class SyntheticDataLoader(flow.nn.Module):
     def __init__(
-        self, batch_size, image_size=112, num_classes=10000, placement=None, sbp=None, channel_last=False,
+        self,
+        batch_size,
+        image_size=112,
+        num_classes=10000,
+        placement=None,
+        sbp=None,
+        channel_last=False,
     ):
         super().__init__()
         self.channel_last = channel_last
-        self.image_shape = (batch_size, image_size, image_size, 3) if self.channel_last else (
-            batch_size, 3, image_size, image_size)
+        self.image_shape = (
+            (batch_size, image_size, image_size, 3)
+            if self.channel_last
+            else (batch_size, 3, image_size, image_size)
+        )
         self.label_shape = (batch_size,)
         self.num_classes = num_classes
         self.placement = placement
@@ -161,7 +161,10 @@ class SyntheticDataLoader(flow.nn.Module):
                 0, high=255, size=self.image_shape, dtype=flow.float32, device="cuda"
             )
             self.label = flow.randint(
-                0, high=self.num_classes, size=self.label_shape, device="cuda",
+                0,
+                high=self.num_classes,
+                size=self.label_shape,
+                device="cuda",
             ).to(dtype=flow.int32)
 
     def __len__(self):

@@ -10,6 +10,7 @@ from flowface.utils.utils_config import get_config
 
 sys.path.append(".")
 
+
 def main():
     config = get_config()
     config.loss = "cosface"
@@ -26,8 +27,7 @@ def main():
     config.batch_size = 128
     config.lr = 0.1  # batch size is 512
 
-
-    config.ofrecord_path =  "/workspace/data/oneflow_face_subset"
+    config.ofrecord_path = "/workspace/data/oneflow_face_subset"
     config.ofrecord_part_num = 8
     config.num_classes = 3000
     config.num_image = 3000
@@ -42,19 +42,17 @@ def main():
     rank = flow.env.get_rank()
     world_size = flow.env.get_world_size()
     placement = flow.env.all_device_placement("cuda")
-    
+
     config.graph = False
     config.batch_size = 16
     config.fp16 = True
     config.model_parallel = True
     config.train_num = 1000000
     config.log_frequent = 10
-    config.use_gpu_decode = False   
+    config.use_gpu_decode = False
     config.is_global = True
 
-    margin_softmax = flow.nn.CombinedMarginLoss(
-        1, 0.0, 0.4).to("cuda")
-
+    margin_softmax = flow.nn.CombinedMarginLoss(1, 0.0, 0.4).to("cuda")
 
     # root dir of loading checkpoint
     # os.makedirs(cfg.output, exist_ok=True)
@@ -72,16 +70,18 @@ def main():
     # trainer()
 
     import os
-    os.environ["MASTER_ADDR"]="127.0.0.1"
-    os.environ["MASTER_PORT"]="17788"
+
+    os.environ["MASTER_ADDR"] = "127.0.0.1"
+    os.environ["MASTER_PORT"] = "17788"
     # os.environ["DEVICE_NUM_PER_NODE"]="2"
-    os.environ["PYTHONUNBUFFERED"]="1"
-    os.environ["NCCL_LAUNCH_MODE"]="PARALLEL"
+    os.environ["PYTHONUNBUFFERED"] = "1"
+    os.environ["NCCL_LAUNCH_MODE"] = "PARALLEL"
     trainer = Trainer(config, margin_softmax, placement, "", world_size, rank)
     trainer()
-    
+
+
 # export DEVICE_NUM_PER_NODE=2; export WORLD_SIZE=2; export LOCAL_RANK=0; export RANK=0; export MASTER_ADDR=127.0.0.1; export MASTER_PORT=17788
 # export DEVICE_NUM_PER_NODE=2; export WORLD_SIZE=2; export LOCAL_RANK=1; export RANK=1; export MASTER_ADDR=127.0.0.1; export MASTER_PORT=17788
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

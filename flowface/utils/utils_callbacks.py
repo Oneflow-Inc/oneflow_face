@@ -8,9 +8,9 @@ import oneflow as flow
 from flowface.eval import verification
 from flowface.utils.utils_logging import AverageMeter
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class CallBackVerification(object):
     def __init__(
@@ -30,12 +30,10 @@ class CallBackVerification(object):
         self.ver_list: List[object] = []
         self.ver_name_list: List[str] = []
         self.world_size = world_size
-        self.  is_global = is_global
+        self.is_global = is_global
 
         if self.is_global:
-            self.init_dataset(
-                val_targets=val_targets, data_dir=rec_prefix, image_size=image_size
-            )
+            self.init_dataset(val_targets=val_targets, data_dir=rec_prefix, image_size=image_size)
         else:
             if self.rank is 0:
                 self.init_dataset(
@@ -47,12 +45,9 @@ class CallBackVerification(object):
         for i in range(len(self.ver_list)):
 
             acc1, std1, acc2, std2, xnorm, embeddings_list = verification.test(
-                self.ver_list[i], backbone, 10, 10, self.  is_global
+                self.ver_list[i], backbone, 10, 10, self.is_global
             )
-            logger.info(
-                "[%s][%d]XNorm: %f" % (
-                    self.ver_name_list[i], global_step, xnorm)
-            )
+            logger.info("[%s][%d]XNorm: %f" % (self.ver_name_list[i], global_step, xnorm))
             logger.info(
                 "[%s][%d]Accuracy-Flip: %1.5f+-%1.5f"
                 % (self.ver_name_list[i], global_step, acc2, std2)
@@ -116,9 +111,7 @@ class CallBackLogging(object):
         if self.rank == 0 and global_step % self.frequent == 0:
             if self.init:
                 try:
-                    speed: float = self.frequent * self.batch_size / (
-                        time.time() - self.tic
-                    )
+                    speed: float = self.frequent * self.batch_size / (time.time() - self.tic)
                     speed_total = speed * self.world_size
                 except ZeroDivisionError:
                     speed_total = float("inf")
@@ -127,36 +120,26 @@ class CallBackLogging(object):
                 time_total = time_now / ((global_step + 1) / self.total_step)
                 time_for_end = time_total - time_now
                 if self.writer is not None:
-                    self.writer.add_scalar(
-                        "time_for_end", time_for_end, global_step)
-                    self.writer.add_scalar(
-                        "learning_rate", learning_rate, global_step)
+                    self.writer.add_scalar("time_for_end", time_for_end, global_step)
+                    self.writer.add_scalar("learning_rate", learning_rate, global_step)
                     self.writer.add_scalar("loss", loss.avg, global_step)
                 if fp16:
-                    msg = (
-                        "Speed %.2f samples/sec   Loss %.4f   LearningRate %.4f   Epoch: %d   Global Step: %d   "
-                        "Fp16 Grad Scale: %2.f   Required: %1.f hours"
-                        % (
-                            speed_total,
-                            loss.avg,
-                            learning_rate,
-                            epoch,
-                            global_step,
-                            time_for_end,
-                        )
+                    msg = "Speed %.2f samples/sec   Loss %.4f   LearningRate %.4f   Epoch: %d   Global Step: %d   " "Fp16 Grad Scale: %2.f   Required: %1.f hours" % (
+                        speed_total,
+                        loss.avg,
+                        learning_rate,
+                        epoch,
+                        global_step,
+                        time_for_end,
                     )
                 else:
-                    msg = (
-                        "Speed %.2f samples/sec   Loss %.4f   LearningRate %.4f   Epoch: %d   Global Step: %d   "
-                        "Required: %1.f hours"
-                        % (
-                            speed_total,
-                            loss.avg,
-                            learning_rate,
-                            epoch,
-                            global_step,
-                            time_for_end,
-                        )
+                    msg = "Speed %.2f samples/sec   Loss %.4f   LearningRate %.4f   Epoch: %d   Global Step: %d   " "Required: %1.f hours" % (
+                        speed_total,
+                        loss.avg,
+                        learning_rate,
+                        epoch,
+                        global_step,
+                        time_for_end,
                     )
                 logger.info(msg)
                 loss.reset()
@@ -171,14 +154,13 @@ class CallBackModelCheckpoint(object):
         self.rank: int = rank
         self.output: str = output
 
-    def __call__(self, global_step, epoch, backbone,   is_global=False):
+    def __call__(self, global_step, epoch, backbone, is_global=False):
 
         if global_step > 100 and backbone is not None:
             path_module = os.path.join(self.output, "epoch_%d" % (epoch))
 
             if is_global:
-                    flow.save(backbone.state_dict(),
-                            path_module, global_dst_rank=0)
+                flow.save(backbone.state_dict(), path_module, global_dst_rank=0)
             else:
                 if self.rank == 0:
                     flow.save(backbone.state_dict(), path_module, global_dst_rank=0)

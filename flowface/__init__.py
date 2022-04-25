@@ -1,8 +1,3 @@
-import imp
-from flowface import backbones
-from flowface import eval
-from flowface import train_tools
-from flowface import utils
-from flowface import configs
+from flowface import backbones, configs, eval, train_tools, utils
 
-__version__ = '0.0.0'
+__version__ = "0.0.0"

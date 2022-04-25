@@ -20,11 +20,11 @@ config.batch_size = 128
 config.lr = 0.1  # batch size is 512
 
 config.dataset = "webface600k"
-config.ofrecord_path =  "/train_tmp/webface600k"
+config.ofrecord_path = "/train_tmp/webface600k"
 config.ofrecord_part_num = 32
 config.num_classes = 617970
 config.num_image = 12720066
 config.num_epoch = 20
-config.warmup_epoch = -1#config.num_epoch // 10
+config.warmup_epoch = -1  # config.num_epoch // 10
 config.decay_epoch = [8, 12, 15, 18]
 config.val_targets = []
