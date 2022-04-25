@@ -192,7 +192,8 @@ def evaluate(embeddings, actual_issame, nrof_folds=10, pca=0):
 
 
 def load_bin_cv(path, image_size):
-    bins, issame_list = pickle.load(open(path, "rb"), encoding="bytes")
+    with open(path, "rb") as f:
+        bins, issame_list = pickle.load(f, encoding="bytes")
     data_list = []
     for flip in [0, 1]:
         data = flow.empty(len(issame_list) * 2, 3, image_size[0], image_size[1])
