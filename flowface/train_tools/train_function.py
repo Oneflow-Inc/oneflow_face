@@ -4,6 +4,7 @@ import oneflow as flow
 from oneflow.nn.parallel import DistributedDataParallel as ddp
 
 from flowface.backbones import get_model
+from flowface.layers.partial_fc import PartialFC
 from flowface.utils.losses import CrossEntropyLoss_sbp
 from flowface.utils.ofrecord_data_utils import OFRecordDataLoader, SyntheticDataLoader
 from flowface.utils.utils_callbacks import (
@@ -109,29 +110,51 @@ class Train_Module(flow.nn.Module):
     def __init__(self, cfg, backbone, placement, world_size):
         super(Train_Module, self).__init__()
         self.placement = placement
-
         if cfg.model_parallel:
-            input_size = cfg.embedding_size
-            output_size = int(cfg.num_classes / world_size)
-            self.fc = FC7(input_size, output_size, cfg, partial_fc=cfg.partial_fc).to_global(
-                placement=placement, sbp=flow.sbp.split(0)
-            )
-            self.backbone = backbone.to_global(placement=placement, sbp=flow.sbp.broadcast)
+            if cfg.is_global:
+                self.fc = PartialFC(
+                    embedding_size=cfg.embedding_size, num_classes=cfg.num_classes, sample_rate=1
+                ).to_global(placement=placement, sbp=flow.sbp.split(0))
+            else:
+                raise NotImplementedError
         else:
-            if cfg.graph:
+            if cfg.is_global:
                 self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg).to_global(
                     placement=placement, sbp=flow.sbp.broadcast
                 )
-                self.backbone = backbone.to_global(placement=placement, sbp=flow.sbp.broadcast)
             else:
-                # eager ddp
-                self.backbone = backbone
                 self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg)
+
+        if cfg.is_global:
+            self.backbone = backbone.to_global(placement=placement, sbp=flow.sbp.broadcast)
+        else:
+            self.backbone = backbone
+            
+        
+                
+                
+
+        # if cfg.model_parallel:
+        #     # eager global
+        #     input_size = cfg.embedding_size
+        #     output_size = int(cfg.num_classes / world_size)
+        #     self.fc = FC7(input_size, output_size, cfg, partial_fc=cfg.partial_fc).to_global(
+        #         placement=placement, sbp=flow.sbp.split(0)
+        #     )
+        #     self.backbone = backbone.to_global(placement=placement, sbp=flow.sbp.broadcast)
+        # else:
+        #     if cfg.graph:
+        #         self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg).to_global(
+        #             placement=placement, sbp=flow.sbp.broadcast
+        #         )
+        #         self.backbone = backbone.to_global(placement=placement, sbp=flow.sbp.broadcast)
+        #     else:
+        #         # eager ddp
+        #         self.backbone = backbone
+        #         self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg)
 
     def forward(self, x, labels):
         x = self.backbone(x)
-        # if x.is_global:
-        #     x = x.to_global(sbp=flow.sbp.broadcast)
         x = self.fc(x, labels)
         return x
 
@@ -208,12 +231,14 @@ class Trainer(object):
         if self.cfg.graph:
             self.train_graph()
         else:
+            if not self.cfg.is_global:
+                self.train_module = ddp(self.train_module)
             self.train_eager()
 
     def load_state_dict(self):
 
-        if self.is_consistent:
-            state_dict = flow.load(self.load_path, consistent_src_rank=0)
+        if self.is_global:
+            state_dict = flow.load(self.load_path, global_src_rank=0)
         elif self.rank == 0:
             state_dict = flow.load(self.load_path)
         else:
@@ -264,8 +289,6 @@ class Trainer(object):
             self.callback_checkpoint(self.global_step, epoch, self.backbone, is_global=True)
 
     def train_eager(self):
-        if not self.cfg.is_global:
-            self.train_module = ddp(self.train_module)
         for epoch in range(self.start_epoch, self.cfg.num_epoch):
             self.train_module.train()
 
@@ -275,6 +298,7 @@ class Trainer(object):
                 image, label = self.train_data_loader()
                 image = image.to("cuda")
                 label = label.to("cuda")
+
                 features_fc7, label = self.train_module(image, label)
                 features_fc7 = self.margin_softmax(features_fc7, label) * 64
                 loss = self.of_cross_entropy(features_fc7, label)
