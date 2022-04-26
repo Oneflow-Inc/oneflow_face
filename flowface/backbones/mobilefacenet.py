@@ -114,7 +114,7 @@ class InvertedResidual(nn.Module):
 
 
 class MobileFaceNet(nn.Module):
-    def __init__(self, width_mult=1.0, inverted_residual_setting=None, round_nearest=8):
+    def __init__(self, embedding_size=128, width_mult=1.0, inverted_residual_setting=None, round_nearest=8):
         """
         MobileNet V2 main class
         Args:
@@ -162,8 +162,8 @@ class MobileFaceNet(nn.Module):
         # building last several layers
         self.conv2 = ConvBNReLU(input_channel, self.last_channel, kernel_size=1)
         self.gdconv = GDConv(in_planes=512, out_planes=512, kernel_size=7, padding=0)
-        self.conv3 = nn.Conv2d(512, 128, kernel_size=1)
-        self.bn = nn.BatchNorm2d(128)
+        self.conv3 = nn.Conv2d(512, embedding_size, kernel_size=1)
+        self.bn = nn.BatchNorm2d(embedding_size)
         # make it nn.Sequential
         self.features = nn.Sequential(*features)
 
