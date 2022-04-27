@@ -64,7 +64,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg = config
 
     # model_parallel = True
-    # @flow.unittest.skip_unless_1n4d()
+    @oneflow.unittest.skip_unless_1n4d()
     def test_eager_global_modelparallel(self):
         self.cfg.is_global = True
         self.cfg.graph = False
@@ -76,6 +76,7 @@ class TestTrain(flow.unittest.TestCase):
         trainer = Trainer(self.cfg, margin_softmax, placement, "", world_size, rank)
         trainer()
 
+    @flow.unittest.skip_unless_1n4d()
     def test_graph_modelparallel(self):
         self.cfg.is_global = True
         self.cfg.graph = True
@@ -88,6 +89,7 @@ class TestTrain(flow.unittest.TestCase):
         trainer()
     
     # model_parallel = False
+    @flow.unittest.skip_unless_1n4d()
     def test_eager_global_dataparallel(self):
         self.cfg.is_global = True
         self.cfg.graph = False
@@ -99,6 +101,7 @@ class TestTrain(flow.unittest.TestCase):
         trainer = Trainer(self.cfg, margin_softmax, placement, "", world_size, rank)
         trainer()
 
+    @flow.unittest.skip_unless_1n4d()
     def test_graph_dataparallel(self):
         self.cfg.is_global = True
         self.cfg.graph = True
