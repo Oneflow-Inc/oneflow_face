@@ -14,6 +14,6 @@ def get_model(name, **kwargs):
     elif name == "r200":
         return iresnet200(False, **kwargs)
     elif name == "mbf":
-        return MobileFaceNet()
+        return MobileFaceNet(**kwargs)
     else:
         raise ValueError()

@@ -114,7 +114,7 @@ class InvertedResidual(nn.Module):
 
 
 class MobileFaceNet(nn.Module):
-    def __init__(self, embedding_size=128, width_mult=1.0, inverted_residual_setting=None, round_nearest=8):
+    def __init__(self, embedding_size=128, width_mult=1.0, inverted_residual_setting=None, round_nearest=8, **kwargs):
         """
         MobileNet V2 main class
         Args:
