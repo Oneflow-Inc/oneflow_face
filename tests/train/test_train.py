@@ -28,14 +28,15 @@ class TestTrain(flow.unittest.TestCase):
 
         config = get_config()
         config.loss = "cosface"
-        config.network = "r18"
+        config.head = "arcface"
+        config.network = "r50"
         config.resume = False
         config.output = "output"
         config.embedding_size = 128
         config.model_parallel = True
         config.partial_fc = True
-        config.sample_rate = 0.1
-        config.fp16 = True
+        config.sample_rate = 1
+        config.fp16 = False
         config.momentum = 0.9
         config.weight_decay = 5e-4
         config.batch_size = 128
@@ -55,12 +56,10 @@ class TestTrain(flow.unittest.TestCase):
 
         config.graph = False
         config.batch_size = 16
-        config.fp16 = True
         config.model_parallel = True
         config.train_num = 1000000
         config.log_frequent = 10
         config.use_gpu_decode = False
-        config.is_global = True
         self.cfg = config
 
     # model_parallel = True
@@ -72,8 +71,7 @@ class TestTrain(flow.unittest.TestCase):
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
         placement = flow.env.all_device_placement("cuda")
-        margin_softmax = flow.nn.CombinedMarginLoss(1, 0.0, 0.4).to("cuda")
-        trainer = Trainer(self.cfg, margin_softmax, placement, "", world_size, rank)
+        trainer = Trainer(self.cfg, placement, "", world_size, rank)
         trainer()
 
     @flow.unittest.skip_unless_1n4d()
@@ -84,8 +82,7 @@ class TestTrain(flow.unittest.TestCase):
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
         placement = flow.env.all_device_placement("cuda")
-        margin_softmax = flow.nn.CombinedMarginLoss(1, 0.0, 0.4).to("cuda")
-        trainer = Trainer(self.cfg, margin_softmax, placement, "", world_size, rank)
+        trainer = Trainer(self.cfg, placement, "", world_size, rank)
         trainer()
     
     # model_parallel = False
@@ -97,8 +94,7 @@ class TestTrain(flow.unittest.TestCase):
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
         placement = flow.env.all_device_placement("cuda")
-        margin_softmax = flow.nn.CombinedMarginLoss(1, 0.0, 0.4).to("cuda")
-        trainer = Trainer(self.cfg, margin_softmax, placement, "", world_size, rank)
+        trainer = Trainer(self.cfg, placement, "", world_size, rank)
         trainer()
 
     @flow.unittest.skip_unless_1n4d()
@@ -109,8 +105,7 @@ class TestTrain(flow.unittest.TestCase):
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
         placement = flow.env.all_device_placement("cuda")
-        margin_softmax = flow.nn.CombinedMarginLoss(1, 0.0, 0.4).to("cuda")
-        trainer = Trainer(self.cfg, margin_softmax, placement, "", world_size, rank)
+        trainer = Trainer(self.cfg, placement, "", world_size, rank)
         trainer()
 
 
