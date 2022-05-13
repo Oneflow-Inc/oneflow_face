@@ -1,39 +1,34 @@
-
+import math
 import oneflow as flow
 class FC(flow.nn.Module):
-    def __init__(self, embedding_size, num_classes, sample_rate=1):
+    def __init__(self, embedding_size, num_classes, is_global=True, is_parallel=True, sample_rate=1):
         super(FC, self).__init__()
         
-        self.weight = flow.nn.Parameter(flow.empty(num_classes, embedding_size))
-        print(self.weight.shape)
+        placement = flow.env.all_device_placement("cuda")
+        if is_global:
+            sbp = flow.sbp.split(0) if is_parallel else flow.sbp.broadcast
+        else:
+            sbp = None
+        self.weight = flow.nn.Parameter(flow.empty(num_classes, embedding_size, sbp=sbp, placement=placement))
         flow.nn.init.normal_(self.weight, mean=0, std=0.01)
         
         if sample_rate < 1:
             assert self.is_global, "Partial FC can only be used in global mode"
-            self.sample = True
-            size = flow.env.get_world_size()
-            num_local = (num_classes + size - 1) // size
-            self.num_sample = int(num_local * sample_rate)
-            self.total_num_sample = self.num_sample * size
+            num_sample = math.ceil(num_classes * sample_rate)
+            self.sampler = flow.nn.DistributedPariticalFCSample(num_sample)
         else:
-            self.sample = False
+            self.sampler = False
             
-
-
     def forward(self, x, label):
         x = flow.nn.functional.normalize(x, dim=1)
-        if self.sample:
-            (mapped_label, sampled_label, sampled_weight,) = flow.distributed_partial_fc_sample(
-                weight=self.weight,
-                label=label,
-                num_sample=self.total_num_sample,
-            )
+        if self.sampler:
+            (mapped_label, sampled_label, sampled_weight,) = self.sampler(self.weight, label)
             label = mapped_label
             weight = sampled_weight
         else:
             weight = self.weight
         weight = flow.nn.functional.normalize(weight, dim=1)
-        x = flow.matmul(x, weight, transpose_b=True) + self.bias
+        x = flow.matmul(x, weight, transpose_b=True)
         return x, label
 
 if __name__ == "__main__":
