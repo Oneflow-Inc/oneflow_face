@@ -1,9 +1,11 @@
 import logging
+import math
 
 import oneflow as flow
 from oneflow.nn.parallel import DistributedDataParallel as ddp
 
 from flowface.backbones import get_model
+from flowface.heads import get_head
 from flowface.layers.partial_fc import PartialFC
 from flowface.utils.losses import CrossEntropyLoss_sbp
 from flowface.utils.ofrecord_data_utils import OFRecordDataLoader, SyntheticDataLoader
@@ -74,90 +76,19 @@ def make_optimizer(args, model):
     )
     return optimizer
 
-
-class FC7(flow.nn.Module):
-    def __init__(self, embedding_size, num_classes, cfg, partial_fc=False, bias=False):
-        super(FC7, self).__init__()
-        self.weight = flow.nn.Parameter(flow.empty(num_classes, embedding_size))
-        flow.nn.init.normal_(self.weight, mean=0, std=0.01)
-
-        self.partial_fc = partial_fc
-
-        size = flow.env.get_world_size()
-        num_local = (cfg.num_classes + size - 1) // size
-        self.num_sample = int(num_local * cfg.sample_rate)
-        self.total_num_sample = self.num_sample * size
-
-    def forward(self, x, label):
-        x = flow.nn.functional.normalize(x, dim=1)
-        if self.partial_fc:
-            (mapped_label, sampled_label, sampled_weight,) = flow.distributed_partial_fc_sample(
-                weight=self.weight,
-                label=label,
-                num_sample=self.total_num_sample,
-            )
-            label = mapped_label
-            weight = sampled_weight
-        else:
-            weight = self.weight
-        weight = flow.nn.functional.normalize(weight, dim=1)
-        x = flow.matmul(x, weight, transpose_b=True)
-
-        return x, label
-
-
 class Train_Module(flow.nn.Module):
-    def __init__(self, cfg, backbone, placement, world_size):
+    def __init__(self, backbone, head, num_classes, embedding_size, model_parallel, is_global, sample_rate):
         super(Train_Module, self).__init__()
-        self.placement = placement
-        if cfg.model_parallel:
-            if cfg.is_global:
-                self.fc = PartialFC(
-                    embedding_size=cfg.embedding_size, num_classes=cfg.num_classes, sample_rate=1
-                ).to_global(placement=placement, sbp=flow.sbp.split(0))
-            else:
-                raise NotImplementedError
-        else:
-            if cfg.is_global:
-                self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg).to_global(
-                    placement=placement, sbp=flow.sbp.broadcast
-                )
-            else:
-                self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg)
-
-        if cfg.is_global:
-            self.backbone = backbone.to_global(placement=placement, sbp=flow.sbp.broadcast)
+        if is_global:
+            self.backbone = backbone.to_global(sbp=flow.sbp.broadcast, placement=flow.env.all_device_placement("cuda"))
         else:
             self.backbone = backbone
-            
+        self.head = head(num_classes, embedding_size, is_global=is_global, is_parallel=model_parallel, sample_rate=sample_rate)
         
-                
-                
-
-        # if cfg.model_parallel:
-        #     # eager global
-        #     input_size = cfg.embedding_size
-        #     output_size = int(cfg.num_classes / world_size)
-        #     self.fc = FC7(input_size, output_size, cfg, partial_fc=cfg.partial_fc).to_global(
-        #         placement=placement, sbp=flow.sbp.split(0)
-        #     )
-        #     self.backbone = backbone.to_global(placement=placement, sbp=flow.sbp.broadcast)
-        # else:
-        #     if cfg.graph:
-        #         self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg).to_global(
-        #             placement=placement, sbp=flow.sbp.broadcast
-        #         )
-        #         self.backbone = backbone.to_global(placement=placement, sbp=flow.sbp.broadcast)
-        #     else:
-        #         # eager ddp
-        #         self.backbone = backbone
-        #         self.fc = FC7(cfg.embedding_size, cfg.num_classes, cfg)
-
-    def forward(self, x, labels):
-        x = self.backbone(x)
-        x = self.fc(x, labels)
-        return x
-
+    def forward(self, imgs, labels):
+        feature = self.backbone(imgs)
+        loss = self.head(feature, labels)
+        return loss
 
 class Trainer(object):
     def __init__(self, cfg, margin_softmax, placement, load_path, world_size, rank):
@@ -179,9 +110,10 @@ class Trainer(object):
 
         # model
         self.backbone = get_model(
-            cfg.network, dropout=0.0, num_features=cfg.embedding_size, channel_last=cfg.channel_last
+            cfg.network, dropout=0.0, embedding_size=cfg.embedding_size, channel_last=cfg.channel_last
         ).to("cuda")
-        self.train_module = Train_Module(cfg, self.backbone, self.placement, world_size).to("cuda")
+        self.head = get_head(cfg.head)
+        self.train_module = Train_Module(self.backbone, self.head, cfg.num_classes, cfg.embedding_size, cfg.model_parallel, cfg.is_global, cfg.sample_rate).to("cuda")
         if cfg.resume:
             if load_path is not None:
                 self.load_state_dict()
@@ -236,7 +168,6 @@ class Trainer(object):
             self.train_eager()
 
     def load_state_dict(self):
-
         if self.is_global:
             state_dict = flow.load(self.load_path, global_src_rank=0)
         elif self.rank == 0:
@@ -259,8 +190,6 @@ class Trainer(object):
         train_graph = TrainGraph(
             self.train_module,
             self.cfg,
-            self.margin_softmax,
-            self.of_cross_entropy,
             self.train_data_loader,
             self.optimizer,
             self.scheduler,
@@ -299,9 +228,14 @@ class Trainer(object):
                 image = image.to("cuda")
                 label = label.to("cuda")
 
-                features_fc7, label = self.train_module(image, label)
-                features_fc7 = self.margin_softmax(features_fc7, label) * 64
-                loss = self.of_cross_entropy(features_fc7, label)
+                # features_fc7, label = self.train_module(image, label)
+                loss = self.train_module(image, label)
+                # import ipdb; ipdb.set_trace()
+                # features_fc7 = self.margin_softmax(features_fc7, label) * 64
+                # loss = self.of_cross_entropy(features_fc7, label)
+                # loss = logits.mean()
+                # loss = flow._C.binary_cross_entropy_with_logits_loss(
+                #     logits, one_hot, weight, None, "mean")
                 loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()

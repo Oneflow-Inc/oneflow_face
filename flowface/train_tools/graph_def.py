@@ -25,8 +25,6 @@ class TrainGraph(flow.nn.Graph):
         self,
         model,
         cfg,
-        combine_margin,
-        cross_entropy,
         data_loader,
         optimizer,
         lr_scheduler=None,
@@ -44,21 +42,14 @@ class TrainGraph(flow.nn.Graph):
 
         self.model = model
 
-        self.cross_entropy = cross_entropy
-        self.combine_margin = combine_margin
         self.data_loader = data_loader
         self.add_optimizer(optimizer, lr_sch=lr_scheduler)
 
     def build(self):
         image, label = self.data_loader()
-
         image = image.to("cuda")
         label = label.to("cuda")
-
-        logits, label = self.model(image, label)
-        logits = self.combine_margin(logits, label) * 64
-        loss = self.cross_entropy(logits, label)
-
+        loss = self.model(image, label)
         loss.backward()
         return loss
 
