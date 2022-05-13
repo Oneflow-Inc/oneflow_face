@@ -3,7 +3,6 @@ import oneflow as flow
 class FC(flow.nn.Module):
     def __init__(self, embedding_size, num_classes, is_global=True, is_parallel=True, sample_rate=1):
         super(FC, self).__init__()
-        
         placement = flow.env.all_device_placement("cuda")
         if is_global:
             sbp = flow.sbp.split(0) if is_parallel else flow.sbp.broadcast
@@ -13,7 +12,7 @@ class FC(flow.nn.Module):
         flow.nn.init.normal_(self.weight, mean=0, std=0.01)
         
         if sample_rate < 1:
-            assert self.is_global, "Partial FC can only be used in global mode"
+            assert is_global, "Partial FC can only be used in global mode"
             num_sample = math.ceil(num_classes * sample_rate)
             self.sampler = flow.nn.DistributedPariticalFCSample(num_sample)
         else:

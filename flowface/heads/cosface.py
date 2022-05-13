@@ -2,21 +2,21 @@ import oneflow as flow
 from flowface.heads.common import FC
 
 
-class ArcFace(flow.nn.Module):
+class CosFace(flow.nn.Module):
     def __init__(self, scale=64, margin=0.5):
-        super(ArcFace, self).__init__()
+        super(CosFace, self).__init__()
         self.scale = scale
-        self.margin_loss = flow.nn.CombinedMarginLoss(m1=1, m2=margin, m3=0)
+        self.margin_loss = flow.nn.CombinedMarginLoss(m1=1, m2=0, m3=margin)
 
     def forward(self, logits: flow.Tensor, labels: flow.Tensor):
         return self.margin_loss(logits, labels) * self.scale
 
         
-class ArcFaceFC(flow.nn.Module):
-    def __init__(self, num_classes, embedding_size, is_global, is_parallel, sample_rate, scale=64, margin=0.5) -> None:
+class CosFaceFC(flow.nn.Module):
+    def __init__(self, num_classes, embedding_size, scale=64, margin=0.5) -> None:
         super().__init__()
-        self.fc = FC(embedding_size, num_classes, is_global=is_global, is_parallel=is_parallel, sample_rate=sample_rate)
-        self.head = ArcFace(scale, margin)
+        self.fc = FC(embedding_size, num_classes)
+        self.head = CosFace(scale, margin)
         self.loss = flow.nn.CrossEntropyLoss()
         self.weight = self.fc.weight
 
@@ -27,7 +27,7 @@ class ArcFaceFC(flow.nn.Module):
         return loss
 
 if __name__ == "__main__":
-    fc = ArcFaceFC(128, 100, 64, 0.5)
+    fc = CosFaceFC(128, 100, 64, 0.5)
     features = flow.randn(4, 128).requires_grad_()
     labels = flow.randint(0, 100, (4, ))
     fc(features, labels).backward()

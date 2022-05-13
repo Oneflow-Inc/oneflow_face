@@ -11,11 +11,11 @@ class SphereFace2(nn.Module):
         margin='A' -> SphereFace2-A
         marign='M' -> SphereFAce2-M
     """
-    def __init__(self, num_class, embedding_size, is_global=True, magn_type='C',
+    def __init__(self, num_classes, embedding_size, is_global=True, is_parallel=False, magn_type='C',
             alpha=0.7, r=40., m=0.4, t=3., lw=50.):
         super().__init__()
         self.feat_dim = embedding_size
-        self.num_class = num_class
+        self.num_class = num_classes
         self.magn_type = magn_type
 
         # alpha is the lambda in paper Eqn. 5
@@ -25,19 +25,27 @@ class SphereFace2(nn.Module):
         self.t = t
         self.lw = lw
 
+        placement = flow.env.all_device_placement("cuda")
+        if is_global:
+            sbp_w = flow.sbp.split(0) if is_parallel else flow.sbp.broadcast
+            sbp_b = flow.sbp.broadcast
+        else:
+            sbp_w = sbp_b = None
+        self.w = flow.nn.Parameter(flow.empty(num_classes, embedding_size, sbp=sbp_w, placement=placement))
+        self.b = nn.Parameter(flow.empty((1, 1), sbp=sbp_b, placement=placement))
+
         # init weights
         if is_global:
             placement = flow.env.all_device_placement("cuda")
-            self.w = nn.Parameter(flow.empty(num_class, embedding_size, sbp=flow.sbp.split(0), placement=placement))
+            self.w = nn.Parameter(flow.empty(num_classes, embedding_size, sbp=flow.sbp.split(0), placement=placement))
             self.b = nn.Parameter(flow.empty((1, 1), sbp=flow.sbp.broadcast, placement=placement))
         else:
-            self.w = nn.Parameter(flow.empty(num_class, embedding_size))
+            self.w = nn.Parameter(flow.empty(num_classes, embedding_size))
             self.b = nn.Parameter(flow.Tensor(1, 1))
-        print(self.w.shape)
         nn.init.xavier_normal_(self.w)
 
         # init bias
-        z = alpha / ((1. - alpha) * (num_class - 1.))
+        z = alpha / ((1. - alpha) * (num_classes - 1.))
         if magn_type == 'C':
             ay = r * (2. * 0.5**t - 1. - m)
             ai = r * (2. * 0.5**t - 1. + m)
@@ -91,12 +99,9 @@ class SphereFace2(nn.Module):
                 raise NotImplementedError
             d_theta = g_cos_theta - cos_theta
         
-        return cos_theta.mean()
         logits = self.r * (cos_theta + d_theta) + self.b
-        return logits.mean()
         weight = self.alpha * one_hot + (1. - self.alpha) * (1. - one_hot)
         weight = self.lw * self.num_class / self.r * weight
-        return logits.mean()
         loss = flow._C.binary_cross_entropy_with_logits_loss(
             logits, one_hot, weight, None, "mean")
 
