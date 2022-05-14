@@ -6,7 +6,6 @@ from oneflow.nn.parallel import DistributedDataParallel as ddp
 
 from flowface.backbones import get_model
 from flowface.heads import get_head
-from flowface.layers.partial_fc import PartialFC
 from flowface.utils.losses import CrossEntropyLoss_sbp
 from flowface.utils.ofrecord_data_utils import OFRecordDataLoader, SyntheticDataLoader
 from flowface.utils.utils_callbacks import (
@@ -84,18 +83,17 @@ class Train_Module(flow.nn.Module):
         else:
             self.backbone = backbone
         self.head = head(num_classes, embedding_size, is_global=is_global, is_parallel=model_parallel, sample_rate=sample_rate)
-        
+
     def forward(self, imgs, labels):
         feature = self.backbone(imgs)
         loss = self.head(feature, labels)
         return loss
 
 class Trainer(object):
-    def __init__(self, cfg, margin_softmax, placement, load_path, world_size, rank):
+    def __init__(self, cfg,  placement, load_path, world_size, rank):
         """
         Args:
             cfg (easydict.EasyDict): train configs.
-            margin_softmax : chose cosface 、arcface or self define
             placement (_oneflow_internal.placement):train devices
             load_path (str) : pretrained model path
             world_size (int): total number of all devices
@@ -109,9 +107,7 @@ class Trainer(object):
         self.rank = rank
 
         # model
-        self.backbone = get_model(
-            cfg.network, dropout=0.0, embedding_size=cfg.embedding_size, channel_last=cfg.channel_last
-        ).to("cuda")
+        self.backbone = get_model(cfg.network)(**cfg.network_kwargs).to("cuda")
         self.head = get_head(cfg.head)
         self.train_module = Train_Module(self.backbone, self.head, cfg.num_classes, cfg.embedding_size, cfg.model_parallel, cfg.is_global, cfg.sample_rate).to("cuda")
         if cfg.resume:
@@ -129,7 +125,6 @@ class Trainer(object):
         )
 
         # loss
-        self.margin_softmax = margin_softmax
 
         self.of_cross_entropy = CrossEntropyLoss_sbp()
 
@@ -223,19 +218,13 @@ class Trainer(object):
 
             one_epoch_steps = len(self.train_data_loader)
             for steps in range(one_epoch_steps):
+                print("steps: ", steps)
                 self.global_step += 1
                 image, label = self.train_data_loader()
                 image = image.to("cuda")
                 label = label.to("cuda")
 
-                # features_fc7, label = self.train_module(image, label)
                 loss = self.train_module(image, label)
-                # import ipdb; ipdb.set_trace()
-                # features_fc7 = self.margin_softmax(features_fc7, label) * 64
-                # loss = self.of_cross_entropy(features_fc7, label)
-                # loss = logits.mean()
-                # loss = flow._C.binary_cross_entropy_with_logits_loss(
-                #     logits, one_hot, weight, None, "mean")
                 loss.backward()
                 self.optimizer.step()
                 self.optimizer.zero_grad()
