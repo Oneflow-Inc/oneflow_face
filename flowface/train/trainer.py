@@ -218,7 +218,6 @@ class Trainer(object):
 
             one_epoch_steps = len(self.train_data_loader)
             for steps in range(one_epoch_steps):
-                print("steps: ", steps)
                 self.global_step += 1
                 image, label = self.train_data_loader()
                 image = image.to("cuda")
