@@ -3,10 +3,12 @@ import oneflow as flow
 class FC(flow.nn.Module):
     def __init__(self, embedding_size, num_classes, is_global=True, is_parallel=True, sample_rate=1):
         super(FC, self).__init__()
-        placement = flow.env.all_device_placement("cuda")
+        # placement = flow.env.all_device_placement("cuda")
         if is_global:
+            placement = flow.env.all_device_placement("cuda")
             sbp = flow.sbp.split(0) if is_parallel else flow.sbp.broadcast
         else:
+            placement = None
             sbp = None
         self.weight = flow.nn.Parameter(flow.empty(num_classes, embedding_size, sbp=sbp, placement=placement))
         flow.nn.init.normal_(self.weight, mean=0, std=0.01)
