@@ -12,6 +12,8 @@ class FC(flow.nn.Module):
         flow.nn.init.normal_(self.weight, mean=0, std=0.01)
         
         if sample_rate < 1:
+            # TODO: support broadcast
+            assert is_parallel, "Partial FC doesn't support broadcast yet"
             assert is_global, "Partial FC can only be used in global mode"
             num_sample = math.ceil(num_classes * sample_rate)
             self.sampler = flow.nn.DistributedPariticalFCSample(num_sample)
