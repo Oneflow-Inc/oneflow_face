@@ -1,19 +1,14 @@
 from .ir_resnet import iresnet18, iresnet34, iresnet50, iresnet100, iresnet200
 from .mobilefacenet import MobileFaceNet
 
+def get_model(name):
+    MODEL_DICT = {
+        "r18": iresnet18,
+        "r34": iresnet34,
+        "r50": iresnet50,
+        "r100": iresnet100,
+        "r200": iresnet200,
+        "mbf": MobileFaceNet,
+    }
+    return MODEL_DICT.get(name)
 
-def get_model(name, **kwargs):
-    if name == "r18":
-        return iresnet18(False, **kwargs)
-    elif name == "r34":
-        return iresnet34(False, **kwargs)
-    elif name == "r50":
-        return iresnet50(False, **kwargs)
-    elif name == "r100":
-        return iresnet100(False, **kwargs)
-    elif name == "r200":
-        return iresnet200(False, **kwargs)
-    elif name == "mbf":
-        return MobileFaceNet(**kwargs)
-    else:
-        raise ValueError()
