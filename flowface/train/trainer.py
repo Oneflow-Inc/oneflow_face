@@ -210,7 +210,7 @@ class Trainer(object):
                 self.callback_verification(self.global_step, self.train_module, val_graph)
                 if self.global_step >= self.cfg.train_num:
                     exit(0)
-            self.callback_checkpoint(self.global_step, epoch, self.backbone, is_global=True)
+            # self.callback_checkpoint(self.global_step, epoch, self.backbone, is_global=True)
 
     def train_eager(self):
         for epoch in range(self.start_epoch, self.cfg.num_epoch):
@@ -241,6 +241,6 @@ class Trainer(object):
                 self.scheduler.step()
                 if self.global_step >= self.cfg.train_num:
                     exit(0)
-            self.callback_checkpoint(
-                self.global_step, epoch, self.train_module, is_global=self.cfg.is_global
-            )
+            # self.callback_checkpoint(
+            #     self.global_step, epoch, self.train_module, is_global=self.cfg.is_global
+            # )

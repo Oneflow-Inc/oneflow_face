@@ -2,7 +2,7 @@
 
 MASTER_ADDR=127.0.0.1
 MASTER_PORT=17788
-DEVICE_NUM_PER_NODE=8
+DEVICE_NUM_PER_NODE=4
 NUM_NODES=1
 NODE_RANK=0
 
@@ -22,4 +22,4 @@ python3 -m oneflow.distributed.launch \
 --node_rank $NODE_RANK \
 --master_addr $MASTER_ADDR \
 --master_port $MASTER_PORT \
-train_simple.py configs/ms1mv3_r50.py --batch_size 96 --model_parallel True
+train_simple.py configs/ms1mv3_r50.py --batch_size 96 --model_parallel True --graph

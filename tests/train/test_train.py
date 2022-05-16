@@ -10,7 +10,7 @@ from easydict import EasyDict
 from omegaconf import OmegaConf
 from oneflow.utils.data import DataLoader, TensorDataset
 
-from flowface.train_tools.train_function import Trainer
+from flowface.train.train import Trainer
 from flowface.utils.file_utils import get_data_from_cache
 from flowface.utils.utils_config import get_config
 
@@ -30,6 +30,11 @@ class TestTrain(flow.unittest.TestCase):
         config.loss = "cosface"
         config.head = "arcface"
         config.network = "r50"
+        config.network_kwargs = {
+            "embedding_size": 128,
+            "dropout":  0.0,
+            "channel_last": False,
+        }
         config.resume = False
         config.output = "output"
         config.embedding_size = 128

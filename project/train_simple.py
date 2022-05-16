@@ -4,7 +4,7 @@ import os
 
 import oneflow as flow
 
-from flowface.train_tools import Trainer
+from flowface.train import Trainer
 from flowface.utils.utils_config import get_config
 from flowface.utils.utils_logging import init_logging
 
@@ -46,7 +46,7 @@ def main(args):
         num_space = 25 - len(key)
         logging.info(": " + key + " " * num_space + str(value))
 
-    trainer = Trainer(cfg, margin_softmax, placement, load_path, world_size, rank)
+    trainer = Trainer(cfg, placement, load_path, world_size, rank)
     trainer()
 
 
