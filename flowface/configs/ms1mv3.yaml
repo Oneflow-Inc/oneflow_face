@@ -1,0 +1,45 @@
+batch_size: 128
+channel_last: false
+dataset: ms1m-retinaface-t1
+decay_epoch:
+- 10
+- 16
+- 22
+embedding_size: 128
+fp16: true
+graph: true
+head: arcface
+is_global: true
+is_graph: false
+log_frequent: 50
+loss: arcface
+lr: 0.1
+model_parallel: true
+momentum: 0.9
+network: r50
+network_kwargs: 
+    channel_last: false
+    dropout: 0.0
+    embedding_size: 128
+num_classes: 93432
+num_epoch: 25
+num_image: 5179510
+ofrecord_part_num: 8
+ofrecord_path: /workspace/data/insightface/ms1m-retinaface-t1/ofrecord
+output: partial_fc
+partial_fc: false
+resume: false
+sample_rate: 1
+scale_grad: false
+synthetic: false
+train_num: 1000000
+use_gpu_decode: true
+val_frequence: 6000
+val_image_num: 
+  agedb_30: 12000
+  cfp_fp: 14000
+  lfw: 12000
+val_targets:
+- lfw
+warmup_epoch: -1
+weight_decay: 0.0005
