@@ -43,7 +43,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg = config
 
     # model_parallel = True
-    # @flow.unittest.skip_unless_1n4d()
+    @flow.unittest.skip_unless_1n4d()
     def test_eager_global_modelparallel(self):
         self.cfg.is_global = True
         self.cfg.is_graph = False
@@ -55,7 +55,6 @@ class TestTrain(flow.unittest.TestCase):
 
     @flow.unittest.skip_unless_1n4d()
     def test_graph_modelparallel(self):
-        # import ipdb; ipdb.set_trace()
         self.cfg.is_global = True
         self.cfg.is_graph = True
         self.cfg.model_parallel = True
