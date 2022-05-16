@@ -17,13 +17,13 @@ class ArcFaceFC(flow.nn.Module):
         super().__init__()
         self.fc = FC(embedding_size, num_classes, is_global=is_global, is_parallel=is_parallel, sample_rate=sample_rate)
         self.head = ArcFace(scale, margin)
-        self.loss = flow.nn.CrossEntropyLoss()
+        self.loss = flow.nn.functional.sparse_softmax_cross_entropy
         self.weight = self.fc.weight
 
     def forward(self, features, labels):
         logits, labels = self.fc(features, labels)
         logits = self.head(logits, labels)
-        loss = self.loss(logits, labels)
+        loss = self.loss(labels, logits).mean()
         return loss
 
 if __name__ == "__main__":
