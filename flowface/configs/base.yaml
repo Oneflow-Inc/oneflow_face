@@ -1,21 +1,21 @@
 # network parameters
 embedding_size : &embedding_size 128
-channel_last: &channel_last false
-network: r50
+channel_last: &channel_last false     # set True if input data is NHWC, otherwise False
+network: r18
 network_kwargs:
-  dropout: 0.0
+  dropout: 0.1
   embedding_size: *embedding_size
   channel_last: *channel_last
 head: "arcface"
-sample_rate: 1
+sample_rate: 0.1
 
 # train options
-model_parallel: false
-fp16: false
-is_graph: true
-is_global: true
-resume: false
-scale_grad: false
+model_parallel: true   # If true, the sbp of fc weight will be set as split(0), otherwise broadcast
+fp16: true             # If true, the model will train in fp16 mode, other fp32 mode
+is_graph: true          # If true, the model will train in graph mode(like Tensorflow 1.x), other eager model(like PyTorch)
+is_global: true         # If true, the model will train in global mode
+resume: false           
+dynamic_scale_grad: true  # If true, the model will use dynameic grad scaler, otherwise static grad scaler. (when fp16 is false, the option is not working)
 
 # hyper parameters
 lr: 0.1
@@ -43,13 +43,10 @@ val_image_num:
     agedb_30: 12000
     cfp_fp: 14000
     lfw: 12000
-#   state:
-#     agedb_30: 12000
-#     cfp_fp: 14000
-#     lfw: 12000
 val_targets:
 - lfw
 - cfp_fp
 - agedb_30
 
 train_num: 100000
+total_step: -1

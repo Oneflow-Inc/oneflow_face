@@ -10,7 +10,7 @@ fp16: true
 graph: true
 head: arcface
 is_global: true
-is_graph: false
+is_graph: true
 log_frequent: 50
 loss: arcface
 lr: 0.1
@@ -33,7 +33,7 @@ sample_rate: 1
 scale_grad: false
 synthetic: false
 train_num: 1000000
-use_gpu_decode: true
+use_gpu_decode: false
 val_frequence: 6000
 val_image_num: 
   agedb_30: 12000
