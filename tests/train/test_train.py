@@ -10,7 +10,7 @@ from easydict import EasyDict
 from omegaconf import OmegaConf
 from oneflow.utils.data import DataLoader, TensorDataset
 
-from flowface.train_tools.train_function import Trainer
+from flowface.train.trainer import Trainer
 from flowface.utils.file_utils import get_data_from_cache
 from flowface.utils.utils_config import get_config
 
@@ -27,9 +27,15 @@ class TestTrain(flow.unittest.TestCase):
             shutil.unpack_archive(str(Path(CACHE_DIR) / CI_DATA_URL.split("/")[-1]), CACHE_DIR)
 
         config = get_config()
-        config.loss = "cosface"
         config.head = "arcface"
         config.network = "r50"
+        config.embedding_size = 128
+        config.channel_last = False
+        config.network_kwargs = {
+            "dropout":0.0, 
+            "embedding_size": config.embedding_size, 
+            "channel_last": config.channel_last,
+        }
         config.resume = False
         config.output = "output"
         config.embedding_size = 128
@@ -70,8 +76,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.model_parallel = True
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
-        placement = flow.env.all_device_placement("cuda")
-        trainer = Trainer(self.cfg, placement, "", world_size, rank)
+        trainer = Trainer(self.cfg, "", world_size, rank)
         trainer()
 
     @flow.unittest.skip_unless_1n4d()
@@ -81,8 +86,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.model_parallel = True
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
-        placement = flow.env.all_device_placement("cuda")
-        trainer = Trainer(self.cfg, placement, "", world_size, rank)
+        trainer = Trainer(self.cfg, "", world_size, rank)
         trainer()
     
     # model_parallel = False
@@ -93,8 +97,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.model_parallel = False
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
-        placement = flow.env.all_device_placement("cuda")
-        trainer = Trainer(self.cfg, placement, "", world_size, rank)
+        trainer = Trainer(self.cfg, "", world_size, rank)
         trainer()
 
     @flow.unittest.skip_unless_1n4d()
@@ -104,8 +107,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.model_parallel = False
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
-        placement = flow.env.all_device_placement("cuda")
-        trainer = Trainer(self.cfg, placement, "", world_size, rank)
+        trainer = Trainer(self.cfg, "", world_size, rank)
         trainer()
 
 
