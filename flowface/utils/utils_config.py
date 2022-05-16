@@ -1,23 +1,23 @@
 import importlib
 import os.path as osp
+import warnings
+from pathlib import Path
 
 
 def get_config(config_file=None):
+    from flowface.configs.base import config as base_config
     if config_file is None:
-        from flowface.configs.base import config
+        warnings.warn("config_file is None, load base config")
+        return base_config
 
-        return config
-        # config = importlib.import_module("configs.base")
-        # cfg = config.config
-        # return cfg
-    assert config_file.startswith("configs/"), "config file setting must start with configs/"
-    temp_config_name = osp.basename(config_file)
-    temp_module_name = osp.splitext(temp_config_name)[0]
-    config = importlib.import_module("configs.base")
-    cfg = config.config
-    config = importlib.import_module("configs.%s" % temp_module_name)
+    config_file = Path(config_file)
+    if not config_file.exists():
+        raise FileNotFoundError(f"can't find config file {str(config_file)}")
+
+    config_file_module = str(config_file.parent) + "." + config_file.stem
+    config = importlib.import_module(config_file_module)
     job_cfg = config.config
-    cfg.update(job_cfg)
-    if cfg.output is None:
-        cfg.output = osp.join("work_dirs", temp_module_name)
-    return cfg
+    base_config.update(job_cfg)
+    if base_config.output is None:
+        base_config.output = osp.join("work_dirs", config_file.stem)
+    return base_config
