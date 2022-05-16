@@ -77,12 +77,12 @@ class CallBackVerification(object):
             if num_update > 0 and num_update % self.frequent == 0:
                 backbone.eval()
                 # self.ver_test(backbone_graph, num_update)
-                self.ver_test(backbone.backbone, num_update)
+                self.ver_test(backbone, num_update)
                 backbone.train()
         else:
             if self.rank is 0 and num_update > 0 and num_update % self.frequent == 0:
                 backbone.eval()
-                self.ver_test(backbone.backbone, num_update)
+                self.ver_test(backbone, num_update)
                 backbone.train()
 
 
@@ -161,7 +161,9 @@ class CallBackModelCheckpoint(object):
 
             if is_global:
                 flow.save(backbone.state_dict(), path_module, global_dst_rank=0)
+                if flow.env.get_local_rank() == 0:
+                    logger.info("oneflow Model Saved in '{}'".format(path_module))
             else:
                 if self.rank == 0:
                     flow.save(backbone.state_dict(), path_module, global_dst_rank=0)
-            logger.info("oneflow Model Saved in '{}'".format(path_module))
+                    logger.info("oneflow Model Saved in '{}'".format(path_module))

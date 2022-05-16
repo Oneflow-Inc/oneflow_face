@@ -13,10 +13,9 @@ def get_config(config_file=None):
         OmegaConf.set_struct(base_config, True)
         return base_config
 
-    config_file = Path(config_file)
-    if not config_file.exists():
+    if not Path(config_file).exists():
         raise FileNotFoundError(f"can't find config file {str(config_file)}")
-    config = OmegaConf.load(f)
+    config = OmegaConf.load(config_file)
     # with open(config_file, "r") as f:
     #     config = yaml.load(f, yaml.FullLoader)
     base_config.update(config)
