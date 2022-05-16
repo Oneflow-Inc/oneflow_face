@@ -35,7 +35,8 @@ num_classes: 93431
 num_image: 5179510
 ofrecord_path: /workspace/data/insightface/ms1m-retinaface-t1/ofrecord
 ofrecord_part_num: 8
-output: ms1mv3_arcface_r50
+ckpt_path: ~
+output: baseline
 synthetic: false
 use_gpu_decode: false
 val_frequence: 6000

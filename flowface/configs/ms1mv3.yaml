@@ -7,12 +7,10 @@ decay_epoch:
 - 22
 embedding_size: 128
 fp16: true
-graph: true
 head: arcface
 is_global: true
 is_graph: true
 log_frequent: 50
-loss: arcface
 lr: 0.1
 model_parallel: true
 momentum: 0.9
@@ -27,10 +25,8 @@ num_image: 5179510
 ofrecord_part_num: 8
 ofrecord_path: /workspace/data/insightface/ms1m-retinaface-t1/ofrecord
 output: partial_fc
-partial_fc: false
 resume: false
 sample_rate: 1
-scale_grad: false
 synthetic: false
 train_num: 1000000
 use_gpu_decode: false
