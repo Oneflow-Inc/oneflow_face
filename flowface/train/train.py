@@ -5,9 +5,8 @@ import os
 import oneflow as flow
 
 from flowface.train import Trainer
-from flowface.utils.utils_config import get_config
+from flowface.utils.utils_config import get_config, dump_config, info_config, init_and_check_config
 from flowface.utils.utils_logging import init_logging
-from flowface.heads.sphereface2 import SphereFace2
 
 
 def str2bool(v):
@@ -28,18 +27,20 @@ def main(args):
     # cfg.is_global = args.is_global
     rank = flow.env.get_rank()
     world_size = flow.env.get_world_size()
-    placement = flow.env.all_device_placement("cuda")
 
-    os.makedirs(cfg.output, exist_ok=True)
+    init_and_check_config(cfg)
+    # os.makedirs(cfg.output, exist_ok=True)
     log_root = logging.getLogger()
     init_logging(log_root, rank, cfg.output)
 
     # root dir of loading checkpoint
     load_path = args.load_path
 
-    for key, value in cfg.items():
-        num_space = 25 - len(key)
-        logging.info(": " + key + " " * num_space + str(value))
+    # for key, value in cfg.items():
+    #     num_space = 25 - len(key)
+    #     logging.info(": " + key + " " * num_space + str(value))
+    dump_config(cfg, "config.yaml")
+    info_config(cfg)
 
     trainer = Trainer(cfg, load_path, world_size, rank)
     trainer()

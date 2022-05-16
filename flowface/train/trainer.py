@@ -134,6 +134,7 @@ class Trainer(object):
         )
 
         # log
+        world_size = flow.env.get_world_size()
         self.callback_logging = CallBackLogging(
             cfg.log_frequent, rank, cfg.total_step, cfg.batch_size, world_size, None
         )
@@ -154,7 +155,7 @@ class Trainer(object):
 
     def __call__(self):
         # Train
-        if self.cfg.graph:
+        if self.cfg.is_graph:
             self.train_graph()
         else:
             if not self.cfg.is_global:
