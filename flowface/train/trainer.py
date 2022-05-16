@@ -90,7 +90,7 @@ class Train_Module(flow.nn.Module):
         return loss
 
 class Trainer(object):
-    def __init__(self, cfg,  placement, load_path, world_size, rank):
+    def __init__(self, cfg, load_path, world_size, rank):
         """
         Args:
             cfg (easydict.EasyDict): train configs.
@@ -100,7 +100,6 @@ class Trainer(object):
             rank (int)      : local device number
         """
 
-        self.placement = placement
         self.load_path = load_path
         self.cfg = cfg
         self.world_size = world_size
