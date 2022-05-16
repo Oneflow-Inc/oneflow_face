@@ -27,52 +27,26 @@ class TestTrain(flow.unittest.TestCase):
             shutil.unpack_archive(str(Path(CACHE_DIR) / CI_DATA_URL.split("/")[-1]), CACHE_DIR)
 
         config = get_config()
-        config.head = "arcface"
-        config.network = "r50"
-        config.embedding_size = 128
-        config.channel_last = False
-        config.network_kwargs = {
-            "dropout":0.0, 
-            "embedding_size": config.embedding_size, 
-            "channel_last": config.channel_last,
-        }
-        config.resume = False
-        config.output = "output"
-        config.embedding_size = 128
-        config.model_parallel = True
-        config.partial_fc = True
-        config.sample_rate = 1
-        config.fp16 = False
-        config.momentum = 0.9
-        config.weight_decay = 5e-4
-        config.batch_size = 128
-        config.lr = 0.1  # batch size is 512
 
         config.ofrecord_path = CACHE_DIR
         config.ofrecord_part_num = 8
         config.num_classes = 3000
         config.num_image = 3000
         config.num_epoch = 10
-        config.warmup_epoch = -1
         config.decay_epoch = [10, 16, 22]
         config.val_targets = ["lfw_subset", "cfp_fp_subset", "agedb_30_subset"]
         config.val_frequence = 1000
-        config.channel_last = False
-        config.is_global = True
 
-        config.graph = False
         config.batch_size = 16
-        config.model_parallel = True
         config.train_num = 1000000
         config.log_frequent = 10
-        config.use_gpu_decode = False
         self.cfg = config
 
     # model_parallel = True
-    @oneflow.unittest.skip_unless_1n4d()
+    # @flow.unittest.skip_unless_1n4d()
     def test_eager_global_modelparallel(self):
         self.cfg.is_global = True
-        self.cfg.graph = False
+        self.cfg.is_graph = False
         self.cfg.model_parallel = True
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
@@ -81,8 +55,9 @@ class TestTrain(flow.unittest.TestCase):
 
     @flow.unittest.skip_unless_1n4d()
     def test_graph_modelparallel(self):
+        # import ipdb; ipdb.set_trace()
         self.cfg.is_global = True
-        self.cfg.graph = True
+        self.cfg.is_graph = True
         self.cfg.model_parallel = True
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
@@ -92,8 +67,10 @@ class TestTrain(flow.unittest.TestCase):
     # model_parallel = False
     @flow.unittest.skip_unless_1n4d()
     def test_eager_global_dataparallel(self):
+        # TODO: unset sample_rate when partial fc is available for broadcast
+        self.cfg.sample_rate = 1
         self.cfg.is_global = True
-        self.cfg.graph = False
+        self.cfg.is_graph = False
         self.cfg.model_parallel = False
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
@@ -102,8 +79,9 @@ class TestTrain(flow.unittest.TestCase):
 
     @flow.unittest.skip_unless_1n4d()
     def test_graph_dataparallel(self):
+        self.cfg.sample_rate = 1
         self.cfg.is_global = True
-        self.cfg.graph = True
+        self.cfg.is_graph = True
         self.cfg.model_parallel = False
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
