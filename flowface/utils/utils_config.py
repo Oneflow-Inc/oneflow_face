@@ -10,16 +10,19 @@ def get_config(config_file=None):
     from flowface.configs.base import base_config
     if config_file is None:
         warnings.warn("config_file is None, load base config")
+        OmegaConf.set_struct(base_config, True)
         return base_config
 
     config_file = Path(config_file)
     if not config_file.exists():
         raise FileNotFoundError(f"can't find config file {str(config_file)}")
-    with open(config_file, "r") as f:
-        config = yaml.load(f, yaml.FullLoader)
+    config = OmegaConf.load(f)
+    # with open(config_file, "r") as f:
+    #     config = yaml.load(f, yaml.FullLoader)
     base_config.update(config)
     if base_config.output is None:
         base_config.output = osp.join("work_dirs", config_file.stem)
+    OmegaConf.set_struct(base_config, True)
     return base_config
 
         
