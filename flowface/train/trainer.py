@@ -206,7 +206,7 @@ class Trainer(object):
                     False,
                     self.scheduler.get_last_lr()[0],
                 )
-                self.callback_verification(self.global_step, self.train_module, val_graph)
+                self.callback_verification(self.global_step, self.backbone, val_graph)
                 if self.global_step >= self.cfg.train_num:
                     exit(0)
             self.callback_checkpoint(self.global_step, epoch, self.backbone, is_global=True)
