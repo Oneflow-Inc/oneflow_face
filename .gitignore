@@ -103,3 +103,9 @@ ENV/
 .mypy_cache/
 
 .DS_Store
+
+# data for ci test
+ci_data/
+
+# checkpoint folder
+flowface/checkpoints/
