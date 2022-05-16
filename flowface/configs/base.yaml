@@ -1,27 +1,41 @@
-batch_size: 128
-channel_last: false
-dataset: ms1m-retinaface-t1
-decay_epoch:
-- 11
-- 17
-- 22
-embedding_size: 512
-fp16: false
-graph: true
-loss: arcface
-lr: 0.1
-model_parallel: false
-momentum: 0.9
+# network parameters
+embedding_size : &embedding_size 128
+channel_last: &channel_last false
 network: r50
-num_classes: 93431
-num_epoch: 25
-num_image: 5179510
-ofrecord_path: /dev/shm/ms1m-retinaface-t1/ofrecord
-output: ms1mv3_arcface_r50
-partial_fc: false
+network_kwargs:
+  dropout: 0.0
+  embedding_size: *embedding_size
+  channel_last: *channel_last
+head: "arcface"
+sample_rate: 1
+
+# train options
+model_parallel: false
+fp16: false
+is_graph: true
+is_global: true
 resume: false
-sample_rate: 1.0
 scale_grad: false
+
+# hyper parameters
+lr: 0.1
+momentum: 0.9
+decay_epoch: [11, 17, 22]
+batch_size: 128
+num_epoch: 25
+warmup_epoch: -1
+weight_decay: 0.0005
+
+# log parameters
+log_frequent: 50
+
+# data parameters
+dataset: ms1m-retinaface-t1
+num_classes: 93431
+num_image: 5179510
+ofrecord_path: /workspace/data/insightface/ms1m-retinaface-t1/ofrecord
+ofrecord_part_num: 8
+output: ms1mv3_arcface_r50
 synthetic: false
 use_gpu_decode: false
 val_frequence: 6000
@@ -37,5 +51,5 @@ val_targets:
 - lfw
 - cfp_fp
 - agedb_30
-warmup_epoch: -1
-weight_decay: 0.0005
+
+train_num: 100000
