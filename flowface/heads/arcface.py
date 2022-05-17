@@ -23,6 +23,7 @@ class ArcFaceFC(flow.nn.Module):
     def forward(self, features, labels):
         logits, labels = self.fc(features, labels)
         logits = self.head(logits, labels)
+        # the parameter order is [labels, logits]
         loss = self.loss(labels, logits).mean()
         return loss
 
