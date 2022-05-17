@@ -131,7 +131,7 @@ class Trainer(object):
 
         # log
         self.callback_logging = CallBackLogging(
-            cfg.log_frequent, self.rank, cfg.total_step, cfg.batch_size, self.world_size, None
+            cfg.log_frequent, self.rank, total_step, cfg.batch_size, self.world_size, None
         )
         # val
         self.callback_verification = CallBackVerification(
