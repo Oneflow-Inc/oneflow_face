@@ -127,7 +127,10 @@ class Trainer(object):
         total_batch_size = cfg.batch_size * self.world_size
         warmup_step = cfg.num_image // total_batch_size * cfg.warmup_epoch
         total_step = cfg.num_image // total_batch_size * cfg.num_epoch
-        self.scheduler = PolyScheduler(self.optimizer, self.cfg.lr, total_step, warmup_step, last_step=-1)
+        # self.scheduler = PolyScheduler(self.optimizer, self.cfg.lr, total_step, warmup_step, last_step=-1)
+
+        lr_scheduler = flow.optim.lr_scheduler.PolynomialLR(self.optimizer, total_step - warmup_step, 0, 2, False)
+        self.scheduler = flow.optim.lr_scheduler.WarmUpLR(lr_scheduler, warmup_factor=0, warmup_iters=warmup_step, warmup_prefix=True)
 
         # log
         self.callback_logging = CallBackLogging(
