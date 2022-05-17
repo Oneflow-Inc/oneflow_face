@@ -6,7 +6,7 @@ from oneflow.nn.parallel import DistributedDataParallel as ddp
 
 from flowface.backbones import get_model
 from flowface.heads import get_head
-from flowface.utils.losses import CrossEntropyLoss_sbp
+from flowface.utils.lr_scheduler import PolyScheduler
 from flowface.utils.ofrecord_data_utils import OFRecordDataLoader, SyntheticDataLoader
 from flowface.utils.utils_callbacks import (
     CallBackLogging,
@@ -90,7 +90,7 @@ class Train_Module(flow.nn.Module):
         return loss
 
 class Trainer(object):
-    def __init__(self, cfg, load_path, world_size, rank):
+    def __init__(self, cfg, load_path):
         """
         Args:
             cfg (easydict.EasyDict): train configs.
@@ -102,8 +102,8 @@ class Trainer(object):
 
         self.load_path = load_path
         self.cfg = cfg
-        self.world_size = world_size
-        self.rank = rank
+        self.world_size = flow.env.get_world_size()
+        self.rank = flow.env.get_local_rank()
 
         # model
         self.backbone = get_model(cfg.network)(**cfg.network_kwargs).to("cuda")
@@ -123,31 +123,26 @@ class Trainer(object):
             cfg, "train", self.cfg.is_global, self.cfg.synthetic
         )
 
-        # loss
-
-        self.of_cross_entropy = CrossEntropyLoss_sbp()
-
         # lr_scheduler
-        self.decay_step = self.cal_decay_step()
-        self.scheduler = flow.optim.lr_scheduler.MultiStepLR(
-            optimizer=self.optimizer, milestones=self.decay_step, gamma=0.1
-        )
+        total_batch_size = cfg.batch_size * self.world_size
+        warmup_step = cfg.num_image // total_batch_size * cfg.warmup_epoch
+        total_step = cfg.num_image // total_batch_size * cfg.num_epoch
+        self.scheduler = PolyScheduler(self.optimizer, self.cfg.lr, total_step, warmup_step, last_step=-1)
 
         # log
-        world_size = flow.env.get_world_size()
         self.callback_logging = CallBackLogging(
-            cfg.log_frequent, rank, cfg.total_step, cfg.batch_size, world_size, None
+            cfg.log_frequent, self.rank, cfg.total_step, cfg.batch_size, self.world_size, None
         )
         # val
         self.callback_verification = CallBackVerification(
             cfg.val_frequence,
-            rank,
+            self.rank,
             cfg.val_targets,
             cfg.ofrecord_path,
             is_global=self.cfg.is_global,
         )
         # save checkpoint
-        self.callback_checkpoint = CallBackModelCheckpoint(rank, cfg.output)
+        self.callback_checkpoint = CallBackModelCheckpoint(self.rank, cfg.output)
 
         self.losses = AverageMeter()
         self.start_epoch = 0
