@@ -33,6 +33,8 @@ def init_and_check_config(config):
         assert config.is_graph, f"gpu decode can only be used when config.is_graph = True"
     if config.sample_rate < 1:
         assert config.is_graph, f"Partial FC(sample_rate < 1) can only be used when config.is_graph = True"
+    if config.is_graph:
+        logging.warn("The logger will show wrong lr when config.is_graph = True, run `tail log/*/train_step2lr.csv` in current path")
 
 def info_config(config):
     for key, value in config.items():
