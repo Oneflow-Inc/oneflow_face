@@ -1,0 +1,10 @@
+batch_size: 16
+ofrecord_path: /workspace/projects/oneflow_face/ci_data/
+num_classes: 3000
+num_image: 3000
+num_epoch: 10
+decay_epoch: [1, 2, 3]
+val_targets: [lfw_subset, cfp_fp_subset, agedb_30_subset]
+val_frequence: 1000
+train_num: 1000000
+log_frequent: 10
