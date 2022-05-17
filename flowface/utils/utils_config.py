@@ -20,6 +20,8 @@ def get_config(config_file=None):
 
 def init_and_check_config(config):
     # init
+    if not config.ckpt_path:
+        config.ckpt_path = "."
     config.output = str(Path(config.ckpt_path) / config.output)
     Path(config.output).mkdir(exist_ok=True, parents=True)
     
@@ -29,8 +31,8 @@ def init_and_check_config(config):
         assert config.sample_rate == 1, f"partial fc can only be used when model_parallel = True"
     if config.use_gpu_decode:
         assert config.is_graph, f"gpu decode can only be used when config.is_graph = True"
-    # assert config.sample_rate == 1 or not config.model_parallel, f"partial fc can only be used when model_parallel = True"
-    # assert (not config.is_graph) and config.use_gpu_decode, f"gpu decode can only be used when config.is_graph = True"
+    if config.sample_rate < 1:
+        assert config.is_graph, f"Partial FC(sample_rate < 1) can only be used when config.is_graph = True"
 
 def info_config(config):
     for key, value in config.items():
