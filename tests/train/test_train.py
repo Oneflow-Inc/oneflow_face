@@ -50,7 +50,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.model_parallel = True
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
-        trainer = Trainer(self.cfg, "", world_size, rank)
+        trainer = Trainer(self.cfg, "")
         trainer()
 
     @flow.unittest.skip_unless_1n4d()
@@ -60,7 +60,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.model_parallel = True
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
-        trainer = Trainer(self.cfg, "", world_size, rank)
+        trainer = Trainer(self.cfg, "")
         trainer()
     
     # model_parallel = False
@@ -73,7 +73,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.model_parallel = False
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
-        trainer = Trainer(self.cfg, "", world_size, rank)
+        trainer = Trainer(self.cfg, "")
         trainer()
 
     @flow.unittest.skip_unless_1n4d()
@@ -84,7 +84,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.model_parallel = False
         rank = flow.env.get_rank()
         world_size = flow.env.get_world_size()
-        trainer = Trainer(self.cfg, "", world_size, rank)
+        trainer = Trainer(self.cfg, "")
         trainer()
 
 
