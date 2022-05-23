@@ -19,6 +19,8 @@ requirements = [
     "scikit-image",
     "easydict",
     "flowvision",
+    "boto3",
+    "omegaconf",
 ]
 
 version = "0.0.0"

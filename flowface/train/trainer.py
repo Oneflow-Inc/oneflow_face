@@ -131,6 +131,7 @@ class Trainer(object):
 
         lr_scheduler = flow.optim.lr_scheduler.PolynomialLR(self.optimizer, total_step - warmup_step, 0, 2, False)
         self.scheduler = flow.optim.lr_scheduler.WarmUpLR(lr_scheduler, warmup_factor=0, warmup_iters=warmup_step, warmup_prefix=True)
+        # self.scheduler = lr_scheduler
 
         # log
         self.callback_logging = CallBackLogging(
