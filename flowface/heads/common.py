@@ -34,6 +34,7 @@ class FC(flow.nn.Module):
         x = flow.matmul(x, weight, transpose_b=True)
         return x, label
 
+
 if __name__ == "__main__":
     fc = FC(128, 100)
     features = flow.randn(4, 128, requires_grad=True)

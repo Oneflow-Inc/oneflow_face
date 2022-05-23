@@ -6,7 +6,6 @@ from oneflow.nn.parallel import DistributedDataParallel as ddp
 
 from flowface.backbones import get_model
 from flowface.heads import get_head
-from flowface.utils.lr_scheduler import PolyScheduler
 from flowface.utils.ofrecord_data_utils import OFRecordDataLoader, SyntheticDataLoader
 from flowface.utils.utils_callbacks import (
     CallBackLogging,
@@ -76,13 +75,13 @@ def make_optimizer(args, model):
     return optimizer
 
 class Train_Module(flow.nn.Module):
-    def __init__(self, backbone, head, num_classes, embedding_size, model_parallel, is_global, sample_rate):
+    def __init__(self, cfg, backbone, head, num_classes, embedding_size, model_parallel, is_global, sample_rate):
         super(Train_Module, self).__init__()
         if is_global:
             self.backbone = backbone.to_global(sbp=flow.sbp.broadcast, placement=flow.env.all_device_placement("cuda"))
         else:
             self.backbone = backbone
-        self.head = head(num_classes, embedding_size, is_global=is_global, is_parallel=model_parallel, sample_rate=sample_rate)
+        self.head = head(num_classes, embedding_size, is_global=is_global, is_parallel=model_parallel, sample_rate=sample_rate, **cfg.head_kwargs)
 
     def forward(self, imgs, labels):
         feature = self.backbone(imgs)
@@ -108,7 +107,7 @@ class Trainer(object):
         # model
         self.backbone = get_model(cfg.network)(**cfg.network_kwargs).to("cuda")
         self.head = get_head(cfg.head)
-        self.train_module = Train_Module(self.backbone, self.head, cfg.num_classes, cfg.embedding_size, cfg.model_parallel, cfg.is_global, cfg.sample_rate).to("cuda")
+        self.train_module = Train_Module(cfg, self.backbone, self.head, cfg.num_classes, cfg.embedding_size, cfg.model_parallel, cfg.is_global, cfg.sample_rate).to("cuda")
         if cfg.resume:
             if load_path is not None:
                 self.load_state_dict()

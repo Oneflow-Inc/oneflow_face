@@ -6,7 +6,12 @@ network_kwargs:
   dropout: 0.0
   embedding_size: *embedding_size
   channel_last: *channel_last
-head: "arcface"
+head: "combined"
+head_kwargs:
+  m1: 1.0
+  m2: 0.5
+  m3: 0.0
+  # scale: 64
 sample_rate: 1
 
 # train options
