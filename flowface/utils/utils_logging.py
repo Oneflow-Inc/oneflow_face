@@ -26,7 +26,8 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def init_logging(log_root, rank, models_root):
+def init_logging(log_root: logging.Logger, rank, models_root):
+    log_root.handlers = []
     if rank is 0:
         log_root.setLevel(logging.INFO)
         formatter = logging.Formatter("Training: %(asctime)s-%(message)s")
