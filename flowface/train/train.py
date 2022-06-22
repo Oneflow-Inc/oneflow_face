@@ -22,7 +22,7 @@ def main(args):
     init_and_check_config(cfg)
     # os.makedirs(cfg.output, exist_ok=True)
     log_root = logging.getLogger()
-    init_logging(log_root, rank, cfg.output)
+    init_logging(log_root, rank, cfg.result_path)
 
     # root dir of loading checkpoint
     load_path = cfg.load_path
