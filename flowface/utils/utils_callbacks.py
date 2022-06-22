@@ -2,6 +2,8 @@ import logging
 import os
 import time
 from typing import List
+from pathlib import Path
+import json
 
 import oneflow as flow
 
@@ -154,16 +156,40 @@ class CallBackModelCheckpoint(object):
         self.rank: int = rank
         self.output: str = output
 
-    def __call__(self, global_step, epoch, backbone, is_global=False):
+    def __call__(self, global_step, epoch, backbone, fc, optimizer, lr_scheduler, is_global=False):
 
-        if global_step > 100 and backbone is not None:
+        if global_step > -1 and backbone is not None:
             path_module = os.path.join(self.output, "epoch_%d" % (epoch))
+            backbone_path = str(Path(self.output) / "backbone")
+            fc_path = str(Path(self.output) / "head")
+            optimizer_path = str(Path(self.output) / "optimizer")
+            lr_scheduler_path = str(Path(self.output) / "lr_scheduler")
+            info_path = str(Path(self.output) / "info.json")
 
             if is_global:
                 flow.save(backbone.state_dict(), path_module, global_dst_rank=0)
+                flow.save(backbone.state_dict(), backbone_path, global_dst_rank=0)
+                flow.save(fc.state_dict(), fc_path, global_dst_rank=0)
+                flow.save(optimizer.state_dict(), optimizer_path, global_dst_rank=0)
+                flow.save(lr_scheduler.state_dict(), lr_scheduler_path, global_dst_rank=0)
                 if flow.env.get_local_rank() == 0:
                     logger.info("oneflow Model Saved in '{}'".format(path_module))
+                info = {
+                    "epoch": epoch,
+                    "global_step": global_step,
+                }
+                with open(info_path, "w") as f:
+                    json.dump(info, f)
             else:
                 if self.rank == 0:
                     flow.save(backbone.state_dict(), path_module, global_dst_rank=0)
                     logger.info("oneflow Model Saved in '{}'".format(path_module))
+                flow.save(fc.state_dict(), path_module, global_dst_rank=0)
+                flow.save(optimizer.state_dict(), optimizer_path, global_dst_rank=0)
+                flow.save(lr_scheduler.state_dict(), lr_scheduler_path, global_dst_rank=0)
+                info = {
+                    "epoch": epoch,
+                    "global_step": global_step,
+                }
+                with open(info_path, "w") as f:
+                    json.dump(info, f)

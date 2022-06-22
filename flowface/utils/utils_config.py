@@ -3,6 +3,7 @@ import warnings
 from pathlib import Path
 from omegaconf import OmegaConf
 import logging
+from datetime import datetime
 
 
 def get_config(config_file=None):
@@ -21,9 +22,11 @@ def get_config(config_file=None):
 def init_and_check_config(config):
     # init
     if not config.ckpt_path:
-        config.ckpt_path = "."
-    config.output = str(Path(config.ckpt_path) / config.output)
-    Path(config.output).mkdir(exist_ok=True, parents=True)
+        config.ckpt_path = str((Path(__file__).parent.parent / "checkpoints").resolve())
+    if not Path(config.result_path).exists():
+        current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+        config.result_path = str(Path(config.ckpt_path) / config.result_path) + "_" + current_time
+        Path(config.result_path).mkdir(exist_ok=True, parents=True)
     
     # check
     assert config.sample_rate > 0 and config.sample_rate <= 1, f"config.sample_rate must be in (0, 1]"
@@ -42,7 +45,7 @@ def info_config(config):
         logging.info(": " + key + " " * num_space + str(value))
 
 def dump_config(config, file_path):
-    file_path = str(Path(config.output) / "config.yaml")
+    file_path = str(Path(config.result_path) / "config.yaml")
     OmegaConf.save(config=config, f=file_path)
     if flow.env.get_local_rank() == 0:
         logging.info(f"training log saved at {file_path}")
