@@ -6,17 +6,12 @@ network_kwargs:
   dropout: 0.0
   embedding_size: *embedding_size
   channel_last: *channel_last
-head: "combined"
-head_kwargs:
-  m1: 1.0
-  m2: 0.5
-  m3: 0.0
-  # scale: 64
+head: "arcface"
 sample_rate: 1
 
 # train options
 model_parallel: true   # If true, the sbp of fc weight will be set as split(0), otherwise broadcast
-fp16: true             # If true, the model will train in fp16 mode, other fp32 mode
+fp16: false             # If true, the model will train in fp16 mode, other fp32 mode
 is_graph: true          # If true, the model will train in graph mode(like Tensorflow 1.x), other eager model(like PyTorch)
 is_global: true         # If true, the model will train in global mode
 dynamic_scale_grad: true  # If true, the model will use dynameic grad scaler, otherwise static grad scaler. (when fp16 is false, the option is not working)
@@ -42,8 +37,7 @@ num_image: 5179510
 ofrecord_path: /workspace/data/insightface/ms1m-retinaface-t1/ofrecord
 ofrecord_part_num: 8
 ckpt_path: ~
-save_frequent: 1 # save per `save_frequent` epoch
-result_path: baseline
+output: baseline300k
 synthetic: false
 use_gpu_decode: false
 val_frequence: 6000
