@@ -4,10 +4,10 @@ import os
 
 import oneflow as flow
 
+from flowface.heads.sphereface2 import SphereFace2
 from flowface.train import Trainer
 from flowface.utils.utils_config import get_config
 from flowface.utils.utils_logging import init_logging
-from flowface.heads.sphereface2 import SphereFace2
 
 
 def str2bool(v):

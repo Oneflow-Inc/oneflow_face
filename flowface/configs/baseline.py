@@ -1,5 +1,6 @@
-from omegaconf import OmegaConf
 from pathlib import Path
+
+from omegaconf import OmegaConf
 
 baseline_config_file = Path(__file__).parent / "baseline.yaml"
 baseline_config = OmegaConf.load(baseline_config_file)

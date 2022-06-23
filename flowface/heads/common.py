@@ -1,7 +1,12 @@
 import math
+
 import oneflow as flow
+
+
 class FC(flow.nn.Module):
-    def __init__(self, embedding_size, num_classes, is_global=True, is_parallel=True, sample_rate=1):
+    def __init__(
+        self, embedding_size, num_classes, is_global=True, is_parallel=True, sample_rate=1
+    ):
         super(FC, self).__init__()
         # placement = flow.env.all_device_placement("cuda")
         if is_global:
@@ -10,9 +15,11 @@ class FC(flow.nn.Module):
         else:
             placement = None
             sbp = None
-        self.weight = flow.nn.Parameter(flow.empty(num_classes, embedding_size, sbp=sbp, placement=placement))
+        self.weight = flow.nn.Parameter(
+            flow.empty(num_classes, embedding_size, sbp=sbp, placement=placement)
+        )
         flow.nn.init.normal_(self.weight, mean=0, std=0.01)
-        
+
         if sample_rate < 1:
             # TODO: support broadcast
             assert is_parallel, "Partial FC doesn't support broadcast yet"
@@ -21,11 +28,15 @@ class FC(flow.nn.Module):
             self.sampler = flow.nn.DistributedPariticalFCSample(num_sample)
         else:
             self.sampler = False
-            
+
     def forward(self, x, label):
         x = flow.nn.functional.normalize(x, dim=1)
         if self.sampler:
-            (mapped_label, sampled_label, sampled_weight,) = self.sampler(self.weight, label)
+            (
+                mapped_label,
+                sampled_label,
+                sampled_weight,
+            ) = self.sampler(self.weight, label)
             label = mapped_label
             weight = sampled_weight
         else:
@@ -38,6 +49,6 @@ class FC(flow.nn.Module):
 if __name__ == "__main__":
     fc = FC(128, 100)
     features = flow.randn(4, 128, requires_grad=True)
-    labels = flow.randint(0, 100, (4, ))
+    labels = flow.randint(0, 100, (4,))
     logits, labels = fc(features, labels)
     logits.sum().backward()

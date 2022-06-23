@@ -5,7 +5,7 @@ import os
 import oneflow as flow
 
 from flowface.train import Trainer
-from flowface.utils.utils_config import get_config, dump_config, info_config, init_and_check_config
+from flowface.utils.utils_config import dump_config, get_config, info_config, init_and_check_config
 from flowface.utils.utils_logging import init_logging
 
 

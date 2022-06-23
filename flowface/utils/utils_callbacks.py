@@ -1,9 +1,9 @@
+import json
 import logging
 import os
 import time
-from typing import List
 from pathlib import Path
-import json
+from typing import List
 
 import oneflow as flow
 

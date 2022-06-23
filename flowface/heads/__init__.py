@@ -10,6 +10,7 @@ HEAD_DICT = {
     "combined": CombinedFC,
 }
 
+
 def get_head(name: str):
     assert name in HEAD_DICT, f"invalid head name: {name}"
     return HEAD_DICT[name]

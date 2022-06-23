@@ -11,8 +11,8 @@ config.embedding_size = 128
 config.channel_last = False
 config.network = "r50"
 config.network_kwargs = {
-    "dropout":0.0, 
-    "embedding_size": config.embedding_size, 
+    "dropout": 0.0,
+    "embedding_size": config.embedding_size,
     "channel_last": config.channel_last,
 }
 config.head = "arcface"
@@ -40,7 +40,7 @@ config.log_frequent = 50
 # data parameters
 config.ofrecord_path = "/workspace/data/insightface/ms1m-retinaface-t1/ofrecord"
 config.ofrecord_part_num = 8
-config.val_targets = ["lfw"] 
+config.val_targets = ["lfw"]
 config.num_classes = 93432
 config.num_image = 5179510
 config.output = "partial_fc"

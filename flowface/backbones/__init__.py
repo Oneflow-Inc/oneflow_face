@@ -1,6 +1,7 @@
 from .ir_resnet import iresnet18, iresnet34, iresnet50, iresnet100, iresnet200
 from .mobilefacenet import MobileFaceNet
 
+
 def get_model(name):
     MODEL_DICT = {
         "r18": iresnet18,
@@ -11,4 +12,3 @@ def get_model(name):
         "mbf": MobileFaceNet,
     }
     return MODEL_DICT.get(name)
-

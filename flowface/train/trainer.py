@@ -76,18 +76,39 @@ def make_optimizer(args, model):
     )
     return optimizer
 
+
 class Train_Module(flow.nn.Module):
-    def __init__(self, cfg, backbone, head, num_classes, embedding_size, model_parallel, is_global, sample_rate):
+    def __init__(
+        self,
+        cfg,
+        backbone,
+        head,
+        num_classes,
+        embedding_size,
+        model_parallel,
+        is_global,
+        sample_rate,
+    ):
         super(Train_Module, self).__init__()
         self.backbone = backbone(**cfg.network_kwargs).to("cuda")
         if is_global:
-            self.backbone = self.backbone.to_global(sbp=flow.sbp.broadcast, placement=flow.env.all_device_placement("cuda"))
-        self.head = head(num_classes, embedding_size, is_global=is_global, is_parallel=model_parallel, sample_rate=sample_rate, **cfg.head_kwargs)
+            self.backbone = self.backbone.to_global(
+                sbp=flow.sbp.broadcast, placement=flow.env.all_device_placement("cuda")
+            )
+        self.head = head(
+            num_classes,
+            embedding_size,
+            is_global=is_global,
+            is_parallel=model_parallel,
+            sample_rate=sample_rate,
+            **cfg.head_kwargs
+        )
 
     def forward(self, imgs, labels):
         feature = self.backbone(imgs)
         loss = self.head(feature, labels)
         return loss
+
 
 class Trainer(object):
     def __init__(self, cfg, load_path):
@@ -108,7 +129,16 @@ class Trainer(object):
         # model
         backbone = get_model(cfg.network)
         head = get_head(cfg.head)
-        self.train_module = Train_Module(cfg, backbone, head, cfg.num_classes, cfg.embedding_size, cfg.model_parallel, cfg.is_global, cfg.sample_rate).to("cuda")
+        self.train_module = Train_Module(
+            cfg,
+            backbone,
+            head,
+            cfg.num_classes,
+            cfg.embedding_size,
+            cfg.model_parallel,
+            cfg.is_global,
+            cfg.sample_rate,
+        ).to("cuda")
         self.backbone = self.train_module.backbone
         self.head = self.train_module.head
 
@@ -126,8 +156,12 @@ class Trainer(object):
         total_step = cfg.num_image // total_batch_size * cfg.num_epoch
         # self.scheduler = PolyScheduler(self.optimizer, self.cfg.lr, total_step, warmup_step, last_step=-1)
 
-        lr_scheduler = flow.optim.lr_scheduler.PolynomialLR(self.optimizer, total_step - warmup_step, 0, 2, False)
-        self.scheduler = flow.optim.lr_scheduler.WarmUpLR(lr_scheduler, warmup_factor=0, warmup_iters=warmup_step, warmup_prefix=True)
+        lr_scheduler = flow.optim.lr_scheduler.PolynomialLR(
+            self.optimizer, total_step - warmup_step, 0, 2, False
+        )
+        self.scheduler = flow.optim.lr_scheduler.WarmUpLR(
+            lr_scheduler, warmup_factor=0, warmup_iters=warmup_step, warmup_prefix=True
+        )
 
         # log
         self.callback_logging = CallBackLogging(
@@ -172,8 +206,8 @@ class Trainer(object):
         info_path = load_path / "info.json"
         if not info_path.exists():
             logging.info("can't find checkpoint to resume! ")
-            return 
-        
+            return
+
         with open(info_path, "r") as f:
             info = json.load(f)
         self.start_epoch = info["epoch"]
@@ -185,8 +219,10 @@ class Trainer(object):
         load_helper(self.scheduler, load_path / "lr_scheduler")
 
         self.scheduler.last_step = self.global_step // self.world_size
-        self.scheduler.milestones = [m * info["world_size"] // self.world_size for m in self.scheduler.milestones]
-        
+        self.scheduler.milestones = [
+            m * info["world_size"] // self.world_size for m in self.scheduler.milestones
+        ]
+
         logging.info("Model resume successfully!")
 
     def cal_decay_step(self):
@@ -227,7 +263,15 @@ class Trainer(object):
                 self.callback_verification(self.global_step, self.backbone, val_graph)
                 if self.global_step >= self.cfg.train_num:
                     exit(0)
-            self.callback_checkpoint(self.global_step, epoch, self.backbone, self.head, self.optimizer, self.scheduler, is_global=True)
+            self.callback_checkpoint(
+                self.global_step,
+                epoch,
+                self.backbone,
+                self.head,
+                self.optimizer,
+                self.scheduler,
+                is_global=True,
+            )
 
     def train_eager(self):
         for epoch in range(self.start_epoch, self.cfg.num_epoch):
@@ -259,5 +303,11 @@ class Trainer(object):
                 if self.global_step >= self.cfg.train_num:
                     exit(0)
             self.callback_checkpoint(
-                self.global_step, epoch, self.backbone, self.head, self.optimizer, self.scheduler, is_global=self.cfg.is_global
+                self.global_step,
+                epoch,
+                self.backbone,
+                self.head,
+                self.optimizer,
+                self.scheduler,
+                is_global=self.cfg.is_global,
             )

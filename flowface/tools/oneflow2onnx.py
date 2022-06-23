@@ -1,13 +1,14 @@
-import os
-from os import mkdir
-from oneflow_onnx.oneflow2onnx.util import convert_to_onnx_and_check
-import oneflow as flow
-
+import argparse
 import logging
+import os
+import tempfile
+from os import mkdir
+
+import oneflow as flow
+from oneflow_onnx.oneflow2onnx.util import convert_to_onnx_and_check
+
 from flowface.backbones import get_model
 from flowface.utils.utils_config import get_config
-import argparse
-import tempfile
 
 
 class ModelGraph(flow.nn.Graph):
@@ -21,7 +22,7 @@ class ModelGraph(flow.nn.Graph):
         return out
 
 
-def convert_func(cfg, model_path, out_path,image_size):
+def convert_func(cfg, model_path, out_path, image_size):
 
     model_module = get_model(cfg.network)(**cfg.network_kwargs).to("cuda")
     model_module.eval()
@@ -39,12 +40,17 @@ def convert_func(cfg, model_path, out_path,image_size):
                 val = value
                 new_key = key.replace("backbone.", "")
                 new_parameters[new_key] = val
-            
+
         # model_module.load_state_dict(new_parameters)
         model_module.load_state_dict(parameters)
         flow.save(model_module.state_dict(), tmpdirname)
         convert_to_onnx_and_check(
-            model_graph, flow_weight_dir=tmpdirname, onnx_model_path="./", print_outlier=True, device="gpu")
+            model_graph,
+            flow_weight_dir=tmpdirname,
+            onnx_model_path="./",
+            print_outlier=True,
+            device="gpu",
+        )
 
 
 def main(args):
@@ -53,17 +59,15 @@ def main(args):
     cfg = get_config(args.config)
     if not os.path.exists(args.out_path):
         mkdir(args.out_path)
-    convert_func(cfg, args.model_path, args.out_path,args.image_size)
+    convert_func(cfg, args.model_path, args.out_path, args.image_size)
 
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='OneFlow ArcFace val')
-    parser.add_argument('config', type=str, help='py config file')
-    parser.add_argument('--model_path', type=str, help='model path')
-    parser.add_argument('--image_size', type=int,
-                        default=112, help='input image size')
-    parser.add_argument('--out_path', type=str,
-                        default="onnx_model", help='out path')
+    parser = argparse.ArgumentParser(description="OneFlow ArcFace val")
+    parser.add_argument("config", type=str, help="py config file")
+    parser.add_argument("--model_path", type=str, help="model path")
+    parser.add_argument("--image_size", type=int, default=112, help="input image size")
+    parser.add_argument("--out_path", type=str, default="onnx_model", help="out path")
     args = parser.parse_args()
     main(args)
