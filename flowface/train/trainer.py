@@ -128,7 +128,6 @@ class Trainer(object):
 
         lr_scheduler = flow.optim.lr_scheduler.PolynomialLR(self.optimizer, total_step - warmup_step, 0, 2, False)
         self.scheduler = flow.optim.lr_scheduler.WarmUpLR(lr_scheduler, warmup_factor=0, warmup_iters=warmup_step, warmup_prefix=True)
-        # self.scheduler = lr_scheduler
 
         # log
         self.callback_logging = CallBackLogging(
@@ -161,7 +160,6 @@ class Trainer(object):
             self.train_eager()
 
     def load_state_dict(self):
-        # import ipdb; ipdb.set_trace()
         def load_helper(module, path):
             path = str(path)
             if self.cfg.is_global:
@@ -179,12 +177,15 @@ class Trainer(object):
         with open(info_path, "r") as f:
             info = json.load(f)
         self.start_epoch = info["epoch"]
-        self.global_step = info["global_step"]
+        self.global_step = info["global_step"] * info["world_size"]
 
         load_helper(self.backbone, load_path / "backbone")
         load_helper(self.head, load_path / "head")
         load_helper(self.optimizer, load_path / "optimizer")
         load_helper(self.scheduler, load_path / "lr_scheduler")
+
+        self.scheduler.last_step = self.global_step // self.world_size
+        self.scheduler.milestones = [m * info["world_size"] // self.world_size for m in self.scheduler.milestones]
         
         logging.info("Model resume successfully!")
 

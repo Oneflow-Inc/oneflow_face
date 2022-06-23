@@ -177,6 +177,7 @@ class CallBackModelCheckpoint(object):
                 info = {
                     "epoch": epoch,
                     "global_step": global_step,
+                    "world_size": flow.env.get_world_size(),
                 }
                 with open(info_path, "w") as f:
                     json.dump(info, f)
@@ -190,6 +191,7 @@ class CallBackModelCheckpoint(object):
                 info = {
                     "epoch": epoch,
                     "global_step": global_step,
+                    "world_size": flow.env.get_world_size(),
                 }
                 with open(info_path, "w") as f:
                     json.dump(info, f)
