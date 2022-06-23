@@ -32,7 +32,7 @@ class TestTrain(flow.unittest.TestCase):
         config.ofrecord_part_num = 8
         config.num_classes = 3000
         config.num_image = 3000
-        config.num_epoch = 10
+        config.num_epoch = 5
         config.decay_epoch = [10, 16, 22]
         config.val_targets = ["lfw_subset", "cfp_fp_subset", "agedb_30_subset"]
         config.val_frequence = 1000
@@ -40,6 +40,7 @@ class TestTrain(flow.unittest.TestCase):
         config.batch_size = 16
         config.train_num = 1000000
         config.log_frequent = 10
+        config.save_frequent = 10
         self.cfg = config
 
     # model_parallel = True
@@ -48,9 +49,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.is_global = True
         self.cfg.is_graph = False
         self.cfg.model_parallel = True
-        rank = flow.env.get_rank()
-        world_size = flow.env.get_world_size()
-        trainer = Trainer(self.cfg, "")
+        trainer = Trainer(self.cfg)
         trainer()
 
     @flow.unittest.skip_unless_1n4d()
@@ -58,11 +57,9 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.is_global = True
         self.cfg.is_graph = True
         self.cfg.model_parallel = True
-        rank = flow.env.get_rank()
-        world_size = flow.env.get_world_size()
-        trainer = Trainer(self.cfg, "")
+        trainer = Trainer(self.cfg)
         trainer()
-    
+
     # model_parallel = False
     @flow.unittest.skip_unless_1n4d()
     def test_eager_global_dataparallel(self):
@@ -71,9 +68,7 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.is_global = True
         self.cfg.is_graph = False
         self.cfg.model_parallel = False
-        rank = flow.env.get_rank()
-        world_size = flow.env.get_world_size()
-        trainer = Trainer(self.cfg, "")
+        trainer = Trainer(self.cfg)
         trainer()
 
     @flow.unittest.skip_unless_1n4d()
@@ -82,12 +77,8 @@ class TestTrain(flow.unittest.TestCase):
         self.cfg.is_global = True
         self.cfg.is_graph = True
         self.cfg.model_parallel = False
-        rank = flow.env.get_rank()
-        world_size = flow.env.get_world_size()
-        trainer = Trainer(self.cfg, "")
+        trainer = Trainer(self.cfg)
         trainer()
-
-
 
 
 if __name__ == "__main__":

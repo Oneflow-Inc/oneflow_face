@@ -152,11 +152,14 @@ class CallBackLogging(object):
 
 
 class CallBackModelCheckpoint(object):
-    def __init__(self, rank, output="./"):
+    def __init__(self, rank, output="./", frequency=1):
         self.rank: int = rank
         self.output: str = output
+        self.frequency = int(frequency)
 
     def __call__(self, global_step, epoch, backbone, fc, optimizer, lr_scheduler, is_global=False):
+        if (epoch + 1) % self.frequency != 0:
+            return
 
         if global_step > -1 and backbone is not None:
             path_module = os.path.join(self.output, "epoch_%d" % (epoch))

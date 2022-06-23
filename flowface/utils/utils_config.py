@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 
 def get_config(config_file=None):
-    from flowface.configs.baseline import baseline_config
+    from flowface.configs import baseline_config
 
     OmegaConf.set_struct(baseline_config, True)
     if config_file is None:

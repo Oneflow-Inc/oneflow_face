@@ -111,17 +111,12 @@ class Train_Module(flow.nn.Module):
 
 
 class Trainer(object):
-    def __init__(self, cfg, load_path):
+    def __init__(self, cfg):
         """
         Args:
             cfg (easydict.EasyDict): train configs.
-            placement (_oneflow_internal.placement):train devices
-            load_path (str) : pretrained model path
-            world_size (int): total number of all devices
-            rank (int)      : local device number
         """
 
-        self.load_path = load_path
         self.cfg = cfg
         self.world_size = flow.env.get_world_size()
         self.rank = flow.env.get_local_rank()
@@ -176,7 +171,7 @@ class Trainer(object):
             is_global=self.cfg.is_global,
         )
         # save checkpoint
-        self.callback_checkpoint = CallBackModelCheckpoint(self.rank, cfg.result_path)
+        self.callback_checkpoint = CallBackModelCheckpoint(self.rank, cfg.result_path, cfg.save_frequent)
 
         self.losses = AverageMeter()
         self.start_epoch = 0
