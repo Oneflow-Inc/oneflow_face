@@ -28,12 +28,12 @@ lr: 0.1
 momentum: 0.9
 decay_epoch: [11, 17, 22]
 batch_size: 128
-num_epoch: 25
-warmup_epoch: 1
+num_epoch: 20
+warmup_epoch: 0
 weight_decay: 0.0005
 
 # log parameters
-log_frequent: 50
+log_frequent: 10
 
 # data parameters
 dataset: ms1m-retinaface-t1
