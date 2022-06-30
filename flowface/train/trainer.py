@@ -1,3 +1,4 @@
+import enum
 import json
 import logging
 import math
@@ -107,7 +108,7 @@ class Train_Module(flow.nn.Module):
     def forward(self, imgs, labels):
         feature = self.backbone(imgs)
         loss = self.head(feature, labels)
-        return loss
+        return feature, loss
 
 
 class Trainer(object):
@@ -134,6 +135,7 @@ class Trainer(object):
             cfg.is_global,
             cfg.sample_rate,
         ).to("cuda")
+        self.train_module.load_state_dict(flow.load("/workspace/projects/oneflow_face/init_model", global_src_rank=0))
         self.backbone = self.train_module.backbone
         self.head = self.train_module.head
 
@@ -145,8 +147,8 @@ class Trainer(object):
             cfg, "train", self.cfg.is_global, self.cfg.synthetic
         )
 
-        from flowface.datasets.mx_dataset import get_dataloader
-        self.dataloader = get_dataloader("/workspace/data/faces_emore", 0, 128)
+        from flowface.datasets.mx_dataset import get_mx_dataloader
+        self.dataloader = get_mx_dataloader("/workspace/data/faces_emore")
 
         # lr_scheduler
         total_batch_size = cfg.batch_size * self.world_size
@@ -257,11 +259,12 @@ class Trainer(object):
             self.train_module.train()
             # one_epoch_steps = len(self.train_data_loader)
             # for steps in range(one_epoch_steps):
-            for step, (image, label) in self.dataloader:
+            for step, (image, label) in enumerate( self.dataloader):
+                import ipdb; ipdb.set_trace()
                 self.global_step += 1
-                image = image.to_global(sbp=flow.sbp.broadcast, placement=self.train_module.backbone.placement)
+                image = image.to_global(sbp=flow.sbp.broadcast, placement=flow.placement("cuda", [0]))
                 label = label.to_global(sbp=image.sbp, placement=image.placement)
-                loss = train_graph()
+                embeddings, loss = train_graph()
                 loss = loss.to_global(sbp=flow.sbp.broadcast).to_local().numpy()
                 self.losses.update(loss, 1)
                 self.callback_logging(

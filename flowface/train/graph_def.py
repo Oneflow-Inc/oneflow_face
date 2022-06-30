@@ -56,9 +56,9 @@ class TrainGraph(flow.nn.Graph):
         image, label = self.data_loader()
         image = image.to("cuda")
         label = label.to("cuda")
-        loss = self.model(image, label)
+        embeddings, loss = self.model(image, label)
         loss.backward()
-        return loss
+        return embeddings, loss
 
 
 class EvalGraph(flow.nn.Graph):
