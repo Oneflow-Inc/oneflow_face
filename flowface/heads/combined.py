@@ -2,7 +2,7 @@ from random import sample
 
 import oneflow as flow
 
-from flowface.heads.common import FC
+from flowface.heads.common import FC, CombinedMarginLoss, ArcFaceInsightface
 
 
 class Combined(flow.nn.Module):
@@ -10,9 +10,14 @@ class Combined(flow.nn.Module):
         super(Combined, self).__init__()
         self.scale = scale
         self.margin_loss = flow.nn.CombinedMarginLoss(m1=m1, m2=m2, m3=m3)
+        # self.margin_loss = CombinedMarginLoss(64, m1=m1, m2=m2, m3=m3)
+        # self.margin_loss = ArcFaceInsightface()
 
     def forward(self, logits: flow.Tensor, labels: flow.Tensor):
+        # import ipdb; ipdb.set_trace()
+        # return self.margin_loss(logits, labels) * self.scale
         return self.margin_loss(logits, labels) * self.scale
+
 
 
 class CombinedFC(flow.nn.Module):

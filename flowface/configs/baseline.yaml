@@ -28,7 +28,7 @@ lr: 0.1
 momentum: 0.9
 decay_epoch: [11, 17, 22]
 batch_size: 128
-num_epoch: 20
+num_epoch: 25
 warmup_epoch: 0
 weight_decay: 0.0005
 
@@ -52,6 +52,7 @@ val_image_num:
     cfp_fp: 14000
     lfw: 12000
 val_targets: [lfw, agedb_30, cfp_fp]
+# val_targets: []
 
 # - lfw
 # - cfp_fp

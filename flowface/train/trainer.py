@@ -145,18 +145,30 @@ class Trainer(object):
             cfg, "train", self.cfg.is_global, self.cfg.synthetic
         )
 
+        from flowface.datasets.mx_dataset import get_dataloader
+        self.dataloader = get_dataloader("/workspace/data/faces_emore", 0, 128)
+
         # lr_scheduler
         total_batch_size = cfg.batch_size * self.world_size
         warmup_step = cfg.num_image // total_batch_size * cfg.warmup_epoch
         total_step = cfg.num_image // total_batch_size * cfg.num_epoch
-        # self.scheduler = PolyScheduler(self.optimizer, self.cfg.lr, total_step, warmup_step, last_step=-1)
 
-        lr_scheduler = flow.optim.lr_scheduler.PolynomialLR(
-            self.optimizer, total_step - warmup_step, 0, 2, False
-        )
-        self.scheduler = flow.optim.lr_scheduler.WarmUpLR(
-            lr_scheduler, warmup_factor=0, warmup_iters=warmup_step, warmup_prefix=True
-        )
+        # lr_scheduler = flow.optim.lr_scheduler.PolynomialLR(
+        #     self.optimizer, total_step - warmup_step, 0, 2, False
+        # )
+        # self.scheduler = flow.optim.lr_scheduler.WarmUpLR(
+        #     lr_scheduler, warmup_factor=0, warmup_iters=warmup_step, warmup_prefix=True
+        # )
+
+        cfg = self.cfg
+        num_image = cfg.num_image
+        total_batch_size = cfg.batch_size * self.world_size
+        self.warmup_step = num_image // total_batch_size * cfg.warmup_epoch
+        self.cfg.total_step = num_image // total_batch_size * cfg.num_epoch
+        logging.info("Total Step is:%d" % self.cfg.total_step)
+        decay_step =  [x * num_image // total_batch_size for x in cfg.decay_epoch]
+
+        self.scheduler = flow.optim.lr_scheduler.MultiStepLR(self.optimizer, decay_step)
 
         # log
         self.callback_logging = CallBackLogging(
@@ -179,6 +191,7 @@ class Trainer(object):
 
         if cfg.resume:
             self.load_state_dict()
+        
 
     def __call__(self):
         if self.cfg.is_graph:
@@ -242,9 +255,12 @@ class Trainer(object):
 
         for epoch in range(self.start_epoch, self.cfg.num_epoch):
             self.train_module.train()
-            one_epoch_steps = len(self.train_data_loader)
-            for steps in range(one_epoch_steps):
+            # one_epoch_steps = len(self.train_data_loader)
+            # for steps in range(one_epoch_steps):
+            for step, (image, label) in self.dataloader:
                 self.global_step += 1
+                image = image.to_global(sbp=flow.sbp.broadcast, placement=self.train_module.backbone.placement)
+                label = label.to_global(sbp=image.sbp, placement=image.placement)
                 loss = train_graph()
                 loss = loss.to_global(sbp=flow.sbp.broadcast).to_local().numpy()
                 self.losses.update(loss, 1)
