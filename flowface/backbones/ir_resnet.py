@@ -139,7 +139,7 @@ class IResNet(nn.Module):
         self.fc = nn.Linear(512 * block.expansion * self.fc_scale, embedding_size)
         self.features = nn.BatchNorm1d(embedding_size, eps=1e-05)
         nn.init.constant_(self.features.weight, 1.0)
-        self.features.weight.requires_grad = True
+        self.features.weight.requires_grad = False
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
