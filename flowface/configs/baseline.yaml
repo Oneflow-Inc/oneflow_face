@@ -9,8 +9,8 @@ network_kwargs:
 head: "combined"
 head_kwargs:
   m1: 1.0
-  m2: 0.5
-  m3: 0.0
+  m2: 0.0
+  m3: 0.4
   # scale: 64
 sample_rate: 1
 
@@ -28,7 +28,7 @@ lr: 0.1
 momentum: 0.9
 decay_epoch: [11, 17, 22]
 batch_size: 128
-num_epoch: 20
+num_epoch: 25
 warmup_epoch: 0
 weight_decay: 0.0005
 
@@ -37,10 +37,10 @@ log_frequent: 10
 
 # data parameters
 dataset: ms1m-retinaface-t1
-num_classes: 93431
+num_classes: 93432
 num_image: 5179510
 ofrecord_path: /workspace/data/insightface/ms1m-retinaface-t1/ofrecord
-ofrecord_part_num: 8
+ofrecord_part_num: 32
 ckpt_path: ~
 save_frequent: 1 # save per `save_frequent` epoch
 result_path: baseline

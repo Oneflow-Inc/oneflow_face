@@ -154,6 +154,9 @@ class Trainer(object):
         lr_scheduler = flow.optim.lr_scheduler.PolynomialLR(
             self.optimizer, total_step - warmup_step, 0, 2, False
         )
+        lr_scheduler = flow.optim.lr_scheduler.MultiStepLR(
+            self.optimizer, total_step - warmup_step
+        )
         self.scheduler = flow.optim.lr_scheduler.WarmUpLR(
             lr_scheduler, warmup_factor=0, warmup_iters=warmup_step, warmup_prefix=True
         )
