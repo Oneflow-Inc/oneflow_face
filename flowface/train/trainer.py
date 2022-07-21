@@ -154,9 +154,6 @@ class Trainer(object):
         lr_scheduler = flow.optim.lr_scheduler.PolynomialLR(
             self.optimizer, total_step - warmup_step, 0, 2, False
         )
-        lr_scheduler = flow.optim.lr_scheduler.MultiStepLR(
-            self.optimizer, total_step - warmup_step
-        )
         self.scheduler = flow.optim.lr_scheduler.WarmUpLR(
             lr_scheduler, warmup_factor=0, warmup_iters=warmup_step, warmup_prefix=True
         )
@@ -174,7 +171,7 @@ class Trainer(object):
             is_global=self.cfg.is_global,
         )
         # save checkpoint
-        self.callback_checkpoint = CallBackModelCheckpoint(self.rank, cfg.result_path, cfg.save_frequent)
+        self.callback_checkpoint = CallBackModelCheckpoint(self.rank, cfg.is_graph, cfg.output, cfg.save_frequent)
 
         self.losses = AverageMeter()
         self.start_epoch = 0
@@ -200,7 +197,7 @@ class Trainer(object):
                 state_dict = flow.load(path)
             module.load_state_dict(state_dict)
 
-        load_path = Path(self.cfg.result_path)
+        load_path = Path(self.cfg.load_path)
         info_path = load_path / "info.json"
         if not info_path.exists():
             logging.info("can't find checkpoint to resume! ")
@@ -240,8 +237,13 @@ class Trainer(object):
             self.optimizer,
             self.scheduler,
         )
-        # train_graph.debug()
         val_graph = EvalGraph(self.backbone, self.cfg)
+
+        if self.cfg.resume:
+            resume_path = self.cfg.output
+            if not Path(resume_path).exists():
+                raise FileNotFoundError("resume path not found!")
+
 
         for epoch in range(self.start_epoch, self.cfg.num_epoch):
             self.train_module.train()
@@ -259,16 +261,11 @@ class Trainer(object):
                     self.scheduler.get_last_lr()[0],
                 )
                 self.callback_verification(self.global_step, self.backbone, val_graph)
-                if self.global_step >= self.cfg.train_num:
-                    exit(0)
-            self.callback_checkpoint(
+            self.callback_checkpoint.graph_save(
                 self.global_step,
                 epoch,
-                self.backbone,
-                self.head,
-                self.optimizer,
-                self.scheduler,
-                is_global=True,
+                train_graph,
+                val_graph,
             )
 
     def train_eager(self):
@@ -277,15 +274,18 @@ class Trainer(object):
 
             one_epoch_steps = len(self.train_data_loader)
             for steps in range(one_epoch_steps):
+                if steps == 100:
+                    break
                 self.global_step += 1
                 image, label = self.train_data_loader()
                 image = image.to("cuda")
                 label = label.to("cuda")
 
                 loss = self.train_module(image, label)
+                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                self.optimizer.zero_grad()
+                self.scheduler.step()
 
                 loss = loss.numpy()
                 self.losses.update(loss, 1)
@@ -297,10 +297,7 @@ class Trainer(object):
                     self.scheduler.get_last_lr()[0],
                 )
                 self.callback_verification(self.global_step, self.backbone)
-                self.scheduler.step()
-                if self.global_step >= self.cfg.train_num:
-                    exit(0)
-            self.callback_checkpoint(
+            self.callback_checkpoint.eager_save(
                 self.global_step,
                 epoch,
                 self.backbone,
