@@ -152,12 +152,42 @@ class CallBackLogging(object):
 
 
 class CallBackModelCheckpoint(object):
-    def __init__(self, rank, output="./", frequency=1):
+    def __init__(self, rank,  is_graph, output="./", frequency=1,):
         self.rank: int = rank
         self.output: str = output
         self.frequency = int(frequency)
+        self.is_graph = is_graph
 
-    def __call__(self, global_step, epoch, backbone, fc, optimizer, lr_scheduler, is_global=False):
+    def graph_save(self, global_step, epoch, train_graph: flow.nn.Graph, val_graph):
+        if (epoch + 1) % self.frequency != 0:
+            return
+        ckpt_path = str(Path(self.output) / f"epoch_{epoch}")
+        flow.save(train_graph.state_dict(), ckpt_path, global_dst_rank=0)
+
+        latest_ckpt_path = str(Path(self.output) / "graph")
+        flow.save(train_graph.state_dict(), latest_ckpt_path, global_dst_rank=0)
+
+        latest_backbone_path = str(Path(self.output) / "backbone")
+        flow.save(val_graph.state_dict(), latest_backbone_path, global_dst_rank=0)
+
+        # save info 
+        info = {
+            "mode": "graph" if self.is_graph else "eager",
+            "epoch": epoch,
+            "global_step": global_step,
+            "world_size": flow.env.get_world_size(),
+        }
+        info_path = str(Path(self.output) / "info.json")
+        with open(info_path, "w") as f:
+            json.dump(info, f)
+
+        if flow.env.get_local_rank() == 0:
+            logger.info(f"OneFlow checkpoint saved in '{ckpt_path}'")
+    
+    def eager_save(self, global_step, epoch, backbone, fc, optimizer, lr_scheduler, is_global=False):
+
+
+    # def __call__(self, global_step, epoch, backbone, fc, optimizer, lr_scheduler, is_global=False):
         if (epoch + 1) % self.frequency != 0:
             return
 
@@ -178,6 +208,7 @@ class CallBackModelCheckpoint(object):
                 if flow.env.get_local_rank() == 0:
                     logger.info("oneflow Model Saved in '{}'".format(path_module))
                 info = {
+                    "mode": "graph" if self.is_graph else "eager",
                     "epoch": epoch,
                     "global_step": global_step,
                     "world_size": flow.env.get_world_size(),
@@ -192,6 +223,7 @@ class CallBackModelCheckpoint(object):
                 flow.save(optimizer.state_dict(), optimizer_path, global_dst_rank=0)
                 flow.save(lr_scheduler.state_dict(), lr_scheduler_path, global_dst_rank=0)
                 info = {
+                    "mode": "graph" if self.is_graph else "eager",
                     "epoch": epoch,
                     "global_step": global_step,
                     "world_size": flow.env.get_world_size(),

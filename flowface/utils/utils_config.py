@@ -24,12 +24,10 @@ def get_config(config_file=None):
 
 def init_and_check_config(config):
     # init
-    if not config.ckpt_path:
-        config.ckpt_path = str((Path(__file__).parent.parent / "checkpoints").resolve())
-    if not Path(config.result_path).exists():
+    if not Path(config.output).exists():
         current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-        config.result_path = str(Path(config.ckpt_path) / config.result_path) + "_" + current_time
-        Path(config.result_path).mkdir(exist_ok=True, parents=True)
+        config.output = config.output + "_" + current_time
+        Path(config.output).mkdir(exist_ok=True, parents=True)
 
     # check
     assert (
@@ -56,7 +54,7 @@ def info_config(config):
 
 
 def dump_config(config, file_path):
-    file_path = str(Path(config.result_path) / "config.yaml")
+    file_path = str(Path(config.output) / "config.yaml")
     OmegaConf.save(config=config, f=file_path)
     if flow.env.get_local_rank() == 0:
         logging.info(f"training log saved at {file_path}")
