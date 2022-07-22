@@ -2,10 +2,6 @@
 embedding_size : &embedding_size 512
 channel_last: &channel_last false     # set True if input data is NHWC, otherwise False
 network: r50
-network_kwargs:
-  dropout: 0.0
-  embedding_size: *embedding_size
-  channel_last: *channel_last
 head: "combined"
 head_kwargs:
   m1: 1.0
@@ -22,7 +18,6 @@ is_global: true         # If true, the model will train in global mode
 dynamic_scale_grad: true  # If true, the model will use dynameic grad scaler, otherwise static grad scaler. (when fp16 is false, the option is not working)
 scale_grad: true
 resume: false           
-load_path: ~
 
 # hyper parameters
 lr: 0.1
@@ -58,5 +53,4 @@ val_targets: [lfw, agedb_30, cfp_fp]
 # - cfp_fp
 # - agedb_30
 
-train_num: 400000
 total_step: -1

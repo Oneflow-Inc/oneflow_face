@@ -15,11 +15,6 @@ def make_grad_scaler():
     )
 
 
-def meter(self, mkey, *args):
-    assert mkey in self.m
-    self.m[mkey]["meter"].record(*args)
-
-
 class TrainGraph(flow.nn.Graph):
     def __init__(
         self,

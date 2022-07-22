@@ -39,8 +39,8 @@ def make_data_loader(args, mode, is_global=False, synthetic=False):
         sbp = flow.sbp.split(0)
         batch_size = total_batch_size
 
+    # for speed test
     if synthetic:
-
         data_loader = SyntheticDataLoader(
             batch_size=batch_size,
             num_classes=args.num_classes,
@@ -67,7 +67,6 @@ def make_data_loader(args, mode, is_global=False, synthetic=False):
 
 def make_optimizer(args, model):
     param_group = {"params": [p for p in model.parameters() if p is not None]}
-
     optimizer = flow.optim.SGD(
         [param_group],
         lr=args.lr,
@@ -90,7 +89,7 @@ class Train_Module(flow.nn.Module):
         sample_rate,
     ):
         super(Train_Module, self).__init__()
-        self.backbone = backbone(**cfg.network_kwargs).to("cuda")
+        self.backbone = backbone.to("cuda")
         if is_global:
             self.backbone = self.backbone.to_global(
                 sbp=flow.sbp.broadcast, placement=flow.env.all_device_placement("cuda")
@@ -149,8 +148,6 @@ class Trainer(object):
         total_batch_size = cfg.batch_size * self.world_size
         warmup_step = cfg.num_image // total_batch_size * cfg.warmup_epoch
         total_step = cfg.num_image // total_batch_size * cfg.num_epoch
-        # self.scheduler = PolyScheduler(self.optimizer, self.cfg.lr, total_step, warmup_step, last_step=-1)
-
         lr_scheduler = flow.optim.lr_scheduler.PolynomialLR(
             self.optimizer, total_step - warmup_step, 0, 2, False
         )
@@ -197,8 +194,8 @@ class Trainer(object):
                 state_dict = flow.load(path)
             module.load_state_dict(state_dict)
 
-        load_path = Path(self.cfg.load_path)
-        info_path = load_path / "info.json"
+        output = Path(self.cfg.output)
+        info_path = output / "info.json"
         if not info_path.exists():
             logging.info("can't find checkpoint to resume! ")
             return
@@ -208,10 +205,10 @@ class Trainer(object):
         self.start_epoch = info["epoch"]
         self.global_step = info["global_step"] * info["world_size"]
 
-        load_helper(self.backbone, load_path / "backbone")
-        load_helper(self.head, load_path / "head")
-        load_helper(self.optimizer, load_path / "optimizer")
-        load_helper(self.scheduler, load_path / "lr_scheduler")
+        load_helper(self.backbone, output / "backbone")
+        load_helper(self.head, output / "head")
+        load_helper(self.optimizer, output / "optimizer")
+        load_helper(self.scheduler, output / "lr_scheduler")
 
         self.scheduler.last_step = self.global_step // self.world_size
         self.scheduler.milestones = [
@@ -225,8 +222,8 @@ class Trainer(object):
         num_image = cfg.num_image
         total_batch_size = cfg.batch_size * self.world_size
         self.warmup_step = num_image // total_batch_size * cfg.warmup_epoch
-        self.cfg.total_step = num_image // total_batch_size * cfg.num_epoch
-        logging.info("Total Step is:%d" % self.cfg.total_step)
+        total_step = num_image // total_batch_size * cfg.num_epoch
+        logging.info("Total Step is:%d" % total_step)
         return [x * num_image // total_batch_size for x in cfg.decay_epoch]
 
     def train_graph(self):
