@@ -197,3 +197,4 @@ class MobileFaceNet(nn.Module):
         x = self.bn(x)
         x = x.view(x.size(0), -1)
         return x
+

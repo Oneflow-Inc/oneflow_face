@@ -14,3 +14,5 @@ def get_model(name, **kwargs):
         return iresnet100(**kwargs)
     elif name == "r200":
         return iresnet200(**kwargs)
+    elif name == "mbf":
+        return MobileFaceNet(**kwargs)
