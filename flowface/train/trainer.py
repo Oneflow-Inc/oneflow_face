@@ -121,7 +121,7 @@ class Trainer(object):
         self.rank = flow.env.get_local_rank()
 
         # model
-        backbone = get_model(cfg.network)
+        backbone = get_model(cfg.network, embedding_size=cfg.embedding_size)
         head = get_head(cfg.head)
         self.train_module = Train_Module(
             cfg,
