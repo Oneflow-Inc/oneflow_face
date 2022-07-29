@@ -15,10 +15,11 @@ def main(args):
     rank = flow.env.get_rank()
     init_and_check_config(cfg)
     log_root = logging.getLogger()
-    init_logging(log_root, rank, cfg.output)
-
     dump_config(cfg, "config.yaml")
     info_config(cfg)
+    
+    init_logging(log_root, rank, cfg.output)
+
 
     trainer = Trainer(cfg)
     trainer()

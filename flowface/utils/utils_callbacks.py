@@ -37,7 +37,7 @@ class CallBackVerification(object):
         if self.is_global:
             self.init_dataset(val_targets=val_targets, data_dir=rec_prefix, image_size=image_size)
         else:
-            if self.rank is 0:
+            if self.rank == 0:
                 self.init_dataset(
                     val_targets=val_targets, data_dir=rec_prefix, image_size=image_size
                 )
@@ -49,13 +49,15 @@ class CallBackVerification(object):
             acc1, std1, acc2, std2, xnorm, embeddings_list = verification.test(
                 self.ver_list[i], backbone, 10, 10, self.is_global
             )
+            if acc2 > self.highest_acc_list[i]:
+                self.highest_acc_list[i] = acc2
+            if flow.env.get_local_rank() != 0:
+                continue
             logger.info("[%s][%d]XNorm: %f" % (self.ver_name_list[i], global_step, xnorm))
             logger.info(
                 "[%s][%d]Accuracy-Flip: %1.5f+-%1.5f"
                 % (self.ver_name_list[i], global_step, acc2, std2)
             )
-            if acc2 > self.highest_acc_list[i]:
-                self.highest_acc_list[i] = acc2
             logger.info(
                 "[%s][%d]Accuracy-Highest: %1.5f"
                 % (self.ver_name_list[i], global_step, self.highest_acc_list[i])
@@ -70,7 +72,7 @@ class CallBackVerification(object):
                 data_set = verification.load_bin_cv(path, image_size)
                 self.ver_list.append(data_set)
                 self.ver_name_list.append(name)
-        if len(self.ver_list) == 0:
+        if len(self.ver_list) == 0 and flow.env.get_local_rank() == 0:
             logger.info("Val targets is None !")
 
     def __call__(self, num_update, backbone: flow.nn.Module, backbone_graph=None):
@@ -82,7 +84,7 @@ class CallBackVerification(object):
                 self.ver_test(backbone, num_update)
                 backbone.train()
         else:
-            if self.rank is 0 and num_update > 0 and num_update % self.frequent == 0:
+            if self.rank == 0 and num_update > 0 and num_update % self.frequent == 0:
                 backbone.eval()
                 self.ver_test(backbone, num_update)
                 backbone.train()
@@ -166,6 +168,7 @@ class CallBackModelCheckpoint(object):
 
         latest_ckpt_path = str(Path(self.output) / "graph")
         flow.save(train_graph.state_dict(), latest_ckpt_path, global_dst_rank=0)
+        # flow.save(train_graph.state_dict(), latest_ckpt_path)
 
         latest_backbone_path = str(Path(self.output) / "backbone")
         flow.save(val_graph.state_dict(), latest_backbone_path, global_dst_rank=0)
