@@ -111,10 +111,6 @@ class Train_Module(flow.nn.Module):
 
 class Trainer(object):
     def __init__(self, cfg):
-        """
-        Args:
-            cfg (easydict.EasyDict): train configs.
-        """
 
         self.cfg = cfg
         self.world_size = flow.env.get_world_size()
@@ -174,8 +170,6 @@ class Trainer(object):
         self.start_epoch = 0
         self.global_step = 0
 
-        if cfg.resume:
-            self.load_state_dict()
 
     def __call__(self):
         if self.cfg.is_graph:
@@ -202,7 +196,7 @@ class Trainer(object):
 
         with open(info_path, "r") as f:
             info = json.load(f)
-        self.start_epoch = info["epoch"]
+        self.start_epoch = info["epoch"] + 1
         self.global_step = info["global_step"] * info["world_size"]
 
         load_helper(self.backbone, output / "backbone")
@@ -234,12 +228,21 @@ class Trainer(object):
             self.optimizer,
             self.scheduler,
         )
-        val_graph = EvalGraph(self.backbone, self.cfg)
+        val_graph = EvalGraph(self.backbone, self.cfg.fp16)
 
         if self.cfg.resume:
             resume_path = self.cfg.output
             if not Path(resume_path).exists():
                 raise FileNotFoundError("resume path not found!")
+            state_dict = flow.load(resume_path + "/graph", global_src_rank=0)
+            train_graph.load_state_dict(state_dict)
+
+            info_path = Path(resume_path) / "info.json"
+            with open(info_path, "r") as f:
+                info = json.load(f)
+            self.start_epoch = info["epoch"] + 1
+            self.global_step = info["global_step"]
+            logging.info("Graph model resume successfully")
 
 
         for epoch in range(self.start_epoch, self.cfg.num_epoch):
@@ -266,6 +269,9 @@ class Trainer(object):
             )
 
     def train_eager(self):
+        if self.cfg.resume:
+            self.load_state_dict()
+            
         for epoch in range(self.start_epoch, self.cfg.num_epoch):
             self.train_module.train()
 
