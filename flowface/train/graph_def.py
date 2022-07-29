@@ -50,13 +50,14 @@ class TrainGraph(flow.nn.Graph):
 
 
 class EvalGraph(flow.nn.Graph):
-    def __init__(self, model, cfg):
+    def __init__(self, model, fp16):
         super().__init__()
         self.config.allow_fuse_add_to_output(True)
         self.model = model
-        if cfg.fp16:
+        if fp16:
             self.config.enable_amp(True)
 
     def build(self, image):
+        image = image.to("cuda")
         logits = self.model(image)
         return logits
