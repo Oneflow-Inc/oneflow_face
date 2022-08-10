@@ -1,0 +1,15 @@
+boto3==1.23.1
+botocore==1.26.1
+easydict==1.9
+mxnet==1.9.1
+numpy==1.22.2
+omegaconf==2.1.2
+oneflow==0.7.0+cu112
+oneflow_onnx==0.5.5
+opencv_python==4.5.5.62
+requests==2.25.1
+scikit_learn==1.1.1
+scipy==1.8.0
+setuptools==52.0.0.post20210125
+tqdm==4.61.2
+wget==3.2

@@ -285,29 +285,25 @@ Moreover, OneFlow offers a validation script to do verification separately, val.
 
 ### Training Speed Benchmark
 
-#### Face_emore Dataset & FP32
+#### Face_emore Dataset
 
-| Backbone | GPU                      | model_parallel | partial_fc | BatchSize / it | Throughput img / sec |
-| -------- | ------------------------ | -------------- | ---------- | -------------- | -------------------- |
-| R100     | 8 * Tesla V100-SXM2-16GB | False          | False      | 64             | 1836.8              |
-| R100     | 8 * Tesla V100-SXM2-16GB | True           | False      | 64             | 1854.15              |
-| R100     | 8 * Tesla V100-SXM2-16GB | True           | True       | 64             | 1872.81              |
-| R100     | 8 * Tesla V100-SXM2-16GB | False           | False       | 96(Max)        | 1931.76               |
-| R100     | 8 * Tesla V100-SXM2-16GB | True           | False      | 115(Max)       | 1921.87              |
-| R100     | 8 * Tesla V100-SXM2-16GB | True           | True       | 120(Max)       | 1962.76              |
-| Y1       | 8 * Tesla V100-SXM2-16GB | False          | False      | 256            | 14298.02             |
-| Y1       | 8 * Tesla V100-SXM2-16GB | True           | False      | 256            | 14049.75             |
-| Y1       | 8 * Tesla V100-SXM2-16GB | False          | False      | 350(Max)       | 14756.03             |
-| Y1       | 8 * Tesla V100-SXM2-16GB | True           | True       | 400(Max)       | 14436.38             |
+| Backbone | GPU                      | Model Parallel | Partial FC | AMP   | Batch Size | Memory (MB) | Throughput (images /s) |
+|----------|--------------------------|----------------|------------|-------|------------|-------------|------------------------|
+| r100     | 8 * Tesla V100-SXM2-16GB | FALSE          | FALSE      | FALSE | 64         | 9641        | 1877.62                |
+| r100     | 8 * Tesla V100-SXM2-16GB | TRUE           | FALSE      | FALSE | 64         | 8707        | 1901.94                |
+| r100     | 8 * Tesla V100-SXM2-16GB | TRUE           | 0.1        | FALSE | 64         | 8635        | 1906.1                 |
+| r100     | 8 * Tesla V100-SXM2-16GB | TRUE           | 0.1        | TRUE  | 64         | 6313        | 3555.63                |
+| r100     | 8 * Tesla V100-SXM2-16GB | TRUE           | 0.1        | TRUE  | 144        | 12086       | 4067.13                |
 
-#### Glint360k Dataset & FP32
+| Backbone | GPU                      | Model Parallel | Partial FC | AMP   | Batch Size | Memory (MB) | Throughput (images /s) |
+|----------|--------------------------|----------------|------------|-------|------------|-------------|------------------------|
+| r50      | 8 * Tesla V100-SXM2-16GB | FALSE          | FALSE      | FALSE | 128        | 12531       | 3161.93                |
+| r50      | 8 * Tesla V100-SXM2-16GB | TRUE           | FALSE      | FALSE | 128        | 11719       | 3170.76                |
+| r50      | 8 * Tesla V100-SXM2-16GB | TRUE           | 0.1        | FALSE | 128        | 11573       | 3195.93                |
+| r50      | 8 * Tesla V100-SXM2-16GB | TRUE           | 0.1        | TRUE  | 128        | 7473        | 6670.09                |
+| r50      | 8 * Tesla V100-SXM2-16GB | TRUE           | 0.1        | TRUE  | 320        | 14007       | 7092.83                |
 
-| Backbone | GPU                      | partial_fc sample_ratio | BatchSize / it | Throughput img / sec |
-| -------- | ------------------------ | ----------------------- | -------------- | -------------------- |
-| R100     | 8 * Tesla V100-SXM2-16GB | 0.1                       | 64             | 1858.57              |
-| R100     | 8 * Tesla V100-SXM2-16GB | 0.1                     | 115             | 1933.88             |
-
-
+# TODO below
 
 ### Evaluation on Lfw, Cfp_fp, Agedb_30
 

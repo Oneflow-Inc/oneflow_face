@@ -1,0 +1,56 @@
+# network parameters
+embedding_size : &embedding_size 512
+channel_last: &channel_last false     # set True if input data is NHWC, otherwise False
+network: r50
+head: "combined"
+head_kwargs:
+  m1: 1.0
+  m2: 0.0
+  m3: 0.4
+  scale: 64
+sample_rate: 1
+
+# train options
+model_parallel: true   # If true, the sbp of fc weight will be set as split(0), otherwise broadcast
+fp16: true             # If true, the model will train in fp16 mode, other fp32 mode
+is_graph: true          # If true, the model will train in graph mode(like Tensorflow 1.x), other eager model(like PyTorch)
+is_global: true         # If true, the model will train in global mode
+dynamic_scale_grad: true  # If true, the model will use dynameic grad scaler, otherwise static grad scaler. (when fp16 is false, the option is not working)
+scale_grad: true
+resume: false           
+
+# hyper parameters
+lr: 0.1
+momentum: 0.9
+decay_epoch: [11, 17, 22]
+batch_size: 128
+num_epoch: 20
+warmup_epoch: 0
+weight_decay: 0.0005
+
+# log parameters
+log_frequent: 10
+
+# data parameters
+dataset: ms1m-retinaface-t1
+num_classes: 93432
+num_image: 5179510
+ofrecord_path: /workspace/data/insightface/ms1m-retinaface-t1/ofrecord
+ofrecord_part_num: 32
+save_frequent: 1 # save per `save_frequent` epoch
+# output: /workspace/baseline
+output: /workspace/baseline_20220721_094738
+synthetic: false
+use_gpu_decode: false
+val_frequence: 6000
+val_image_num: 
+    agedb_30: 12000
+    cfp_fp: 14000
+    lfw: 12000
+val_targets: [lfw, agedb_30, cfp_fp]
+
+# - lfw
+# - cfp_fp
+# - agedb_30
+
+total_step: -1

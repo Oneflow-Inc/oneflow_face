@@ -1,0 +1,5 @@
+network: mbf
+batch_size: 384
+result_path: /workspace/mbf_20220623_085709
+resume: true
+is_graph: true

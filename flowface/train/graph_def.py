@@ -1,0 +1,63 @@
+import oneflow as flow
+import oneflow.nn as nn
+
+
+def make_static_grad_scaler():
+    return flow.amp.StaticGradScaler(flow.env.get_world_size())
+
+
+def make_grad_scaler():
+    return flow.amp.GradScaler(
+        init_scale=2 ** 30,
+        growth_factor=2.0,
+        backoff_factor=0.5,
+        growth_interval=2000,
+    )
+
+
+class TrainGraph(flow.nn.Graph):
+    def __init__(
+        self,
+        model,
+        cfg,
+        data_loader,
+        optimizer,
+        lr_scheduler=None,
+    ):
+        super().__init__()
+
+        if cfg.fp16:
+            self.config.enable_amp(True)
+            self.set_grad_scaler(make_grad_scaler())
+        elif cfg.scale_grad:
+            self.set_grad_scaler(make_static_grad_scaler())
+
+        self.config.allow_fuse_add_to_output(True)
+        self.config.allow_fuse_model_update_ops(True)
+
+        self.model = model
+
+        self.data_loader = data_loader
+        self.add_optimizer(optimizer, lr_sch=lr_scheduler)
+
+    def build(self):
+        image, label = self.data_loader()
+        image = image.to("cuda")
+        label = label.to("cuda")
+        loss = self.model(image, label)
+        loss.backward()
+        return loss
+
+
+class EvalGraph(flow.nn.Graph):
+    def __init__(self, model, fp16):
+        super().__init__()
+        self.config.allow_fuse_add_to_output(True)
+        self.model = model
+        if fp16:
+            self.config.enable_amp(True)
+
+    def build(self, image):
+        image = image.to("cuda")
+        logits = self.model(image)
+        return logits
